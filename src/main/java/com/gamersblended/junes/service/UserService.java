@@ -1,9 +1,10 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.model.Users;
-import com.gamersblended.junes.repository.UsersRepository;
+import com.gamersblended.junes.repository.jpa.UsersRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
 public class UserService {
 
     @Autowired
+    @Qualifier("jpaUsersRepository")
     private UsersRepository usersRepository;
 
     public List<Users> getAllUsers() {
