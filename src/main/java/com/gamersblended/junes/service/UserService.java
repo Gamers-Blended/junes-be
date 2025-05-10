@@ -1,6 +1,6 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.model.Users;
+import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UsersRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +17,8 @@ public class UserService {
     @Qualifier("jpaUsersRepository")
     private UsersRepository usersRepository;
 
-    public List<Users> getAllUsers() {
-        List<Users> res = usersRepository.getAllUsers();
+    public List<User> getAllUsers() {
+        List<User> res = usersRepository.getAllUsers();
         log.info("Total number of users returned from db: {}", res.size());
         return res;
 

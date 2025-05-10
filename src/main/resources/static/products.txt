@@ -1,0 +1,167 @@
+[
+  {
+    "_id": "65f8a12b3e5d827b94c8f2a1",
+    "name": "Atelier Marie Remake: The Alchemist of Salburg",
+    "price": 49.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2023-07-13",
+    "series": ["atelier"],
+    "genres": ["jrpg"],
+    "units_sold": 56
+  },
+  {
+    "_id": "65f8a12b3e5d827b94c8f2a2",
+    "name": "Baten Kaitos I & II HD Remaster",
+    "price": 49.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2023-09-14",
+    "series": ["baten_kaitos"],
+    "genres": ["jrpg"],
+    "units_sold": 129
+  },
+  {
+    "_id": "65f8a12b3e5d827b94c8f2a3",
+    "name": "Chrono Cross: The Radical Dreamers Edition",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2022-04-07",
+    "series": ["chrono_cross"],
+    "genres": ["jrpg"],
+    "units_sold": 34
+  },
+  {
+    "_id": "65f8a12b3e5d827b94c8f2a4",
+    "name": "Fatal Frame: Maiden of Black Water",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2021-10-28",
+    "series": ["fatal_frame"],
+    "genres": ["survival_horror"],
+    "units_sold": 560
+  },
+  {
+    "name": "Fatal Frame: Mask of the Lunar Eclipse",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2023-03-09",
+    "series": ["fatal_frame"],
+    "genres": ["survival_horror"],
+    "units_sold": 673
+  },
+  {
+    "name": "Final Fantasy IX",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2019-02-13",
+    "series": ["final_fantasy"],
+    "genres": ["jrpg"],
+    "units_sold": 78
+  },
+  {
+    "name": "Final Fantasy Pixel Remaster",
+    "price": 79.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2024-10-08",
+    "series": ["final_fantasy"],
+    "genres": ["jrpg"],
+    "units_sold": 980
+  },
+  {
+    "name": "Grandia HD Collection",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2019-08-16",
+    "series": ["grandia"],
+    "genres": ["jrpg"],
+    "units_sold": 865
+  },
+  {
+    "name": "Ninja Gaiden: Master Collection",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2021-06-10",
+    "series": ["ninja_gaiden"],
+    "genres": ["action"],
+    "units_sold": 56
+  },
+  {
+    "name": "SaGa Frontier Remastered",
+    "price": 29.99,
+    "platform": "Nintendo Switch",
+    "region": "Asia",
+    "release_date": "2021-04-15",
+    "series": ["saga"],
+    "genres": ["jrpg"],
+    "units_sold": 346
+  },
+  {
+    "name": "Final Fantasy VII Final Fantasy VIII Remastered Twin Pack",
+    "price": 39.99,
+    "platform": "Nintendo Switch",
+    "region": "Europe",
+    "release_date": "2020-12-04",
+    "series": ["final_fantasy"],
+    "genres": ["jrpg"],
+    "units_sold": 765
+  },
+  {
+    "name": "Phoenix Wright: Ace Attorney Trilogy",
+    "price": 29.99,
+    "platform": "Nintendo Switch",
+    "region": "Japan",
+    "release_date": "2019-04-09",
+    "series": ["ace_attorney"],
+    "genres": ["visual_novel"],
+    "units_sold": 345
+  },
+  {
+    "name": "Apollo Justice: Ace Attorney Trilogy",
+    "price": 29.99,
+    "platform": "Nintendo Switch",
+    "region": "United States",
+    "release_date": "2024-01-25",
+    "series": ["ace_attorney"],
+    "genres": ["visual_novel"],
+    "units_sold": 345
+  },
+  {
+    "_id": "65f8a12b3e5d827b94c8f2a4",
+    "name": "Fatal Frame: Maiden of Black Water",
+    "price": 39.99,
+    "platform": "PlayStation 4",
+    "region": "Asia",
+    "release_date": "2011-10-28",
+    "series": ["fatal_frame"],
+    "genres": ["survival_horror"],
+    "units_sold": 980
+  },
+  {
+    "name": "Fatal Frame: Mask of the Lunar Eclipse",
+    "price": 39.99,
+    "platform": "PlayStation 4",
+    "region": "Asia",
+    "release_date": "2023-03-09",
+    "series": ["fatal_frame"],
+    "genres": ["survival_horror"],
+    "units_sold": 347
+  },
+  {
+    "name": "Ninja Gaiden: Master Collection",
+    "price": 39.99,
+    "platform": "PlayStation 4",
+    "region": "Asia",
+    "release_date": "2021-06-10",
+    "series": ["ninja_gaiden"],
+    "genres": ["action"],
+    "units_sold": 236
+  }
+]
