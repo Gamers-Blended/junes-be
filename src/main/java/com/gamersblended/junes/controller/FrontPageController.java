@@ -4,10 +4,7 @@ import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,9 +16,18 @@ public class FrontPageController {
     @Autowired
     private ProductService productService;
 
+    // User logged in
     @GetMapping("/recommended")
-    public List<Product> getRecommendedItems(@RequestParam(required = false) Integer optionalUserID) {
-        return productService.getRecommendedProducts(optionalUserID);
+    public List<Product> getRecommendedProductsLoggedIn(@RequestParam(required = false) Integer optionalUserID) {
+        log.info("Calling get recommended products while userID {} is logged in API!", optionalUserID);
+        return productService.getRecommendedProductsWithID(optionalUserID);
+    }
+
+    // User not logged in
+    @PostMapping("/recommended/no-user")
+    public List<Product> getRecommendedProductsNotLoggedIn(@RequestBody List<String> historyCache) {
+        log.info("Calling get recommended products while user is NOT logged in API! Size of historyCache: {}", historyCache.size());
+        return productService.getRecommendedProductsWithoutID(historyCache);
     }
 
 }
