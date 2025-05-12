@@ -18,9 +18,9 @@ public class FrontPageController {
 
     // User logged in
     @GetMapping("/recommended")
-    public List<ProductDTO> getRecommendedProductsLoggedIn(@RequestParam(required = false) Integer optionalUserID) {
-        log.info("Calling get recommended products while userID {} is logged in API!", optionalUserID);
-        return productService.getRecommendedProductsWithID(optionalUserID);
+    public List<ProductDTO> getRecommendedProductsLoggedIn(@RequestParam Integer userID) {
+        log.info("Calling get recommended products while userID {} is logged in API!", userID);
+        return productService.getRecommendedProductsWithID(userID);
     }
 
     // User not logged in
