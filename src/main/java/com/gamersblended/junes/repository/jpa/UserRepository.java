@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository("jpaUsersRepository") // JPA repository bean
-public interface UsersRepository extends JpaRepository<User, Integer> {
+public interface UserRepository extends JpaRepository<User, Integer> {
 
     @Query(value = "SELECT * FROM customer_data.users", nativeQuery = true)
     List<User> getAllUsers();

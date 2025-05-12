@@ -1,11 +1,12 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.dto.ProductDTO;
+import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
-import com.gamersblended.junes.repository.jpa.UsersRepository;
-import com.gamersblended.junes.repository.mongodb.ProductsRepository;
+import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,26 +16,29 @@ import java.util.List;
 public class ProductService {
 
     private static final int MAX_CACHE_SIZE = 20;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+    private final ProductMapper productMapper;
 
     @Autowired
-    @Qualifier("mongoProductsRepository") // Inject MongoDB repository
-    private ProductsRepository productsRepository;
-
-    @Autowired
-    private UsersRepository usersRepository;
+    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductMapper productMapper) {
+        this.productRepository = productRepository;
+        this.userRepository = userRepository;
+        this.productMapper = productMapper;
+    }
 
     public List<Product> getAllProducts() {
-        List<Product> res = productsRepository.findAll();
+        List<Product> res = productRepository.findAll();
         log.info("Total number of products returned from db: {}", res.size());
         return res;
     }
 
     // Case for logged users
-    public List<Product> getRecommendedProductsWithID(Integer userID) {
+    public List<ProductDTO> getRecommendedProductsWithID(Integer userID) {
         try {
             if (null != userID) {
                 // Get user's browsing history
-                List<String> userHistoryList = usersRepository.getUserHistory(userID);
+                List<String> userHistoryList = userRepository.getUserHistory(userID);
                 log.info("Retrieved userHistoryList: {}", userHistoryList);
 
                 // Call Recommender System API if browsing history non-empty
@@ -50,7 +54,7 @@ public class ProductService {
     }
 
     // Case for user not logged in
-    public List<Product> getRecommendedProductsWithoutID(List<String> browsingCache) {
+    public List<ProductDTO> getRecommendedProductsWithoutID(List<String> browsingCache) {
         try {
             // Keep only the most recent 20 products in browsingCache
             if (null != browsingCache && browsingCache.size() > MAX_CACHE_SIZE) {
@@ -67,15 +71,15 @@ public class ProductService {
         return returnDefaultRecommendedProducts();
     }
 
-    public List<Product> callRecommenderSystem(List<String> inputProductIDList) {
+    public List<ProductDTO> callRecommenderSystem(List<String> inputProductIDList) {
         log.info("Recommender API called with {} product(s)!", inputProductIDList.size());
 
         // Mocked result
-        return productsRepository.findTop10ByOrderByUnitsSoldAsc();
+        return productMapper.toDTOList(productRepository.findTop10ByOrderByUnitsSoldAsc());
     }
 
     // Default return top 20 products in terms of most units sold
-    public List<Product> returnDefaultRecommendedProducts() {
-        return productsRepository.findTop20ByOrderByUnitsSoldDesc();
+    public List<ProductDTO> returnDefaultRecommendedProducts() {
+        return productMapper.toDTOList(productRepository.findTop20ByOrderByUnitsSoldDesc());
     }
 }
