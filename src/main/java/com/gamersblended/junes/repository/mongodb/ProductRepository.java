@@ -1,7 +1,9 @@
 package com.gamersblended.junes.repository.mongodb;
 
 import com.gamersblended.junes.model.Product;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,11 +13,8 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
     List<Product> findAll();
 
-    List<Product> findTop20ByOrderByUnitsSoldDesc();
-
-    List<Product> findTop10ByOrderByUnitsSoldAsc();
-
-    List<Product> findTop20ByOrderByReleaseDateAsc();
+    @Query(value = "{}", sort = "{ 'units_sold': -1 }")
+    List<Product> findTopProductsWithPagination(Pageable pageable);
 
     // Specific query, MongoDB query syntax:
     // @Query("{ }") // Select all documents (similar to findAll)

@@ -1,6 +1,7 @@
 package com.gamersblended.junes.controller;
 
-import com.gamersblended.junes.dto.ProductDTO;
+import com.gamersblended.junes.dto.ProductSliderItemDTO;
+import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
 import com.gamersblended.junes.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +19,16 @@ public class FrontPageController {
 
     // User logged in
     @GetMapping("/recommended")
-    public List<ProductDTO> getRecommendedProductsLoggedIn(@RequestParam Integer userID) {
-        log.info("Calling get recommended products while userID {} is logged in API!", userID);
-        return productService.getRecommendedProductsWithID(userID);
+    public List<ProductSliderItemDTO> getRecommendedProductsLoggedIn(@RequestParam Integer userID, @RequestParam Integer pageNumber) {
+        log.info("Calling get recommended products API while userID {} is logged in, page {}!", userID, pageNumber);
+        return productService.getRecommendedProductsWithID(userID, pageNumber);
     }
 
     // User not logged in
     @PostMapping("/recommended/no-user")
-    public List<ProductDTO> getRecommendedProductsNotLoggedIn(@RequestBody List<String> historyCache) {
-        log.info("Calling get recommended products while user is NOT logged in API! Size of historyCache: {}", historyCache.size());
-        return productService.getRecommendedProductsWithoutID(historyCache);
+    public List<ProductSliderItemDTO> getRecommendedProductsNotLoggedIn(@RequestBody RecommendedProductNotLoggedRequestDTO requestDTO) {
+        log.info("Calling get recommended products API while user is NOT logged in, page {}! Size of historyCache: {}", requestDTO.getPageNumber(), requestDTO.getHistoryCache().size());
+        return productService.getRecommendedProductsWithoutID(requestDTO);
     }
 
 }

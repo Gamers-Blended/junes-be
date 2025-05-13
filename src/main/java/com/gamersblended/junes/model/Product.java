@@ -43,4 +43,8 @@ public class Product {
     @NonNull
     @Field("units_sold")
     private Integer unitsSold;
+
+    @NonNull
+    @Field("src_url")
+    private String srcUrl;
 }
