@@ -14,6 +14,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query(value = "SELECT * FROM customer_data.users", nativeQuery = true)
     List<User> getAllUsers();
 
-    @Query(value = "SELECT history_list FROM customer_data.users WHERE id = :id", nativeQuery = true)
+    @Query(value = "SELECT UNNEST(history_list) FROM customer_data.users WHERE id = :id", nativeQuery = true)
     List<String> getUserHistory(@Param("id") Integer id);
 }
