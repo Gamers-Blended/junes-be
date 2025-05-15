@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository("mongoProductsRepository") //  MongoDB repository bean
@@ -15,6 +16,9 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
     @Query(value = "{}", sort = "{ 'units_sold': -1 }")
     List<Product> findTopProductsWithPagination(Pageable pageable);
+
+    @Query("{ 'release_date': { '$gte': '?0' } }")
+    List<Product> findPreOrderProductsAfterDateWithPagination(LocalDate currentDate, Pageable pageable);
 
     // Specific query, MongoDB query syntax:
     // @Query("{ }") // Select all documents (similar to findAll)

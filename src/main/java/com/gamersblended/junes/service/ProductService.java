@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -90,5 +92,19 @@ public class ProductService {
         PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "units_sold"));
 
         return productMapper.toSliderItemDTOList(productRepository.findTopProductsWithPagination(pageRequest));
+    }
+
+    public List<ProductSliderItemDTO> getPreOrderProducts(LocalDate currentDate, Integer pageNumber) {
+        try {
+            if (null == currentDate) {
+                currentDate = LocalDate.now();
+            }
+            log.info("Searching for preorder products after date: {}", currentDate);
+            PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "release_date"));
+            return productMapper.toSliderItemDTOList(productRepository.findPreOrderProductsAfterDateWithPagination(currentDate, pageRequest));
+        } catch (Exception ex) {
+            log.error("Exception in getPreOrderProducts: ", ex);
+            return new ArrayList<>();
+        }
     }
 }
