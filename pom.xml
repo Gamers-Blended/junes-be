@@ -33,6 +33,7 @@
 		<pmd.version>3.26.0</pmd.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<javadoc.version>3.6.2</javadoc.version>
+		<springdoc.version>1.8.0</springdoc.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -103,6 +104,11 @@
 			<artifactId>mapstruct-processor</artifactId>
 			<version>${mapstruct.version}</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>${springdoc.version}</version>
 		</dependency>
 <!--		<dependency>-->
 <!--			<groupId>org.springframework.security</groupId>-->
