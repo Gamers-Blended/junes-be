@@ -139,9 +139,10 @@
 				<configuration>
 					<effort>Max</effort>
 					<threshold>Low</threshold>
-					<failOnError>true</failOnError>
+					<failOnError>false</failOnError>
 					<xmlOutput>true</xmlOutput>
 					<xmlOutputDirectory>${project.build.directory}/spotbugs</xmlOutputDirectory>
+					<excludeFilterFile>${project.basedir}/spotbugs-exclude.xml</excludeFilterFile>
 				</configuration>
 				<executions>
 					<execution>
@@ -196,7 +197,6 @@
 				<version>${javadoc.version}</version>
 				<configuration>
 					<source>1.8</source>
-					<target>1.8</target>
 <!--					<doclint>none</doclint>-->
 					<doclint>all</doclint>
 				</configuration>

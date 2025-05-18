@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -43,4 +45,28 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public List<String> getHistoryList() {
+        return Collections.unmodifiableList(historyList);
+    }
+
+    public List<String> getAddressList() {
+        return Collections.unmodifiableList(addressList);
+    }
+
+    public List<String> getPaymentInfoList() {
+        return Collections.unmodifiableList(paymentInfoList);
+    }
+
+    public void setHistoryList(List<String> historyList) {
+        this.historyList = historyList != null ? new ArrayList<>(historyList) : new ArrayList<>();
+    }
+
+    public void setAddressList(List<String> addressList) {
+        this.addressList = addressList != null ? new ArrayList<>(addressList) : new ArrayList<>();
+    }
+
+    public void setPaymentInfoList(List<String> paymentInfoList) {
+        this.paymentInfoList = paymentInfoList != null ? new ArrayList<>(paymentInfoList) : new ArrayList<>();
+    }
 }

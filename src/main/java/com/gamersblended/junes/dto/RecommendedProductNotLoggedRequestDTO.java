@@ -3,7 +3,7 @@ package com.gamersblended.junes.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.*;
 
 @Getter
 @Setter
@@ -11,4 +11,12 @@ public class RecommendedProductNotLoggedRequestDTO {
 
     private Integer pageNumber;
     private List<String> historyCache;
+
+    public List<String> getHistoryCache() {
+        return Collections.unmodifiableList(historyCache);
+    }
+
+    public void setHistoryCache(Set<String> historyCache) {
+        this.historyCache = new ArrayList<>(historyCache);
+    }
 }

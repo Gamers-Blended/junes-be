@@ -65,11 +65,11 @@ public class ProductService {
         Integer pageNumber = requestDTO.getPageNumber();
         try {
             // Keep only the most recent 20 products in browsingCache
-            if (null != browsingCache && browsingCache.size() > MAX_CACHE_SIZE) {
+            if (browsingCache.size() > MAX_CACHE_SIZE) {
                 log.info("browsingCache exceeded max capacity of {}, keeping only the most recent {} products...", MAX_CACHE_SIZE, MAX_CACHE_SIZE);
                 browsingCache = browsingCache.subList(browsingCache.size() - MAX_CACHE_SIZE, browsingCache.size());
             }
-            if (null != browsingCache && !browsingCache.contains("") && !browsingCache.isEmpty()) {
+            if (!browsingCache.contains("") && !browsingCache.isEmpty()) {
                 return callRecommenderSystem(browsingCache, pageNumber);
             }
         } catch (Exception ex) {

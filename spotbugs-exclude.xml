@@ -1,0 +1,6 @@
+<FindBugsFilter>
+    <Match>
+        <Class name="target/generated-sources/annotations/com/gamersblended/junes/mapper/ProductMapperImpl"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
+</FindBugsFilter>
