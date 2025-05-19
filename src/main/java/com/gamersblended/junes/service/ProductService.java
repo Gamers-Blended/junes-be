@@ -22,6 +22,7 @@ public class ProductService {
 
     private static final int MAX_CACHE_SIZE = 20;
     private static final int PAGE_SIZE = 5;
+    private static final String UNITS_SOLD = "units_sold";
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
@@ -39,7 +40,14 @@ public class ProductService {
         return res;
     }
 
-    // Case for logged users
+    /**
+     * For get recommended products API
+     * Case 1: logged users
+     *
+     * @param userID     ID of logged user calling the API
+     * @param pageNumber Starts from 0, last page calculated from front end
+     * @return List of up to 5 recommended products
+     */
     public List<ProductSliderItemDTO> getRecommendedProductsWithID(Integer userID, Integer pageNumber) {
         try {
             if (null != userID) {
@@ -59,7 +67,13 @@ public class ProductService {
         return returnDefaultRecommendedProducts(pageNumber);
     }
 
-    // Case for user not logged in
+    /**
+     * For get recommended products API
+     * Case 2: user not logged in
+     *
+     * @param requestDTO  Contains historyCache & pageNumber
+     * @return List of up to 5 recommended products
+     */
     public List<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO) {
         List<String> browsingCache = requestDTO.getHistoryCache();
         Integer pageNumber = requestDTO.getPageNumber();
@@ -79,31 +93,71 @@ public class ProductService {
         return returnDefaultRecommendedProducts(pageNumber);
     }
 
+    /**
+     * Calls external recommender system
+     *
+     * @param inputProductIDList List of up to 20 unique product IDs
+     * @param pageNumber         Starts from 0, last page calculated from front end
+     * @return List of up to 5 recommended products
+     */
     public List<ProductSliderItemDTO> callRecommenderSystem(List<String> inputProductIDList, Integer pageNumber) {
         log.info("Recommender API called with {} product(s) for page {}!", inputProductIDList.size(), pageNumber);
-        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "units_sold"));
+        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, UNITS_SOLD));
         // Mocked result
         return productMapper.toSliderItemDTOList(productRepository.findTopProductsWithPagination(pageRequest));
     }
 
-    // Default return products with most units sold, descending
+
+    /**
+     * By default, gives products with most units sold, descending
+     *
+     * @param pageNumber Starts from 0, last page calculated from front end
+     * @return List of up to 5 products with most units sold as default
+     */
     public List<ProductSliderItemDTO> returnDefaultRecommendedProducts(Integer pageNumber) {
         log.info("Returning default products with most units sold for page {}!", pageNumber);
-        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "units_sold"));
+        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, UNITS_SOLD));
 
         return productMapper.toSliderItemDTOList(productRepository.findTopProductsWithPagination(pageRequest));
     }
 
+    /**
+     * For get preorder products API
+     *
+     * @param currentDate Products must have release_date on or after this date (triggered date if not given)
+     * @param pageNumber  Starts from 0, last page calculated from front end
+     * @return List of up to 5 preorder products in ascending release_date order
+     */
     public List<ProductSliderItemDTO> getPreOrderProducts(LocalDate currentDate, Integer pageNumber) {
         try {
             if (null == currentDate) {
                 currentDate = LocalDate.now();
             }
-            log.info("Searching for preorder products after date: {}", currentDate);
+            log.info("Searching for preorder products on and after the date: {}, page: {}", currentDate, pageNumber);
             PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "release_date"));
             return productMapper.toSliderItemDTOList(productRepository.findPreOrderProductsAfterDateWithPagination(currentDate, pageRequest));
         } catch (Exception ex) {
             log.error("Exception in getPreOrderProducts: ", ex);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * For get bestseller API
+     * @param currentDate Products must have created_on on or before this date (triggered date if not given)
+     * @param pageNumber  Starts from 0, last page calculated from front end
+     * @return List of up to 5 bestsellers in terms of units_sold in descending order
+     */
+    public List<ProductSliderItemDTO> getBestSellers(LocalDate currentDate, Integer pageNumber) {
+        try {
+            if (null == currentDate) {
+                currentDate = LocalDate.now();
+            }
+            log.info("Searching for best selling products for date: {}, page: {}", currentDate, pageNumber);
+            PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, UNITS_SOLD));
+            return productMapper.toSliderItemDTOList(productRepository.findBestSellersBeforeDateWithPagination(currentDate, pageRequest));
+        } catch (Exception ex) {
+            log.error("Exception in getBestSellers: ", ex);
             return new ArrayList<>();
         }
     }

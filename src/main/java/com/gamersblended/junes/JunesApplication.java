@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @EnableMongoRepositories(basePackages = "com.gamersblended.junes.repository.mongodb")
 @EnableJpaRepositories(basePackages = "com.gamersblended.junes.repository.jpa")
 public class JunesApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(JunesApplication.class, args);
 	}

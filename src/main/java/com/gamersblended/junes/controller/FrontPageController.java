@@ -5,10 +5,15 @@ import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
 import com.gamersblended.junes.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @Slf4j
 @RestController
@@ -36,5 +41,11 @@ public class FrontPageController {
     public List<ProductSliderItemDTO> getPreOrderProducts(@RequestParam(required = false) LocalDate currentDate, @RequestParam Integer pageNumber) {
         log.info("Calling get preorder products API, page {}!", pageNumber);
         return productService.getPreOrderProducts(currentDate, pageNumber);
+    }
+
+    @GetMapping("/best-sellers")
+    public List<ProductSliderItemDTO> getBestSellingProducts(@RequestParam(required = false) LocalDate currentDate, @RequestParam Integer pageNumber) {
+        log.info("Calling get best sellers API, page {}!", pageNumber);
+        return productService.getBestSellers(currentDate, pageNumber);
     }
 }

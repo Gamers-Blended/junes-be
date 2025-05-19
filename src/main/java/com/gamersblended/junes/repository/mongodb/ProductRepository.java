@@ -20,6 +20,16 @@ public interface ProductRepository extends MongoRepository<Product, String> {
     @Query("{ 'release_date': { '$gte': '?0' } }")
     List<Product> findPreOrderProductsAfterDateWithPagination(LocalDate currentDate, Pageable pageable);
 
+    /**
+     * Find products with created_on before currentDate
+     *
+     * @param currentDate Upper bound for date product added to database (inclusive)
+     * @param pageable    Page number
+     * @return List of products
+     */
+    @Query("{ 'created_on': { '$lte': '?0' } }")
+    List<Product> findBestSellersBeforeDateWithPagination(LocalDate currentDate, Pageable pageable);
+
     // Specific query, MongoDB query syntax:
     // @Query("{ }") // Select all documents (similar to findAll)
 }
