@@ -25,7 +25,6 @@ public class ProductDTO {
     private String productImageUrl;
     private List<String> imageUrlList;
     private LocalDate createdOn;
-    private LocalDate updatedOn;
 
     /**
      * Code can read but cannot change set

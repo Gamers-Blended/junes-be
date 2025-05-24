@@ -6,12 +6,9 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Document(collection = "products")
 @Getter
@@ -19,6 +16,7 @@ import java.util.Set;
 public class Product {
 
     @Id
+    @Field("_id")
     private String id; // Maps to _id field in MongoDB
 
     @NonNull
@@ -68,11 +66,10 @@ public class Product {
     @Field("image_url_list")
     private List<String> imageUrlList;
 
+    @NonNull
     @Field("created_on")
     private LocalDate createdOn;
 
-    @Field("updated_on")
-    private LocalDate updatedOn;
 
     /**
      * Private constructor for frameworks like Spring/MongoDB/JPA
@@ -113,8 +110,7 @@ public class Product {
                    @NonNull Integer unitsSold,
                    @NonNull String productImageUrl,
                    @NonNull List<String> imageUrlList,
-                   @NonNull LocalDate createdOn,
-                   LocalDate updatedOn) {
+                   @NonNull LocalDate createdOn) {
         Objects.requireNonNull(name, "Name cannot be null");
         Objects.requireNonNull(description, "Description cannot be null");
         Objects.requireNonNull(price, "Price cannot be null");
