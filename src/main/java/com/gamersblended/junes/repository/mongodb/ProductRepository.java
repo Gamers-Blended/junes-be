@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository("mongoProductsRepository") //  MongoDB repository bean
 public interface ProductRepository extends MongoRepository<Product, String> {
@@ -29,6 +30,8 @@ public interface ProductRepository extends MongoRepository<Product, String> {
      */
     @Query("{ 'created_on': { '$lte': '?0' } }")
     List<Product> findBestSellersBeforeDateWithPagination(LocalDate currentDate, Pageable pageable);
+
+    Optional<Product> findById(String id);
 
     // Specific query, MongoDB query syntax:
     // @Query("{ }") // Select all documents (similar to findAll)

@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
 import com.gamersblended.junes.mapper.ProductMapper;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -71,7 +73,7 @@ public class ProductService {
      * For get recommended products API
      * Case 2: user not logged in
      *
-     * @param requestDTO  Contains historyCache & pageNumber
+     * @param requestDTO Contains historyCache & pageNumber
      * @return List of up to 5 recommended products
      */
     public List<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO) {
@@ -144,6 +146,7 @@ public class ProductService {
 
     /**
      * For get bestseller API
+     *
      * @param currentDate Products must have created_on on or before this date (triggered date if not given)
      * @param pageNumber  Starts from 0, last page calculated from front end
      * @return List of up to 5 bestsellers in terms of units_sold in descending order
@@ -160,5 +163,33 @@ public class ProductService {
             log.error("Exception in getBestSellers: ", ex);
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * For get product details for quick shop API
+     *
+     * @param productID _id value of product
+     * @return Product details used in quick shop window
+     */
+    public ProductDTO getQuickShopDetails(String productID) {
+        try {
+            if (null == productID) {
+                log.error("There is no productID given, returning empty result...");
+                return new ProductDTO();
+            }
+            log.info("Searching product details for productID: {}", productID);
+            Optional<Product> product = productRepository.findById(productID);
+            if (product.isPresent()) {
+                return productMapper.toDTO(product.get());
+            } else {
+                log.error("There is no product with productID = {}, returning empty result...", productID);
+                return new ProductDTO();
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid ObjectId format: {}", productID);
+        } catch (Exception ex) {
+            log.error("Exception in getQuickShopDetails: ", ex);
+        }
+        return new ProductDTO();
     }
 }
