@@ -5,16 +5,11 @@ import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
 import com.gamersblended.junes.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 @Slf4j
@@ -22,8 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequestMapping("junes/api/v1/frontpage")
 public class FrontPageController {
 
-    @Autowired
     private ProductService productService;
+
+    public FrontPageController(ProductService productService) {
+        this.productService = productService;
+    }
 
     // User logged in
     @GetMapping("/recommended")
@@ -52,8 +50,8 @@ public class FrontPageController {
     }
 
     @GetMapping("quick-shop/{productID}")
-    public ProductDTO getQuickShopDetailsByID(@PathVariable String productID) {
+    public ResponseEntity<ProductDTO> getQuickShopDetailsByID(@PathVariable String productID) {
         log.info("Calling get quick shop details API for productID: {}!", productID);
-        return productService.getQuickShopDetails(productID);
+        return ResponseEntity.ok(productService.getQuickShopDetails(productID));
     }
 }

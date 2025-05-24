@@ -3,6 +3,8 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
+import com.gamersblended.junes.exception.InvalidProductIdException;
+import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.UserRepository;
@@ -173,23 +175,25 @@ public class ProductService {
      */
     public ProductDTO getQuickShopDetails(String productID) {
         try {
-            if (null == productID) {
-                log.error("There is no productID given, returning empty result...");
-                return new ProductDTO();
+            if (null == productID || productID.trim().isEmpty()) {
+                log.error("productID cannot be null or empty.");
+                throw new InvalidProductIdException("Product ID cannot be null or empty.");
             }
+
             log.info("Searching product details for productID: {}", productID);
             Optional<Product> product = productRepository.findById(productID);
             if (product.isPresent()) {
                 return productMapper.toDTO(product.get());
             } else {
-                log.error("There is no product with productID = {}, returning empty result...", productID);
-                return new ProductDTO();
+                log.error("productID {} not found.", productID);
+                throw new ProductNotFoundException("productID " + productID + " not found.");
             }
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid ObjectId format: {}", productID);
+
+        } catch (InvalidProductIdException | ProductNotFoundException ex) {
+            throw ex;
         } catch (Exception ex) {
-            log.error("Exception in getQuickShopDetails: ", ex);
+            log.error("Exception in getQuickShopDetails for ID {}: {}", productID, ex.getMessage());
+            throw new RuntimeException("Service error in getQuickShopDetails: Could not retrieve product details.", ex);
         }
-        return new ProductDTO();
     }
 }
