@@ -10,5 +10,5 @@ public class ProductSliderItemDTO {
     private String id;
     private String name;
     private Double price;
-    private String srcUrl;
+    private String productImageUrl;
 }
