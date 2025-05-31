@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS customer_data.carts (
     user_id INTEGER NOT NULL,
     product_id VARCHAR(255) NOT NULL,
     quantity INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP
+    created_on TIMESTAMP NOT NULL,
+    updated_on TIMESTAMP
 );
+
+INSERT INTO customer_data.carts (user_id, product_id, quantity, created_on)
+VALUES(1, '681a55f2cb20535492b5e691', 2, NOW());

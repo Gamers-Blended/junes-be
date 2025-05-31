@@ -33,6 +33,8 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
     Optional<Product> findById(String id);
 
+    List<Product> findByIdIn(List<String> idList);
+
     // Specific query, MongoDB query syntax:
     // @Query("{ }") // Select all documents (similar to findAll)
 }

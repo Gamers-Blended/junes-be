@@ -28,6 +28,6 @@ public class Cart {
     @Column(name = "created_on", nullable = false)
     private LocalDate createdOn;
 
-    @Column(name = "updated_at")
-    private LocalDate updatedAt;
+    @Column(name = "updated_on")
+    private LocalDate updatedOn;
 }

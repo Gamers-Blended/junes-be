@@ -1,15 +1,19 @@
 package com.gamersblended.junes.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CartProductDTO {
 
-    private String id;
+    private String productID;
     private String name;
     private Double price;
     private String platform;
@@ -18,5 +22,5 @@ public class CartProductDTO {
     private String productImageUrl;
     private Integer quantity;
     private Integer userID;
-    private LocalDate createdAt;
+    private LocalDate createdOn;
 }
