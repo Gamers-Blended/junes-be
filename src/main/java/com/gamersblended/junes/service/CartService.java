@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -158,6 +159,9 @@ public class CartService {
                     }
                 })
                 .collect(Collectors.toList());
+
+        // Only sort by created_on, descending
+        productsInCartList.sort(Comparator.comparing(CartProductDTO::getCreatedOn).reversed());
 
         // Apply pagination
         int start = (int) pageable.getOffset();
