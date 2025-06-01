@@ -5,15 +5,18 @@ import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.CartRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -184,5 +187,76 @@ public class CartService {
     public Map<String, Product> getProductMap(List<String> productIDList) {
         List<Product> metadataList = productRepository.findByIdIn(productIDList);
         return metadataList.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+    }
+
+    /**
+     * Add given product to user's cart
+     *
+     * @param userID       The ID of the user whose cart is modified
+     * @param productToAdd The Product to add to user's cart
+     * @return Output message
+     */
+    @Transactional
+    public String addToCart(Integer userID, CartProductDTO productToAdd) {
+        try {
+            // Validate quantity
+            if (productToAdd.getQuantity() <= 0) {
+                log.error("Invalid quantity value {} given.", productToAdd.getQuantity());
+                return "Error in adding to userID's (" + userID + ") cart due to invalid quantity value: " + productToAdd.getQuantity();
+            }
+            // Get user's cart from database
+            List<Cart> userCartProductList = cartRepository.getUserCart(userID);
+
+            // If user does not have cart data in database
+            // Create new record with productToAdd and save to database
+            if (userCartProductList.isEmpty()) {
+                log.info("UserID {} has an empty cart, creating a new record...", userID);
+                addCartItemToDatabase(userID, productToAdd);
+                return "Product added to cart";
+            }
+
+            // Check if user already has product in cart
+            Optional<Cart> queriedCartProduct = userCartProductList.stream()
+                    .filter(cartDTO -> cartDTO.getProductID().equals(productToAdd.getProductID()))
+                    .findFirst();
+            if (queriedCartProduct.isPresent()) {
+                // Update quantity if record exists in database
+                Cart existingCartProduct = queriedCartProduct.get();
+                Integer newQuantity = existingCartProduct.getQuantity() + productToAdd.getQuantity();
+                log.info("UserID {} already has productID {} in their cart, updating quantity from {} to {}...", userID, productToAdd.getProductID(),
+                        existingCartProduct.getQuantity(), newQuantity);
+                existingCartProduct.setQuantity(newQuantity);
+                existingCartProduct.setUpdatedOn(LocalDateTime.now());
+                cartRepository.save(existingCartProduct);
+            } else {
+                // Create new record inside cart database
+                log.info("UserID {} doesn't have productID {} in their cart, creating a new record...", userID, productToAdd.getProductID());
+                addCartItemToDatabase(userID, productToAdd);
+            }
+
+            return "Product added to cart";
+        } catch (Exception ex) {
+            log.error("Exception in addToCart: ", ex);
+            return "Error in adding to userID's (" + userID + ") cart.";
+        }
+    }
+
+    /**
+     * Add given product as a new record to carts database
+     *
+     * @param userID       The ID of the user whose cart is modified
+     * @param productToAdd The Product to add to user's cart
+     */
+    private void addCartItemToDatabase(Integer userID, CartProductDTO productToAdd) {
+        try {
+            Cart newCart = new Cart();
+            newCart.setUserID(userID);
+            newCart.setProductID(productToAdd.getProductID());
+            newCart.setQuantity(productToAdd.getQuantity());
+            newCart.setCreatedOn(productToAdd.getCreatedOn());
+            cartRepository.save(newCart);
+        } catch (Exception ex) {
+            log.error("Exception in addCartItemToDatabase: ", ex);
+        }
     }
 }

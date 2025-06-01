@@ -30,4 +30,10 @@ public class CartController {
         }
         return ResponseEntity.ok(cartService.getCartProducts(userID, cartProductDTOList, pageable));
     }
+
+    @PostMapping("/add")
+    public ResponseEntity<String> addToCart(@RequestParam Integer userID, @RequestBody CartProductDTO cartProductDTO) {
+        log.info("Calling add to cart API for userID = {}, product = {}!", userID, cartProductDTO);
+        return ResponseEntity.ok(cartService.addToCart(userID, cartProductDTO));
+    }
 }
