@@ -5,9 +5,12 @@ CREATE TABLE IF NOT EXISTS customer_data.carts (
     user_id INTEGER NOT NULL,
     product_id VARCHAR(255) NOT NULL,
     quantity INTEGER NOT NULL,
-    created_on TIMESTAMP NOT NULL,
-    updated_on TIMESTAMP
+    created_on TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_on TIMESTAMP WITHOUT TIME ZONE
 );
 
 INSERT INTO customer_data.carts (user_id, product_id, quantity, created_on)
-VALUES(1, '681a55f2cb20535492b5e691', 2, NOW());
+VALUES(1, '681a55f2cb20535492b5e691', 2, '2025-05-31 23:30:00');
+
+INSERT INTO customer_data.carts (user_id, product_id, quantity, created_on)
+VALUES(1, '681a55f2cb20535492b5e68d', 3, '2025-05-31 23:40:00');

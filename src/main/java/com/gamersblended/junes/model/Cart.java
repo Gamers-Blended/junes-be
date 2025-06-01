@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "carts", schema = "customer_data")
@@ -26,8 +26,8 @@ public class Cart {
     private Integer quantity;
 
     @Column(name = "created_on", nullable = false)
-    private LocalDate createdOn;
+    private LocalDateTime createdOn;
 
     @Column(name = "updated_on")
-    private LocalDate updatedOn;
+    private LocalDateTime updatedOn;
 }

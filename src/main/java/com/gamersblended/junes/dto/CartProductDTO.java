@@ -4,8 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -22,5 +21,5 @@ public class CartProductDTO {
     private String productImageUrl;
     private Integer quantity;
     private Integer userID;
-    private LocalDate createdOn;
+    private LocalDateTime createdOn;
 }

@@ -24,9 +24,9 @@ public class CartController {
     @PostMapping("/products")
     public ResponseEntity<Page<CartProductDTO>> getCartProducts(@RequestParam(required = false) Integer userID, @RequestBody(required = false) List<CartProductDTO> cartProductDTOList, Pageable pageable) {
         if (null == cartProductDTOList) {
-            log.info("Calling get shopping cart product(s) API for guest user, page {}!", pageable.getPageNumber());
+            log.info("Calling get shopping cart product(s) API for logged user with userID = {}, page = {}, sort by = {}!", userID, pageable.getPageNumber(), pageable.getSort());
         } else {
-            log.info("Calling get shopping cart product(s) API for logged user with userID = {}, page {}!", userID, pageable.getPageNumber());
+            log.info("Calling get shopping cart product(s) API for guest user, page {}!", pageable.getPageNumber());
         }
         return ResponseEntity.ok(cartService.getCartProducts(userID, cartProductDTOList, pageable));
     }
