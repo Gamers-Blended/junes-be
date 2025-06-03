@@ -36,4 +36,10 @@ public class CartController {
         log.info("Calling add to cart API for userID = {}, product = {}!", userID, cartProductDTO);
         return ResponseEntity.ok(cartService.addToCart(userID, cartProductDTO));
     }
+
+    @PostMapping("/remove")
+    public ResponseEntity<String> removeFromCart(@RequestParam Integer userID, @RequestBody CartProductDTO cartProductDTO) {
+        log.info("Calling remove from cart API for userID = {}, productID = {}, quantity = {}!", userID, cartProductDTO.getProductID(), cartProductDTO.getQuantity());
+        return ResponseEntity.ok(cartService.removeFromCart(userID, cartProductDTO));
+    }
 }

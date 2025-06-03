@@ -181,7 +181,7 @@ public class CartService {
     /**
      * Query MongoDB on a list of product_IDs to get Product metadata
      *
-     * @param productIDList A lsit of product_IDs to query MongoDB
+     * @param productIDList A list of product_IDs to query MongoDB
      * @return A map with the product_ID as key, corresponding Product as value
      */
     public Map<String, Product> getProductMap(List<String> productIDList) {
@@ -200,10 +200,10 @@ public class CartService {
     public String addToCart(Integer userID, CartProductDTO productToAdd) {
         try {
             // Validate quantity
-            if (productToAdd.getQuantity() <= 0) {
-                log.error("Invalid quantity value {} given.", productToAdd.getQuantity());
+            if (Boolean.FALSE.equals(validateQuantity(productToAdd.getQuantity()))) {
                 return "Error in adding to userID's (" + userID + ") cart due to invalid quantity value: " + productToAdd.getQuantity();
             }
+
             // Get user's cart from database
             List<Cart> userCartProductList = cartRepository.getUserCart(userID);
 
@@ -258,5 +258,77 @@ public class CartService {
         } catch (Exception ex) {
             log.error("Exception in addCartItemToDatabase: ", ex);
         }
+    }
+
+    /**
+     * Remove given product from user's cart
+     *
+     * @param userID          The ID of the user whose cart is modified
+     * @param productToRemove The Product to remove from user's cart (must already exist in cart)
+     * @return Output message
+     */
+    @Transactional
+    public String removeFromCart(Integer userID, CartProductDTO productToRemove) {
+        try {
+            // Validate quantity
+            if (Boolean.FALSE.equals(validateQuantity(productToRemove.getQuantity()))) {
+                return "Error in removing productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart due to invalid quantity value: " + productToRemove.getQuantity();
+            }
+
+            // Get user's cart from database
+            List<Cart> userCartProductList = cartRepository.getUserCart(userID);
+
+            // User supposed to have cart data in database, else throw error
+            if (userCartProductList.isEmpty()) {
+                log.info("UserID {} has an empty cart! Nothing to remove!", userID);
+                throw new Exception();
+            }
+
+            // Check if user already has product in cart
+            Optional<Cart> queriedCartProduct = userCartProductList.stream()
+                    .filter(cartDTO -> cartDTO.getProductID().equals(productToRemove.getProductID()))
+                    .findFirst();
+            if (queriedCartProduct.isPresent()) {
+                // Update quantity
+                Cart existingCartProduct = queriedCartProduct.get();
+                Integer newQuantity = existingCartProduct.getQuantity() - productToRemove.getQuantity();
+
+                // if newQuantity is <= 0, remove record from carts database
+                if (newQuantity <= 0) {
+                    log.info("productID {} will be removed from user's ({}) cart.", existingCartProduct.getProductID(), userID);
+                    cartRepository.delete(existingCartProduct);
+                } else {
+                    log.info("Updating productID {} quantity from {} to {} for UserID's ({}) cart, ...", productToRemove.getProductID(),
+                            existingCartProduct.getQuantity(), newQuantity, userID);
+                    existingCartProduct.setQuantity(newQuantity);
+                    existingCartProduct.setUpdatedOn(LocalDateTime.now());
+                    cartRepository.save(existingCartProduct);
+                }
+            } else {
+                // User supposed to have to-be-removed product inside cart, else throw error
+                log.info("UserID {} doesn't have productID {} in their cart, nothing to remove!", userID, productToRemove.getProductID());
+                throw new Exception();
+            }
+
+            return productToRemove.getQuantity() + " of ProductID " + productToRemove.getProductID() + " removed from cart";
+
+        } catch (Exception ex) {
+            log.error("Exception in removeFromCart: ", ex);
+            return "Error in removing productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart.";
+        }
+    }
+
+    /**
+     * Check that quantity is at least 1
+     *
+     * @param quantity Integer value to check
+     * @return True if value >= 0, else false
+     */
+    public Boolean validateQuantity(Integer quantity) {
+        if (quantity <= 0) {
+            log.error("Invalid quantity value {} given.", quantity);
+            return false;
+        }
+        return true;
     }
 }
