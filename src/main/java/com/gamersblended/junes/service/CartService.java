@@ -1,6 +1,9 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CartProductDTO;
+import com.gamersblended.junes.exception.EmptyCartException;
+import com.gamersblended.junes.exception.InvalidQuantityException;
+import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.CartRepository;
@@ -201,7 +204,7 @@ public class CartService {
         try {
             // Validate quantity
             if (Boolean.FALSE.equals(validateQuantity(productToAdd.getQuantity()))) {
-                return "Error in adding to userID's (" + userID + ") cart due to invalid quantity value: " + productToAdd.getQuantity();
+                throw new InvalidQuantityException("Error in adding to userID's (" + userID + ") cart due to invalid quantity value: " + productToAdd.getQuantity());
             }
 
             // Get user's cart from database
@@ -272,7 +275,7 @@ public class CartService {
         try {
             // Validate quantity
             if (Boolean.FALSE.equals(validateQuantity(productToRemove.getQuantity()))) {
-                return "Error in removing productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart due to invalid quantity value: " + productToRemove.getQuantity();
+                throw new InvalidQuantityException("Error in removing productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart due to invalid quantity value: " + productToRemove.getQuantity());
             }
 
             // Get user's cart from database
@@ -280,8 +283,8 @@ public class CartService {
 
             // User supposed to have cart data in database, else throw error
             if (userCartProductList.isEmpty()) {
-                log.info("UserID {} has an empty cart! Nothing to remove!", userID);
-                throw new Exception();
+                log.error("UserID {} has an empty cart! Nothing to remove!", userID);
+                throw new EmptyCartException("UserID " + userID + " has an empty cart! Nothing to remove!");
             }
 
             // Check if user already has product in cart
@@ -306,15 +309,15 @@ public class CartService {
                 }
             } else {
                 // User supposed to have to-be-removed product inside cart, else throw error
-                log.info("UserID {} doesn't have productID {} in their cart, nothing to remove!", userID, productToRemove.getProductID());
-                throw new Exception();
+                log.error("UserID {} doesn't have productID {} in their cart, nothing to remove!", userID, productToRemove.getProductID());
+                throw new ProductNotFoundException("UserID + " + userID + " doesn't have productID " + productToRemove.getProductID() + " in their cart, nothing to remove!");
             }
 
-            return productToRemove.getQuantity() + " of ProductID " + productToRemove.getProductID() + " removed from cart";
+            return productToRemove.getQuantity() + " of ProductID " + productToRemove.getProductID() + " removed from cart.";
 
         } catch (Exception ex) {
             log.error("Exception in removeFromCart: ", ex);
-            return "Error in removing productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart.";
+            return "Error in removing " + productToRemove.getQuantity() + " of productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart.";
         }
     }
 
