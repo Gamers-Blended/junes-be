@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository("mongoProductsRepository") //  MongoDB repository bean
-public interface ProductRepository extends MongoRepository<Product, String> {
+public interface ProductRepository extends MongoRepository<Product, String>, CustomProductRepository {
 
     List<Product> findAll();
 

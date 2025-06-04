@@ -11,11 +11,15 @@ import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -194,6 +198,25 @@ public class ProductService {
         } catch (Exception ex) {
             log.error("Exception in getQuickShopDetails for ID {}: {}", productID, ex.getMessage());
             throw new RuntimeException("Service error in getQuickShopDetails: Could not retrieve product details.", ex);
+        }
+    }
+
+    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genre, List<String> region, List<String> publisher, List<String> edition, List<String> rating, List<String> language, String startingLetter, String releaseDate, Pageable pageable) {
+        try {
+            YearMonth releaseYearMonth = null;
+            if (releaseDate != null) {
+                releaseYearMonth = YearMonth.parse(releaseDate);
+            }
+
+            Page<Product> productsPage = productRepository.findProductsWithFilters(
+                    platform, name, availability, minPrice, maxPrice, genre,
+                    region, publisher, edition, rating, language, startingLetter,
+                    releaseYearMonth, pageable);
+
+            return productsPage.map(productMapper::toSliderItemDTO);
+        } catch (Exception ex) {
+            log.error("Exception in getProductListings for platform = {}: {}", platform, ex.getMessage());
+            throw new RuntimeException("Service error in getProductListings: Could not retrieve product listings for " + platform + ".", ex);
         }
     }
 }
