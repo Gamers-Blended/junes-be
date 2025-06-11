@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -15,13 +16,13 @@ public interface CustomProductRepository {
             List<String> availability,
             BigDecimal minPrice,
             BigDecimal maxPrice,
-            List<String> genre,
-            List<String> region,
-            List<String> publisher,
-            List<String> edition,
-            List<String> rating,
-            List<String> language,
+            List<String> genres,
+            List<String> regions,
+            List<String> publishers,
+            List<String> editions,
+            List<String> languages,
             String startingLetter,
             YearMonth releaseDate,
+            LocalDate currentDate,
             Pageable pageable);
 }

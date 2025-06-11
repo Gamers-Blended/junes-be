@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -14,7 +16,7 @@ public class CartProductDTO {
 
     private String productID;
     private String name;
-    private Double price;
+    private BigDecimal price;
     private String platform;
     private String region;
     private String edition;

@@ -1,6 +1,8 @@
 package com.gamersblended.junes.repository.mongodb;
 
+import com.gamersblended.junes.constant.PlatformEnums;
 import com.gamersblended.junes.model.Product;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,16 +13,25 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Pattern;
 
+@Slf4j
 @Repository
 public class CustomProductRepositoryImpl implements CustomProductRepository {
+    private static final int MAX_STRING_LENGTH = 100;
+    private static final int MAX_LIST_SIZE = 20;
+    private static final String IN_STOCK = "in_stock";
+    private static final String OUT_OF_STOCK = "out_of_stock";
+    private static final String PREORDER = "preorder";
+    private static final Pattern SAFE_STRING_PATTERN = Pattern.compile("^[a-zA-Z0-9\\s\\-_.,!?'\"()&]+$");
+
     private MongoTemplate mongoTemplate;
 
     public CustomProductRepositoryImpl(MongoTemplate mongoTemplate) {
-        this.mongoTemplate = mongoTemplate;
+        this.mongoTemplate = Objects.requireNonNull(mongoTemplate, "MongoTemplate cannot be null");
     }
 
     ;
@@ -32,15 +43,21 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             List<String> availability,
             BigDecimal minPrice,
             BigDecimal maxPrice,
-            List<String> genre,
-            List<String> region,
-            List<String> publisher,
-            List<String> edition,
-            List<String> rating,
-            List<String> language,
+            List<String> genres,
+            List<String> regions,
+            List<String> publishers,
+            List<String> editions,
+            List<String> languages,
             String startingLetter,
             YearMonth releaseDate,
+            LocalDate currentDate,
             Pageable pageable) {
+
+        validateInputs(platform, name,
+                minPrice, maxPrice, genres,
+                regions, publishers, editions,
+                languages, startingLetter,
+                pageable);
 
         Query query = new Query();
 
@@ -48,70 +65,95 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         query.addCriteria(Criteria.where("platform").is(platform));
 
         // Name like '%name%'
-        if (name != null && !name.isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(".*" + name + ".*", "i"));
+        if (null != name && !name.isEmpty()) {
+            query.addCriteria(Criteria.where("name").regex(".*" + name.trim() + ".*", "i"));
         }
 
         // Starting letter like 'startingLetter%'
-        if (startingLetter != null && !startingLetter.isEmpty()) {
+        if (null != startingLetter && !startingLetter.isEmpty()) {
             query.addCriteria(Criteria.where("name").regex("^" + startingLetter, "i"));
         }
 
         // Price range
-        if (minPrice != null) {
+        if (null != minPrice) {
             query.addCriteria(Criteria.where("price").gte(minPrice));
         }
-        if (maxPrice != null) {
+        if (null != maxPrice) {
             query.addCriteria(Criteria.where("price").lte(maxPrice));
         }
 
         // Lists (IN operator)
-        if (availability != null && !availability.isEmpty()) {
-            query.addCriteria(Criteria.where("availability").in(availability));
+        if (null != genres && !genres.isEmpty()) {
+            query.addCriteria(Criteria.where("genres").in(genres));
         }
 
-        if (genre != null && !genre.isEmpty()) {
-            query.addCriteria(Criteria.where("genre").in(genre));
+        if (null != regions && !regions.isEmpty()) {
+            query.addCriteria(Criteria.where("region").in(regions));
         }
 
-        if (region != null && !region.isEmpty()) {
-            query.addCriteria(Criteria.where("region").in(region));
+        if (null != publishers && !publishers.isEmpty()) {
+            query.addCriteria(Criteria.where("publisher").in(publishers));
         }
 
-        if (publisher != null && !publisher.isEmpty()) {
-            query.addCriteria(Criteria.where("publisher").in(publisher));
+        if (null != editions && !editions.isEmpty()) {
+            query.addCriteria(Criteria.where("edition").in(editions));
         }
 
-        if (edition != null && !edition.isEmpty()) {
-            query.addCriteria(Criteria.where("edition").in(edition));
-        }
-
-        if (rating != null && !rating.isEmpty()) {
-            query.addCriteria(Criteria.where("rating").in(rating));
-        }
-
-        if (language != null && !language.isEmpty()) {
-            query.addCriteria(Criteria.where("language").is(language));
+        if (null != languages && !languages.isEmpty()) {
+            query.addCriteria(Criteria.where("languages").is(languages));
         }
 
         // Release date (month and year match)
-        if (releaseDate != null) {
+        if (null != releaseDate) {
             query.addCriteria(new Criteria().andOperator(
-                    Criteria.where("releaseDate").exists(true),
+                    Criteria.where("release_date").exists(true),
                     new Criteria() {
                         @Override
                         public Document getCriteriaObject() {
                             return new Document("$expr", new Document("$and", Arrays.asList(
                                     new Document("$eq", Arrays.asList(
-                                            new Document("$month", "$releaseDate"),
+                                            new Document("$month", "release_date"),
                                             releaseDate.getMonthValue())),
                                     new Document("$eq", Arrays.asList(
-                                            new Document("$year", "$releaseDate"),
+                                            new Document("$year", "release_date"),
                                             releaseDate.getYear()))
                             )));
                         }
                     }
             ));
+        }
+
+        // Availability (in_stock, out_of_stock, preorder)
+        if (null != availability && !availability.isEmpty()) {
+            Set<String> availabilitySet = new HashSet<>(availability);
+
+            if (availabilitySet.equals(Set.of(IN_STOCK))) {
+                // stock > 0 & release_date before or on currentDate
+                query.addCriteria(Criteria.where("stock").gt(0));
+                query.addCriteria(Criteria.where("release_date").lte(currentDate));
+            } else if (availabilitySet.equals(Set.of(OUT_OF_STOCK))) {
+                // stock <= 0 & release_date before or on currentDate
+                query.addCriteria(Criteria.where("stock").lte(0));
+                query.addCriteria(Criteria.where("release_date").lte(currentDate));
+            } else if (availabilitySet.equals(Set.of(PREORDER))) {
+                // release_date after currentDate
+                query.addCriteria(Criteria.where("release_date").gt(currentDate));
+            } else if (availabilitySet.equals(Set.of(IN_STOCK, OUT_OF_STOCK))) {
+                // release_date before or on currentDate
+                query.addCriteria(Criteria.where("release_date").lte(currentDate));
+            } else if (availabilitySet.equals(Set.of(IN_STOCK, PREORDER))) {
+                // stock > 0 or release_date after currentDate
+                query.addCriteria(new Criteria().orOperator(
+                        Criteria.where("stock").gt(0),
+                        Criteria.where("release_date").gt(currentDate)
+                ));
+            } else if (availabilitySet.equals(Set.of(OUT_OF_STOCK, PREORDER))) {
+                // stock <= 0 or release_date after currentDate
+                query.addCriteria(new Criteria().orOperator(
+                        Criteria.where("stock").lte(0),
+                        Criteria.where("release_date").gt(currentDate)
+                ));
+            }
         }
 
         // Add pagination
@@ -122,5 +164,151 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         long count = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Product.class);
 
         return PageableExecutionUtils.getPage(products, pageable, () -> count);
+    }
+
+    private void validateInputs(String platform, String name,
+                                BigDecimal minPrice, BigDecimal maxPrice, List<String> genres,
+                                List<String> regions, List<String> publishers, List<String> editions,
+                                List<String> languages, String startingLetter,
+                                Pageable pageable) {
+
+        // Required field validation
+        validatePlatform(platform);
+
+        // Pageable validation
+        if (null == pageable) {
+            throw new IllegalArgumentException("Pageable cannot be null");
+        }
+
+        // Page size limits
+        if (pageable.getPageSize() > 20) {
+            throw new IllegalArgumentException("Page size cannot exceed 20, given page size: " + pageable.getPageSize());
+        }
+
+        // Optional string validations - only validate if provided
+        if (null != name) {
+            validateStringLength("name", name);
+            validateStringContent("name", name);
+        }
+
+        // Optional starting letter validation
+        if (null != startingLetter) {
+            validateStartingLetter(startingLetter);
+        }
+
+        // Optional price validations
+        if (null != minPrice) {
+            validatePrice("minPrice", minPrice);
+        }
+        if (null != maxPrice) {
+            validatePrice("maxPrice", maxPrice);
+        }
+
+        // Optional list validations
+        if (null != genres) {
+            validateStringList("genres", genres);
+        }
+        if (null != regions) {
+            validateStringList("regions", regions);
+        }
+        if (null != publishers) {
+            validateStringList("publishers", publishers);
+        }
+        if (null != editions) {
+            validateStringList("editions", editions);
+        }
+        if (null != languages) {
+            validateStringList("languages", languages);
+        }
+    }
+
+    /**
+     * Checks if platform input value is non-null and is a valid value
+     *
+     * @param platform filter input
+     */
+    private void validatePlatform(String platform) {
+        if (null == platform || platform.trim().isEmpty()) {
+            throw new IllegalArgumentException("Platform cannot be null or empty");
+        }
+        if (!PlatformEnums.isValidPlatformValue(platform)) {
+            throw new IllegalArgumentException("Platform is not valid! Platform: " + platform);
+        }
+    }
+
+    /**
+     * Checks if input string is within length limit
+     *
+     * @param fieldName field which string input belongs to
+     * @param value     value to check
+     */
+    private void validateStringLength(String fieldName, String value) {
+        if (null != value && value.length() > MAX_STRING_LENGTH) {
+            throw new IllegalArgumentException(fieldName + " cannot exceed " + MAX_STRING_LENGTH + " characters");
+        }
+    }
+
+    /**
+     * Checks for injections inside input string
+     *
+     * @param fieldName field which string input belongs to
+     * @param value     value to check
+     */
+    private void validateStringContent(String fieldName, String value) {
+        if (value != null && !SAFE_STRING_PATTERN.matcher(value).matches()) {
+            throw new IllegalArgumentException(fieldName + " contains invalid characters, given value: " + value);
+        }
+    }
+
+    /**
+     * Checks if string input is only 1-letter long
+     *
+     * @param value value to check
+     */
+    private void validateStartingLetter(String value) {
+        if (!value.trim().isEmpty() && value.trim().length() != 1) {
+            throw new IllegalArgumentException("Starting letter must be exactly one character, given starting letter: " + value);
+        }
+    }
+
+    /**
+     * Checks if price field is within 0 and 999999.99 + contains only 2 decimal points
+     *
+     * @param fieldName field which bigDecimal input belongs to
+     * @param price     value to check
+     */
+    private void validatePrice(String fieldName, BigDecimal price) {
+        if (null != price) {
+            if (price.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException(fieldName + " cannot be negative, given value: " + price);
+            }
+            if (price.compareTo(new BigDecimal("999999.99")) > 0) {
+                throw new IllegalArgumentException(fieldName + " cannot exceed 999999.99, given value: " + price);
+            }
+            if (price.scale() > 2) {
+                throw new IllegalArgumentException(fieldName + " cannot have more than 2 decimal places, given value: " + price);
+            }
+        }
+    }
+
+    /**
+     * Checks if input list is within size limit and does not contain null values
+     * Elements are within length limit and does not contain invalid characters
+     *
+     * @param fieldName
+     * @param list
+     */
+    private void validateStringList(String fieldName, List<String> list) {
+        if (list.size() > MAX_LIST_SIZE) {
+            throw new IllegalArgumentException(fieldName + " list cannot exceed " + MAX_LIST_SIZE + " items");
+        }
+
+        for (String item : list) {
+            if (null == item) {
+                throw new IllegalArgumentException(fieldName + " list cannot contain null values");
+            }
+            validateStringLength(fieldName + " item", item);
+            validateStringContent(fieldName + " item", item);
+        }
     }
 }

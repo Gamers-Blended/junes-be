@@ -2,6 +2,8 @@ package com.gamersblended.junes.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -12,18 +14,21 @@ public class ProductDTO {
     private String id;
     private String name;
     private String description;
-    private Double price;
+    private BigDecimal price;
     private String platform;
     private String region;
     private String edition;
+    private String publisher;
     private LocalDate releaseDate;
     private Set<String> series;
     private Set<String> genres;
     private Set<String> languages;
     private Set<String> numberOfPlayers;
     private Integer unitsSold;
+    private Integer stock;
     private String productImageUrl;
     private List<String> imageUrlList;
+    private String editionNotes;
     private LocalDate createdOn;
 
     /**
@@ -51,11 +56,7 @@ public class ProductDTO {
         return List.copyOf(imageUrlList);
     }
 
-    /**
-     * Accepting a copy prevents external modification
-     *
-     * @param series
-     */
+    // Accepting a copy prevents external modification
     public void setSeries(Set<String> series) {
         this.series = new HashSet<>(series);
     }

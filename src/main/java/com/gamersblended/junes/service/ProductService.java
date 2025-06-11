@@ -201,17 +201,25 @@ public class ProductService {
         }
     }
 
-    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genre, List<String> region, List<String> publisher, List<String> edition, List<String> rating, List<String> language, String startingLetter, String releaseDate, Pageable pageable) {
+    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, String startingLetter, String releaseDate, LocalDate currentDate, Pageable pageable) {
         try {
+            // Optional month-year filter
             YearMonth releaseYearMonth = null;
-            if (releaseDate != null) {
+            if (null != releaseDate) {
                 releaseYearMonth = YearMonth.parse(releaseDate);
+                log.info("releaseYearMonth filter provided: {}", releaseYearMonth);
             }
 
+            // Process currentDate
+            if (null == currentDate) {
+                currentDate = LocalDate.now();
+            }
+            log.info("Reference date: {}", currentDate);
+
             Page<Product> productsPage = productRepository.findProductsWithFilters(
-                    platform, name, availability, minPrice, maxPrice, genre,
-                    region, publisher, edition, rating, language, startingLetter,
-                    releaseYearMonth, pageable);
+                    platform, name, availability, minPrice, maxPrice, genres,
+                    regions, publishers, editions, languages, startingLetter,
+                    releaseYearMonth, currentDate, pageable);
 
             return productsPage.map(productMapper::toSliderItemDTO);
         } catch (Exception ex) {

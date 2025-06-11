@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -100,7 +101,7 @@ public class CartService {
                         return new CartProductDTO(
                                 currentProductInCart.getProductID(),
                                 "Unknown Product",
-                                0.00,
+                                new BigDecimal("0.00"),
                                 "Unknown Product",
                                 "Unknown Product",
                                 "Unknown Product",
@@ -153,7 +154,7 @@ public class CartService {
                         return new CartProductDTO(
                                 currentProductInCart.getProductID(),
                                 "Unknown Product",
-                                0.00,
+                                new BigDecimal("0.00"),
                                 "Unknown Product",
                                 "Unknown Product",
                                 "Unknown Product",

@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -26,7 +27,7 @@ public class Product {
     private String description;
 
     @NonNull
-    private Double price;
+    private BigDecimal price;
 
     @NonNull
     private String platform;
@@ -36,6 +37,9 @@ public class Product {
 
     @NonNull
     private String edition;
+
+    @NonNull
+    private String publisher;
 
     @NonNull
     @Field("release_date")
@@ -59,12 +63,18 @@ public class Product {
     private Integer unitsSold;
 
     @NonNull
+    private Integer stock;
+
+    @NonNull
     @Field("product_image_url")
     private String productImageUrl;
 
     @NonNull
     @Field("image_url_list")
     private List<String> imageUrlList;
+
+    @Field("edition_notes")
+    private String editionNotes;
 
     @NonNull
     @Field("created_on")
@@ -77,19 +87,22 @@ public class Product {
     private Product() {
         // Initialize fields to prevent null values
         this.name = "";
-        this.price = 0.0;
+        this.price = BigDecimal.ZERO;
         this.description = "";
         this.platform = "";
         this.region = "";
         this.edition = "";
+        this.publisher = "";
         this.releaseDate = LocalDate.parse("2025-01-01");
         this.series = new HashSet<>();
         this.genres = new HashSet<>();
         this.languages = new HashSet<>();
         this.numberOfPlayers = new HashSet<>();
         this.unitsSold = 0;
+        this.stock = 0;
         this.productImageUrl = "";
         this.imageUrlList = new ArrayList<>();
+        this.editionNotes = "";
         this.createdOn = LocalDate.parse("2025-01-01");
     }
 
@@ -98,16 +111,18 @@ public class Product {
      */
     public Product(@NonNull String name,
                    @NonNull String description,
-                   @NonNull Double price,
+                   @NonNull BigDecimal price,
                    @NonNull String platform,
                    @NonNull String region,
                    @NonNull String edition,
+                   @NonNull String publisher,
                    @NonNull LocalDate releaseDate,
                    @NonNull Set<String> series,
                    @NonNull Set<String> genres,
                    @NonNull Set<String> languages,
                    @NonNull Set<String> numberOfPlayers,
                    @NonNull Integer unitsSold,
+                   @NonNull Integer stock,
                    @NonNull String productImageUrl,
                    @NonNull List<String> imageUrlList,
                    @NonNull LocalDate createdOn) {
@@ -117,12 +132,14 @@ public class Product {
         Objects.requireNonNull(platform, "Platform cannot be null");
         Objects.requireNonNull(region, "Region cannot be null");
         Objects.requireNonNull(edition, "Edition cannot be null");
+        Objects.requireNonNull(publisher, "Publisher cannot be null");
         Objects.requireNonNull(releaseDate, "Release date cannot be null");
         Objects.requireNonNull(series, "Series cannot be null");
         Objects.requireNonNull(genres, "Genres cannot be null");
         Objects.requireNonNull(languages, "Languages cannot be null");
         Objects.requireNonNull(numberOfPlayers, "Number of players cannot be null");
         Objects.requireNonNull(unitsSold, "Units sold cannot be null");
+        Objects.requireNonNull(stock, "Stock cannot be null");
         Objects.requireNonNull(productImageUrl, "Source URL cannot be null");
         Objects.requireNonNull(imageUrlList, "Image URL list cannot be null");
         Objects.requireNonNull(createdOn, "Created on date cannot be null");
@@ -133,12 +150,14 @@ public class Product {
         this.platform = platform;
         this.region = region;
         this.edition = edition;
+        this.publisher = publisher;
         this.releaseDate = releaseDate;
         this.series = Set.copyOf(series);
         this.genres = Set.copyOf(genres);
         this.languages = Set.copyOf(languages);
         this.numberOfPlayers = Set.copyOf(numberOfPlayers);
         this.unitsSold = unitsSold;
+        this.stock = stock;
         this.productImageUrl = productImageUrl;
         this.imageUrlList = List.copyOf(imageUrlList);
         this.createdOn = createdOn;
