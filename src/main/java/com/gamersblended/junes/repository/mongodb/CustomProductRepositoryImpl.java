@@ -76,10 +76,12 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
         // Price range
         if (null != minPrice) {
-            query.addCriteria(Criteria.where("price").gte(minPrice));
+            log.info("Only products priced at least {} will be returned", minPrice);
+            query.addCriteria(Criteria.where("price").gte(minPrice.doubleValue()));
         }
         if (null != maxPrice) {
-            query.addCriteria(Criteria.where("price").lte(maxPrice));
+            log.info("Only products priced at most {} will be returned", maxPrice);
+            query.addCriteria(Criteria.where("price").lte(maxPrice.doubleValue()));
         }
 
         // Lists (IN operator)
