@@ -86,23 +86,28 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
         // Lists (IN operator)
         if (null != genres && !genres.isEmpty()) {
+            log.info("Only products with this/these genre(s) = {} will be returned", genres);
             query.addCriteria(Criteria.where("genres").in(genres));
         }
 
         if (null != regions && !regions.isEmpty()) {
+            log.info("Only products from this/these region(s) = {} will be returned", regions);
             query.addCriteria(Criteria.where("region").in(regions));
         }
 
         if (null != publishers && !publishers.isEmpty()) {
+            log.info("Only products by this/these publisher(s) = {} will be returned", publishers);
             query.addCriteria(Criteria.where("publisher").in(publishers));
         }
 
         if (null != editions && !editions.isEmpty()) {
+            log.info("Only products under this/these edition(s) = {} will be returned", editions);
             query.addCriteria(Criteria.where("edition").in(editions));
         }
 
         if (null != languages && !languages.isEmpty()) {
-            query.addCriteria(Criteria.where("languages").is(languages));
+            log.info("Only products supporting this/these language(s) = {} will be returned", languages);
+            query.addCriteria(Criteria.where("languages").in(languages));
         }
 
         // Release date (month and year match)
