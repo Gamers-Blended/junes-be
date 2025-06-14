@@ -75,11 +75,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         }
 
         // Price range
-        if (null != minPrice) {
+        if (null != minPrice && null != maxPrice) {
+            log.info("Only products priced between {} and {} (inclusive) will be returned", minPrice, maxPrice);
+            query.addCriteria(Criteria.where("price").gte(minPrice.doubleValue()).lte(maxPrice.doubleValue()));
+        } else if (null != minPrice) {
             log.info("Only products priced at least {} will be returned", minPrice);
             query.addCriteria(Criteria.where("price").gte(minPrice.doubleValue()));
-        }
-        if (null != maxPrice) {
+        } else if (null != maxPrice) {
             log.info("Only products priced at most {} will be returned", maxPrice);
             query.addCriteria(Criteria.where("price").lte(maxPrice.doubleValue()));
         }
@@ -210,6 +212,9 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         if (null != maxPrice) {
             validatePrice("maxPrice", maxPrice);
         }
+        if (null != minPrice && null != maxPrice) {
+            validateMinMaxPrices(minPrice, maxPrice);
+        }
 
         // Optional list validations
         if (null != genres) {
@@ -295,6 +300,19 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             if (price.scale() > 2) {
                 throw new IllegalArgumentException(fieldName + " cannot have more than 2 decimal places, given value: " + price);
             }
+        }
+    }
+
+    /**
+     * Checks if minPrice is lower than or equal to maxPrice
+     *
+     * @param minPrice lower price bound
+     * @param maxPrice upper price bound
+     */
+    private void validateMinMaxPrices(BigDecimal minPrice, BigDecimal maxPrice) {
+        if (null != minPrice && null != maxPrice && minPrice.compareTo(maxPrice) > 0) {
+            log.error("minPrice of {} cannot be greater than maxPrice of {}", minPrice, maxPrice);
+            throw new IllegalArgumentException("minPrice of " + minPrice + " cannot be greater than maxPrice of " + maxPrice);
         }
     }
 
