@@ -5,7 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -23,6 +22,6 @@ public interface CustomProductRepository {
             List<String> languages,
             String startingLetter,
             YearMonth releaseDate,
-            LocalDate currentDate,
+            String currentDate,
             Pageable pageable);
 }

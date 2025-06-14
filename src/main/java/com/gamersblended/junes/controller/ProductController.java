@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -37,7 +36,7 @@ public class ProductController {
             @RequestParam(required = false) List<String> languages,
             @RequestParam(required = false) String startingLetter,
             @RequestParam(required = false) String releaseDate,
-            @RequestParam(required = false) LocalDate currentDate,
+            @RequestParam(required = false) String currentDate,
             Pageable pageable) {
         log.info("Calling get product listings API for platform: {}, page = {}, sort by = {}!", platform, pageable.getPageNumber(), pageable.getSort());
         return ResponseEntity.ok(productService.getProductListings(

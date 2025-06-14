@@ -3,7 +3,6 @@ package com.gamersblended.junes.repository.mongodb;
 import com.gamersblended.junes.constant.PlatformEnums;
 import com.gamersblended.junes.model.Product;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -13,9 +12,11 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -34,8 +35,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         this.mongoTemplate = Objects.requireNonNull(mongoTemplate, "MongoTemplate cannot be null");
     }
 
-    ;
-
     @Override
     public Page<Product> findProductsWithFilters(
             String platform,
@@ -50,7 +49,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             List<String> languages,
             String startingLetter,
             YearMonth releaseDate,
-            LocalDate currentDate,
+            String currentDate,
             Pageable pageable) {
 
         validateInputs(platform, name,
@@ -123,26 +122,32 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
             if (availabilitySet.equals(Set.of(IN_STOCK))) {
                 // stock > 0 & release_date before or on currentDate
+                log.info("Only products that are in stock will be returned");
                 query.addCriteria(Criteria.where("stock").gt(0));
                 query.addCriteria(Criteria.where("release_date").lte(currentDate));
             } else if (availabilitySet.equals(Set.of(OUT_OF_STOCK))) {
                 // stock <= 0 & release_date before or on currentDate
+                log.info("Only products that are out of stock will be returned");
                 query.addCriteria(Criteria.where("stock").lte(0));
                 query.addCriteria(Criteria.where("release_date").lte(currentDate));
             } else if (availabilitySet.equals(Set.of(PREORDER))) {
                 // release_date after currentDate
+                log.info("Only products that are preorders will be returned");
                 query.addCriteria(Criteria.where("release_date").gt(currentDate));
             } else if (availabilitySet.equals(Set.of(IN_STOCK, OUT_OF_STOCK))) {
                 // release_date before or on currentDate
+                log.info("Only products that are in stock and out of stock will be returned");
                 query.addCriteria(Criteria.where("release_date").lte(currentDate));
             } else if (availabilitySet.equals(Set.of(IN_STOCK, PREORDER))) {
                 // stock > 0 or release_date after currentDate
+                log.info("Only products that are in stock and preorders will be returned");
                 query.addCriteria(new Criteria().orOperator(
                         Criteria.where("stock").gt(0),
                         Criteria.where("release_date").gt(currentDate)
                 ));
             } else if (availabilitySet.equals(Set.of(OUT_OF_STOCK, PREORDER))) {
                 // stock <= 0 or release_date after currentDate
+                log.info("Only products that are out of stock and preorders will be returned");
                 query.addCriteria(new Criteria().orOperator(
                         Criteria.where("stock").lte(0),
                         Criteria.where("release_date").gt(currentDate)
@@ -162,6 +167,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
     /**
      * Create a Criteria for filtering release date to be in the same month and year
+     *
      * @param releaseDate target month and year of release date
      * @return Criteria for releaseDate
      */
@@ -170,6 +176,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         String endDate = releaseDate.plusMonths(1).atDay(1).toString(); // 1st day of next month
 
         // From 1st day of month till last day of month
+        log.info("Only products that were released between {} and {} (inclusive) will be returned", startDate, endDate);
         return Criteria.where("release_date").gte(startDate).lt(endDate);
     }
 

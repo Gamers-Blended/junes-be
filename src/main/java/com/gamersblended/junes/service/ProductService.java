@@ -201,7 +201,7 @@ public class ProductService {
         }
     }
 
-    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, String startingLetter, String releaseDate, LocalDate currentDate, Pageable pageable) {
+    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, String startingLetter, String releaseDate, String currentDate, Pageable pageable) {
         try {
             // Optional month-year filter
             YearMonth releaseYearMonth = null;
@@ -212,7 +212,7 @@ public class ProductService {
 
             // Process currentDate
             if (null == currentDate) {
-                currentDate = LocalDate.now();
+                currentDate = LocalDate.now().toString();
             }
             log.info("Reference date: {}", currentDate);
 
