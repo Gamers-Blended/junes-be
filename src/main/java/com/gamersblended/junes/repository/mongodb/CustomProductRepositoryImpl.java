@@ -114,22 +114,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
         // Release date (month and year match)
         if (null != releaseDate) {
-            query.addCriteria(new Criteria().andOperator(
-                    Criteria.where("release_date").exists(true),
-                    new Criteria() {
-                        @Override
-                        public Document getCriteriaObject() {
-                            return new Document("$expr", new Document("$and", Arrays.asList(
-                                    new Document("$eq", Arrays.asList(
-                                            new Document("$month", "release_date"),
-                                            releaseDate.getMonthValue())),
-                                    new Document("$eq", Arrays.asList(
-                                            new Document("$year", "release_date"),
-                                            releaseDate.getYear()))
-                            )));
-                        }
-                    }
-            ));
+            query.addCriteria(createReleaseDateCriteria(releaseDate));
         }
 
         // Availability (in_stock, out_of_stock, preorder)
@@ -173,6 +158,19 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         long count = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Product.class);
 
         return PageableExecutionUtils.getPage(products, pageable, () -> count);
+    }
+
+    /**
+     * Create a Criteria for filtering release date to be in the same month and year
+     * @param releaseDate target month and year of release date
+     * @return Criteria for releaseDate
+     */
+    private Criteria createReleaseDateCriteria(YearMonth releaseDate) {
+        String startDate = releaseDate.atDay(1).toString(); // 1st day of month
+        String endDate = releaseDate.plusMonths(1).atDay(1).toString(); // 1st day of next month
+
+        // From 1st day of month till last day of month
+        return Criteria.where("release_date").gte(startDate).lt(endDate);
     }
 
     private void validateInputs(String platform, String name,
