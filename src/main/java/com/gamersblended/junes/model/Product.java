@@ -24,6 +24,9 @@ public class Product {
     private String name;
 
     @NonNull
+    private String slug;
+
+    @NonNull
     private String description;
 
     @NonNull
@@ -87,6 +90,7 @@ public class Product {
     private Product() {
         // Initialize fields to prevent null values
         this.name = "";
+        this.slug = "";
         this.price = BigDecimal.ZERO;
         this.description = "";
         this.platform = "";
@@ -110,6 +114,7 @@ public class Product {
      * All-args constructor ensures that Product won't be partially initialized
      */
     public Product(@NonNull String name,
+                   @NonNull String slug,
                    @NonNull String description,
                    @NonNull BigDecimal price,
                    @NonNull String platform,
@@ -127,6 +132,7 @@ public class Product {
                    @NonNull List<String> imageUrlList,
                    @NonNull LocalDate createdOn) {
         Objects.requireNonNull(name, "Name cannot be null");
+        Objects.requireNonNull(slug, "Slug cannot be null");
         Objects.requireNonNull(description, "Description cannot be null");
         Objects.requireNonNull(price, "Price cannot be null");
         Objects.requireNonNull(platform, "Platform cannot be null");
@@ -145,6 +151,7 @@ public class Product {
         Objects.requireNonNull(createdOn, "Created on date cannot be null");
 
         this.name = name;
+        this.slug = slug;
         this.description = description;
         this.price = price;
         this.platform = platform;

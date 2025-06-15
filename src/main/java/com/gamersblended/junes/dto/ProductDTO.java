@@ -13,6 +13,7 @@ public class ProductDTO {
 
     private String id;
     private String name;
+    private String slug;
     private String description;
     private BigDecimal price;
     private String platform;
