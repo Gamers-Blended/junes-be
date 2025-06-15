@@ -201,6 +201,25 @@ public class ProductService {
         }
     }
 
+    /**
+     * For get product listings for specific platform API
+     *
+     * @param platform       Listings will only be limited to this platform
+     * @param name           Filter for name substring
+     * @param availability   Filter for in stock, out of stock and preorder
+     * @param minPrice       lower bound for price
+     * @param maxPrice       upper bound for price
+     * @param genres         Filter for list of genres
+     * @param regions        Filter for list of regions
+     * @param publishers     Filter for list of publishers
+     * @param editions       Filter for list of editions
+     * @param languages      Filter for list of languages
+     * @param startingLetter Filter for the first character of a product's name
+     * @param releaseDate    Filter for products released in specific month and year
+     * @param currentDate    Reference date to determine if a product is preorder or not
+     * @param pageable       Page number and sort settings
+     * @return List of products under platform and optional filters
+     */
     public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, String startingLetter, String releaseDate, String currentDate, Pageable pageable) {
         try {
             // Optional month-year filter
@@ -227,4 +246,5 @@ public class ProductService {
             throw new RuntimeException("Service error in getProductListings: Could not retrieve product listings for " + platform + ".", ex);
         }
     }
+
 }
