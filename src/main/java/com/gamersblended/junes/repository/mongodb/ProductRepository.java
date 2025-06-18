@@ -35,6 +35,8 @@ public interface ProductRepository extends MongoRepository<Product, String>, Cus
 
     List<Product> findByIdIn(List<String> idList);
 
+    List<Product> findBySlug(String slug);
+
     // Specific query, MongoDB query syntax:
     // @Query("{ }") // Select all documents (similar to findAll)
 }

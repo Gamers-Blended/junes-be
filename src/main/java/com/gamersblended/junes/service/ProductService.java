@@ -1,8 +1,6 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.ProductDTO;
-import com.gamersblended.junes.dto.ProductSliderItemDTO;
-import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
+import com.gamersblended.junes.dto.*;
 import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.mapper.ProductMapper;
@@ -247,4 +245,47 @@ public class ProductService {
         }
     }
 
+    /**
+     * For get product details API
+     *
+     * @param productSlug Requested product to retrieve details from
+     * @return Product details with all available variant
+     */
+    public ProductDetailsDTO getProductDetails(String productSlug) {
+        try {
+            List<Product> productList = productRepository.findBySlug(productSlug);
+            log.info("There are {} variant of product: {}", productList.size(), productSlug);
+
+            if (productList.isEmpty()) {
+                log.error("There is no information on this product in database: {}", productSlug);
+                ProductDetailsDTO blankProduct = new ProductDetailsDTO();
+                return blankProduct;
+            }
+
+            ProductDetailsDTO productDetailsDTO = new ProductDetailsDTO();
+
+            // Create 1st part
+            ProductDTO productDTO = productMapper.toDTO(productList.get(0));
+
+            // Create 2nd part from each product variant
+            List<ProductVariantDTO> productVariantDTOList = new ArrayList<>();
+            for (Product currentProduct : productList) {
+                ProductVariantDTO productVariantDTO = new ProductVariantDTO();
+                productVariantDTO.setEdition(currentProduct.getEdition());
+                productVariantDTO.setRegion(currentProduct.getRegion());
+                productVariantDTO.setPlatform(currentProduct.getPlatform());
+                productVariantDTO.setPrice(currentProduct.getPrice());
+
+                productVariantDTOList.add(productVariantDTO);
+            }
+
+            productDetailsDTO.setProductDTO(productDTO);
+            productDetailsDTO.setProductVariantDTOList(productVariantDTOList);
+
+            return productDetailsDTO;
+        } catch (Exception ex) {
+            log.error("Exception in getProductDetails for productSlug = {}: {}", productSlug, ex.getMessage());
+            throw new RuntimeException("Service error in getProductDetails: Could not retrieve product details for " + productSlug + ".", ex);
+        }
+    }
 }

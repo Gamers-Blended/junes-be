@@ -1,5 +1,6 @@
 package com.gamersblended.junes.controller;
 
+import com.gamersblended.junes.dto.ProductDetailsDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
@@ -54,5 +55,11 @@ public class ProductController {
                 releaseDate,
                 currentDate,
                 pageable));
+    }
+
+    @GetMapping("/details/{platformSlug}")
+    public ResponseEntity<ProductDetailsDTO> getProductDetails(@PathVariable String platformSlug) {
+        log.info("Calling get product details API for title: {}!", platformSlug);
+        return ResponseEntity.ok(productService.getProductDetails(platformSlug));
     }
 }
