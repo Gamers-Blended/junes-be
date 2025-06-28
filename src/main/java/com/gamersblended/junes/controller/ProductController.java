@@ -57,9 +57,9 @@ public class ProductController {
                 pageable));
     }
 
-    @GetMapping("/details/{platformSlug}")
-    public ResponseEntity<ProductDetailsDTO> getProductDetails(@PathVariable String platformSlug) {
-        log.info("Calling get product details API for title: {}!", platformSlug);
-        return ResponseEntity.ok(productService.getProductDetails(platformSlug));
+    @GetMapping("/details/{productSlug}")
+    public ResponseEntity<ProductDetailsDTO> getProductDetails(@PathVariable String productSlug) {
+        log.info("Calling get product details API for title: {}!", productSlug);
+        return ResponseEntity.ok(productService.getProductDetails(productSlug));
     }
 }
