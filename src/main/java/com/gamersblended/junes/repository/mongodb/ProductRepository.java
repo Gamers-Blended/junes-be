@@ -19,17 +19,17 @@ public interface ProductRepository extends MongoRepository<Product, String>, Cus
     Page<Product> findAllByOrderByUnitsSoldDesc(Pageable pageable);
 
     @Query("{ 'release_date': { '$gte': '?0' } }")
-    List<Product> findPreOrderProductsAfterDateWithPagination(LocalDate currentDate, Pageable pageable);
+    Page<Product> findPreOrderProductsAfterDateWithPagination(LocalDate currentDate, Pageable pageable);
 
     /**
      * Find products with created_on before currentDate
      *
      * @param currentDate Upper bound for date product added to database (inclusive)
      * @param pageable    Page number
-     * @return List of products
+     * @return Page of products
      */
     @Query("{ 'created_on': { '$lte': '?0' } }")
-    List<Product> findBestSellersBeforeDateWithPagination(LocalDate currentDate, Pageable pageable);
+    Page<Product> findBestSellersBeforeDateWithPagination(LocalDate currentDate, Pageable pageable);
 
     Optional<Product> findById(String id);
 

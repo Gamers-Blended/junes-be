@@ -25,7 +25,7 @@ import java.util.List;
 @RequestMapping("junes/api/v1/frontpage")
 public class FrontPageController {
 
-    private ProductService productService;
+    private final ProductService productService;
 
     public FrontPageController(ProductService productService) {
         this.productService = productService;
@@ -58,14 +58,14 @@ public class FrontPageController {
                     content = @Content)
     })
     @PostMapping("/recommended/no-user")
-    public Page<ProductSliderItemDTO> getRecommendedProductsNotLoggedIn(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+    public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsNotLoggedIn(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "List of up to 20 productIDs and pageNumber", required = true,
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = RecommendedProductNotLoggedRequestDTO.class),
                     examples = @ExampleObject(value = "{ \"pageNumber\": 0, \"historyCache\": [\"681a55f2cb20535492b5e695\", \"681a55f2cb20535492b5e691\"] }")))
                                                                         @RequestBody RecommendedProductNotLoggedRequestDTO requestDTO, Pageable pageable) {
         log.info("Calling get recommended products API while user is NOT logged in, page {}! Size of historyCache: {}", pageable.getPageNumber(), requestDTO.getHistoryCache().size());
-        return productService.getRecommendedProductsWithoutID(requestDTO, pageable);
+        return ResponseEntity.ok(productService.getRecommendedProductsWithoutID(requestDTO, pageable));
     }
 
     @Operation(summary = "Get a list of preorder products")
@@ -77,9 +77,9 @@ public class FrontPageController {
                     content = @Content)
     })
     @GetMapping("/preorders")
-    public List<ProductSliderItemDTO> getPreOrderProducts(@RequestParam(required = false) LocalDate currentDate, @RequestParam Integer pageNumber) {
-        log.info("Calling get preorder products API, page {}!", pageNumber);
-        return productService.getPreOrderProducts(currentDate, pageNumber);
+    public ResponseEntity<Page<ProductSliderItemDTO>> getPreOrderProducts(@RequestParam(required = false) LocalDate currentDate, Pageable pageable) {
+        log.info("Calling get preorder products API, page {}!", pageable.getPageNumber());
+        return ResponseEntity.ok(productService.getPreOrderProducts(currentDate, pageable.getPageNumber()));
     }
 
     @Operation(summary = "Get a list of best-selling products")
@@ -91,9 +91,9 @@ public class FrontPageController {
                     content = @Content)
     })
     @GetMapping("/best-sellers")
-    public List<ProductSliderItemDTO> getBestSellingProducts(@RequestParam(required = false) LocalDate currentDate, @RequestParam Integer pageNumber) {
-        log.info("Calling get best sellers API, page {}!", pageNumber);
-        return productService.getBestSellers(currentDate, pageNumber);
+    public ResponseEntity<Page<ProductSliderItemDTO>> getBestSellingProducts(@RequestParam(required = false) LocalDate currentDate, Pageable pageable) {
+        log.info("Calling get best sellers API, page {}!", pageable.getPageNumber());
+        return ResponseEntity.ok(productService.getBestSellers(currentDate, pageable.getPageNumber()));
     }
 
     @Operation(summary = "Get product details for given product ID for quick shop window")

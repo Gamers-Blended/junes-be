@@ -104,6 +104,11 @@ public class ProductService {
         return returnDefaultRecommendedProducts(pageable);
     }
 
+
+    /**
+     * Check if given pageNumber exceeds LAST_PAGE
+     * @param pageNumber Input page number to check against
+     */
     private void validatePageNumberLimit(Integer pageNumber) {
         if (pageNumber > LAST_PAGE) {
             log.error("Requested pageNumber exceeded last page! pageNumber: {}", pageNumber);
@@ -122,8 +127,8 @@ public class ProductService {
         log.info("Recommender API called with {} product(s) for page {}!", inputProductIDList.size(), pageable.getPageNumber());
         PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), PAGE_SIZE);
         // Mocked result
-        Page<Product> productDTOPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
-        return productDTOPage.map(productMapper::toSliderItemDTO);
+        Page<Product> mockedResultPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
+        return mockedResultPage.map(productMapper::toSliderItemDTO);
     }
 
 
@@ -137,8 +142,8 @@ public class ProductService {
         log.info("Returning default products with most units sold for page {}!", pageable.getPageNumber());
         PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), PAGE_SIZE);
 
-        Page<Product> productDTOPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
-        return productDTOPage.map(productMapper::toSliderItemDTO);
+        Page<Product> recommendedProductPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
+        return recommendedProductPage.map(productMapper::toSliderItemDTO);
     }
 
     /**
@@ -146,19 +151,20 @@ public class ProductService {
      *
      * @param currentDate Products must have release_date on or after this date (triggered date if not given)
      * @param pageNumber  Starts from 0, last page calculated from front end
-     * @return List of up to 5 preorder products in ascending release_date order
+     * @return Page of up to 5 preorder products in ascending release_date order
      */
-    public List<ProductSliderItemDTO> getPreOrderProducts(LocalDate currentDate, Integer pageNumber) {
+    public Page<ProductSliderItemDTO> getPreOrderProducts(LocalDate currentDate, Integer pageNumber) {
         try {
             if (null == currentDate) {
                 currentDate = LocalDate.now();
             }
             log.info("Searching for preorder products on and after the date: {}, page: {}", currentDate, pageNumber);
             PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "release_date"));
-            return productMapper.toSliderItemDTOList(productRepository.findPreOrderProductsAfterDateWithPagination(currentDate, pageRequest));
+            Page<Product> preorderPage = productRepository.findPreOrderProductsAfterDateWithPagination(currentDate, pageRequest);
+            return preorderPage.map(productMapper::toSliderItemDTO);
         } catch (Exception ex) {
             log.error("Exception in getPreOrderProducts: ", ex);
-            return new ArrayList<>();
+            return Page.empty();
         }
     }
 
@@ -167,19 +173,20 @@ public class ProductService {
      *
      * @param currentDate Products must have created_on on or before this date (triggered date if not given)
      * @param pageNumber  Starts from 0, last page calculated from front end
-     * @return List of up to 5 bestsellers in terms of units_sold in descending order
+     * @return Page of up to 5 bestsellers in terms of units_sold in descending order
      */
-    public List<ProductSliderItemDTO> getBestSellers(LocalDate currentDate, Integer pageNumber) {
+    public Page<ProductSliderItemDTO> getBestSellers(LocalDate currentDate, Integer pageNumber) {
         try {
             if (null == currentDate) {
                 currentDate = LocalDate.now();
             }
             log.info("Searching for best selling products for date: {}, page: {}", currentDate, pageNumber);
             PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, UNITS_SOLD));
-            return productMapper.toSliderItemDTOList(productRepository.findBestSellersBeforeDateWithPagination(currentDate, pageRequest));
+            Page<Product> bestSellingProductPage = productRepository.findBestSellersBeforeDateWithPagination(currentDate, pageRequest);
+            return bestSellingProductPage.map(productMapper::toSliderItemDTO);
         } catch (Exception ex) {
             log.error("Exception in getBestSellers: ", ex);
-            return new ArrayList<>();
+            return Page.empty();
         }
     }
 
@@ -272,8 +279,7 @@ public class ProductService {
 
             if (productList.isEmpty()) {
                 log.error("There is no information on this product in database: {}", productSlug);
-                ProductDetailsDTO blankProduct = new ProductDetailsDTO();
-                return blankProduct;
+                return new ProductDetailsDTO();
             }
 
             ProductDetailsDTO productDetailsDTO = new ProductDetailsDTO();
