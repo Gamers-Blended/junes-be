@@ -56,12 +56,9 @@ public class ProductService {
      * @return List of up to 5 recommended products
      */
     public Page<ProductSliderItemDTO> getRecommendedProductsWithID(Integer userID, Pageable pageable) {
-        try {
-            if (pageable.getPageNumber() > LAST_PAGE) {
-                log.error("Requested pageNumber exceeded last page! pageNumber: {}", pageable.getPageNumber());
-                throw new IllegalArgumentException("Requested pageNumber exceeded last page! pageNumber: " + pageable.getPageNumber());
-            }
+        validatePageNumberLimit(pageable.getPageNumber());
 
+        try {
             if (null != userID) {
                 // Get user's browsing history
                 List<String> userHistoryList = userRepository.getUserHistory(userID);
@@ -83,12 +80,14 @@ public class ProductService {
      * For get recommended products API
      * Case 2: user not logged in
      *
-     * @param requestDTO Contains historyCache & pageNumber
+     * @param requestDTO Contains historyCache, a list of up to 20 of the latest productIDs guest has viewed
      * @param pageable Page number specified here
      * @return Page of up to 5 recommended products
      */
     public Page<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO, Pageable pageable) {
         List<String> browsingCache = requestDTO.getHistoryCache();
+        validatePageNumberLimit(pageable.getPageNumber());
+
         try {
             // Keep only the most recent 20 products in browsingCache
             if (browsingCache.size() > MAX_CACHE_SIZE) {
@@ -103,6 +102,13 @@ public class ProductService {
         }
         log.info("browsingCache is empty, returning default products...");
         return returnDefaultRecommendedProducts(pageable);
+    }
+
+    private void validatePageNumberLimit(Integer pageNumber) {
+        if (pageNumber > LAST_PAGE) {
+            log.error("Requested pageNumber exceeded last page! pageNumber: {}", pageNumber);
+            throw new IllegalArgumentException("Requested pageNumber exceeded last page! pageNumber: " + pageNumber);
+        }
     }
 
     /**
