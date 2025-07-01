@@ -9,7 +9,6 @@ import java.util.*;
 @Setter
 public class RecommendedProductNotLoggedRequestDTO {
 
-    private Integer pageNumber;
     private List<String> historyCache;
 
     public List<String> getHistoryCache() {

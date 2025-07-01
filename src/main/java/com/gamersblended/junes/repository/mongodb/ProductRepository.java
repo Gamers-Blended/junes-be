@@ -1,6 +1,7 @@
 package com.gamersblended.junes.repository.mongodb;
 
 import com.gamersblended.junes.model.Product;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -15,8 +16,7 @@ public interface ProductRepository extends MongoRepository<Product, String>, Cus
 
     List<Product> findAll();
 
-    @Query(value = "{}", sort = "{ 'units_sold': -1 }")
-    List<Product> findTopProductsWithPagination(Pageable pageable);
+    Page<Product> findAllByOrderByUnitsSoldDesc(Pageable pageable);
 
     @Query("{ 'release_date': { '$gte': '?0' } }")
     List<Product> findPreOrderProductsAfterDateWithPagination(LocalDate currentDate, Pageable pageable);

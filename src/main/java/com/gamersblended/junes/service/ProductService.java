@@ -28,6 +28,7 @@ public class ProductService {
 
     private static final int MAX_CACHE_SIZE = 20;
     private static final int PAGE_SIZE = 5;
+    private static final int LAST_PAGE = 3;
     private static final String UNITS_SOLD = "units_sold";
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
@@ -51,11 +52,16 @@ public class ProductService {
      * Case 1: logged users
      *
      * @param userID     ID of logged user calling the API
-     * @param pageNumber Starts from 0, last page calculated from front end
+     * @param pageable Page number specified here
      * @return List of up to 5 recommended products
      */
-    public List<ProductSliderItemDTO> getRecommendedProductsWithID(Integer userID, Integer pageNumber) {
+    public Page<ProductSliderItemDTO> getRecommendedProductsWithID(Integer userID, Pageable pageable) {
         try {
+            if (pageable.getPageNumber() > LAST_PAGE) {
+                log.error("Requested pageNumber exceeded last page! pageNumber: {}", pageable.getPageNumber());
+                throw new IllegalArgumentException("Requested pageNumber exceeded last page! pageNumber: " + pageable.getPageNumber());
+            }
+
             if (null != userID) {
                 // Get user's browsing history
                 List<String> userHistoryList = userRepository.getUserHistory(userID);
@@ -63,14 +69,14 @@ public class ProductService {
 
                 // Call Recommender System API if browsing history non-empty
                 if (!userHistoryList.isEmpty() && !userHistoryList.contains("")) {
-                    return callRecommenderSystem(userHistoryList, pageNumber);
+                    return callRecommenderSystem(userHistoryList, pageable);
                 }
                 log.info("UserID {} doesn't have any browsing history", userID);
             }
         } catch (Exception ex) {
             log.error("Exception in getRecommendedProductsWithID for userID {}: ", userID, ex);
         }
-        return returnDefaultRecommendedProducts(pageNumber);
+        return returnDefaultRecommendedProducts(pageable);
     }
 
     /**
@@ -78,11 +84,11 @@ public class ProductService {
      * Case 2: user not logged in
      *
      * @param requestDTO Contains historyCache & pageNumber
-     * @return List of up to 5 recommended products
+     * @param pageable Page number specified here
+     * @return Page of up to 5 recommended products
      */
-    public List<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO) {
+    public Page<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO, Pageable pageable) {
         List<String> browsingCache = requestDTO.getHistoryCache();
-        Integer pageNumber = requestDTO.getPageNumber();
         try {
             // Keep only the most recent 20 products in browsingCache
             if (browsingCache.size() > MAX_CACHE_SIZE) {
@@ -90,41 +96,43 @@ public class ProductService {
                 browsingCache = browsingCache.subList(browsingCache.size() - MAX_CACHE_SIZE, browsingCache.size());
             }
             if (!browsingCache.contains("") && !browsingCache.isEmpty()) {
-                return callRecommenderSystem(browsingCache, pageNumber);
+                return callRecommenderSystem(browsingCache, pageable);
             }
         } catch (Exception ex) {
             log.error("Exception in getRecommendedProductsWithoutID for browsingCache {}: ", browsingCache, ex);
         }
         log.info("browsingCache is empty, returning default products...");
-        return returnDefaultRecommendedProducts(pageNumber);
+        return returnDefaultRecommendedProducts(pageable);
     }
 
     /**
      * Calls external recommender system
      *
      * @param inputProductIDList List of up to 20 unique product IDs
-     * @param pageNumber         Starts from 0, last page calculated from front end
-     * @return List of up to 5 recommended products
+     * @param pageable         Page number specified here
+     * @return Page of up to 5 recommended products
      */
-    public List<ProductSliderItemDTO> callRecommenderSystem(List<String> inputProductIDList, Integer pageNumber) {
-        log.info("Recommender API called with {} product(s) for page {}!", inputProductIDList.size(), pageNumber);
-        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, UNITS_SOLD));
+    public Page<ProductSliderItemDTO> callRecommenderSystem(List<String> inputProductIDList, Pageable pageable) {
+        log.info("Recommender API called with {} product(s) for page {}!", inputProductIDList.size(), pageable.getPageNumber());
+        PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), PAGE_SIZE);
         // Mocked result
-        return productMapper.toSliderItemDTOList(productRepository.findTopProductsWithPagination(pageRequest));
+        Page<Product> productDTOPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
+        return productDTOPage.map(productMapper::toSliderItemDTO);
     }
 
 
     /**
      * By default, gives products with most units sold, descending
      *
-     * @param pageNumber Starts from 0, last page calculated from front end
-     * @return List of up to 5 products with most units sold as default
+     * @param pageable Page number specified here
+     * @return Page of up to 5 products with most units sold as default
      */
-    public List<ProductSliderItemDTO> returnDefaultRecommendedProducts(Integer pageNumber) {
-        log.info("Returning default products with most units sold for page {}!", pageNumber);
-        PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.DESC, UNITS_SOLD));
+    public Page<ProductSliderItemDTO> returnDefaultRecommendedProducts(Pageable pageable) {
+        log.info("Returning default products with most units sold for page {}!", pageable.getPageNumber());
+        PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), PAGE_SIZE);
 
-        return productMapper.toSliderItemDTOList(productRepository.findTopProductsWithPagination(pageRequest));
+        Page<Product> productDTOPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
+        return productDTOPage.map(productMapper::toSliderItemDTO);
     }
 
     /**
