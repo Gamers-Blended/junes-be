@@ -294,6 +294,7 @@ public class ProductService {
                 productVariantDTO.setEdition(currentProduct.getEdition());
                 productVariantDTO.setRegion(currentProduct.getRegion());
                 productVariantDTO.setPlatform(currentProduct.getPlatform());
+                productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
                 productVariantDTO.setPrice(currentProduct.getPrice());
 
                 productVariantDTOList.add(productVariantDTO);

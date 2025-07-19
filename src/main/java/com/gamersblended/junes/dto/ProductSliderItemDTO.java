@@ -12,6 +12,9 @@ public class ProductSliderItemDTO {
     private String id;
     private String name;
     private String slug;
+    private String platform;
+    private String region;
+    private String edition;
     private BigDecimal price;
     private String productImageUrl;
 }

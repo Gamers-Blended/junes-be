@@ -13,4 +13,5 @@ public class ProductVariantDTO {
     private String region;
     private String edition;
     private BigDecimal price;
+    private String productImageUrl;
 }
