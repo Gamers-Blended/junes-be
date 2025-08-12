@@ -1,12 +1,12 @@
 package com.gamersblended.junes.constant;
 
 public enum PlatformEnums {
-    PLAYSTATION_4("playstation_4"),
-    PLAYSTATION_5("playstation_5"),
-    XBOX_ONE("xbox_one"),
-    XBOX_SERIES_X("xbox_series_x"),
-    NINTENDO_SWITCH("nintendo_switch"),
-    NINTENDO_SWITCH_2("nintendo_switch_2"),
+    PLAYSTATION_4("ps4"),
+    PLAYSTATION_5("ps5"),
+    XBOX_ONE("xbo"),
+    XBOX_SERIES_X("xsx"),
+    NINTENDO_SWITCH("nsw"),
+    NINTENDO_SWITCH_2("nsw2"),
     PC("pc");
 
     private final String platformValue;
