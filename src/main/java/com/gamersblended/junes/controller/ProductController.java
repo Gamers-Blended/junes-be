@@ -36,7 +36,7 @@ public class ProductController {
             @RequestParam(required = false) List<String> editions,
             @RequestParam(required = false) List<String> languages,
             @RequestParam(required = false) List<String> startingLetters,
-            @RequestParam(required = false) String releaseDate,
+            @RequestParam(required = false) List<String> releaseDates,
             @RequestParam(required = false) String currentDate,
             Pageable pageable) {
         log.info("Calling get product listings API for platform: {}, page = {}, sort by = {}!", platform, pageable.getPageNumber(), pageable.getSort());
@@ -52,7 +52,7 @@ public class ProductController {
                 editions,
                 languages,
                 startingLetters,
-                releaseDate,
+                releaseDates,
                 currentDate,
                 pageable));
     }

@@ -234,18 +234,21 @@ public class ProductService {
      * @param editions       Filter for list of editions
      * @param languages      Filter for list of languages
      * @param startingLetters Filter for list of the first character of a product's name
-     * @param releaseDate    Filter for products released in specific month and year
+     * @param releaseDates    Filter for products released in specific list of (month and year)
      * @param currentDate    Reference date to determine if a product is preorder or not
      * @param pageable       Page number and sort settings
      * @return List of products under platform and optional filters
      */
-    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, List<String> startingLetters, String releaseDate, String currentDate, Pageable pageable) {
+    public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, List<String> startingLetters, List<String> releaseDates, String currentDate, Pageable pageable) {
         try {
             // Optional month-year filter
-            YearMonth releaseYearMonth = null;
-            if (null != releaseDate) {
-                releaseYearMonth = YearMonth.parse(releaseDate);
-                log.info("releaseYearMonth filter provided: {}", releaseYearMonth);
+            List<YearMonth> releaseYearMonthList = new ArrayList<>();
+            if (null != releaseDates && !releaseDates.isEmpty()) {
+
+                for (String currentReleaseDate: releaseDates) {
+                    releaseYearMonthList.add(YearMonth.parse(currentReleaseDate));
+                }
+                log.info("releaseYearMonthList filter provided: {}", releaseYearMonthList);
             }
 
             // Process currentDate
@@ -257,7 +260,7 @@ public class ProductService {
             Page<Product> productsPage = productRepository.findProductsWithFilters(
                     platform, name, availability, minPrice, maxPrice, genres,
                     regions, publishers, editions, languages, startingLetters,
-                    releaseYearMonth, currentDate, pageable);
+                    releaseYearMonthList, currentDate, pageable);
 
             return productsPage.map(productMapper::toSliderItemDTO);
         } catch (Exception ex) {

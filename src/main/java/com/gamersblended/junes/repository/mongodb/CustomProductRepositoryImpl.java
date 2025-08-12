@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -49,7 +50,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             List<String> editions,
             List<String> languages,
             List<String> startingLetters,
-            YearMonth releaseDate,
+            List<YearMonth> releaseDates,
             String currentDate,
             Pageable pageable) {
 
@@ -116,8 +117,24 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         }
 
         // Release date (month and year match)
-        if (null != releaseDate) {
-            query.addCriteria(createReleaseDateCriteria(releaseDate));
+        if (null != releaseDates && !releaseDates.isEmpty()) {
+
+            // Log all date ranges
+            List<String> dateRanges = releaseDates.stream()
+                    .map(releaseDate -> {
+                        String startDate = releaseDate.atDay(1).toString();
+                        String endDate = releaseDate.atEndOfMonth().toString();
+                        return startDate + " to " + endDate;
+                    })
+                    .collect(Collectors.toList());
+
+            log.info("Only products that were released in any of these date ranges: {} (inclusive) will be returned", dateRanges);
+
+            Criteria[] dateCriteria = releaseDates.stream()
+                    .map(this::createReleaseDateCriteria)
+                    .toArray(Criteria[]::new);
+
+            query.addCriteria(new Criteria().orOperator(dateCriteria));
         }
 
         // Availability (in_stock, out_of_stock, preorder)
@@ -177,11 +194,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private Criteria createReleaseDateCriteria(YearMonth releaseDate) {
         String startDate = releaseDate.atDay(1).toString(); // 1st day of month
-        String endDate = releaseDate.plusMonths(1).atDay(1).toString(); // 1st day of next month
+        String endDate = releaseDate.atEndOfMonth().toString(); // last day of month
 
         // From 1st day of month till last day of month
-        log.info("Only products that were released between {} and {} (inclusive) will be returned", startDate, endDate);
-        return Criteria.where("release_date").gte(startDate).lt(endDate);
+        return Criteria.where("release_date").gte(startDate).lte(endDate);
     }
 
     private void validateInputs(String platform, String name,
