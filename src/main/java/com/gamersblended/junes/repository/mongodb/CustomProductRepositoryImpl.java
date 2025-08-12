@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 public class CustomProductRepositoryImpl implements CustomProductRepository {
     private static final int MAX_STRING_LENGTH = 100;
     private static final int MAX_LIST_SIZE = 20;
+    private static final int PAGE_SIZE_LIMIT = 100;
     private static final String IN_STOCK = "in_stock";
     private static final String OUT_OF_STOCK = "out_of_stock";
     private static final String PREORDER = "preorder";
@@ -195,8 +196,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         }
 
         // Page size limits
-        if (pageable.getPageSize() > 20) {
-            throw new IllegalArgumentException("Page size cannot exceed 20, given page size: " + pageable.getPageSize());
+        if (pageable.getPageSize() > PAGE_SIZE_LIMIT) {
+            throw new IllegalArgumentException("Page size cannot exceed " + PAGE_SIZE_LIMIT + ", given page size: " + pageable.getPageSize());
         }
 
         // Optional string validations - only validate if provided
