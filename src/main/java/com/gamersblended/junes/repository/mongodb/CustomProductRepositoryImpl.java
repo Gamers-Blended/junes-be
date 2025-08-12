@@ -48,7 +48,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             List<String> publishers,
             List<String> editions,
             List<String> languages,
-            String startingLetter,
+            List<String> startingLetters,
             YearMonth releaseDate,
             String currentDate,
             Pageable pageable) {
@@ -56,7 +56,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         validateInputs(platform, name,
                 minPrice, maxPrice, genres,
                 regions, publishers, editions,
-                languages, startingLetter,
+                languages, startingLetters,
                 pageable);
 
         Query query = new Query();
@@ -67,11 +67,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         // Name like '%name%'
         if (null != name && !name.isEmpty()) {
             query.addCriteria(Criteria.where("name").regex(".*" + name.trim() + ".*", "i"));
-        }
-
-        // Starting letter like 'startingLetter%'
-        if (null != startingLetter && !startingLetter.isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex("^" + startingLetter, "i"));
         }
 
         // Price range
@@ -110,6 +105,14 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         if (null != languages && !languages.isEmpty()) {
             log.info("Only products supporting this/these language(s) = {} will be returned", languages);
             query.addCriteria(Criteria.where("languages").in(languages));
+        }
+
+        if (null != startingLetters && !startingLetters.isEmpty()) {
+            log.info("Only products starting with letter(s) = {} will be returned", startingLetters);
+
+            // Create a character class like "^[abc]" for letters a, b, c
+            String regexPattern = "^[" + String.join("", startingLetters) + "]";
+            query.addCriteria(Criteria.where("name").regex(regexPattern, "i"));
         }
 
         // Release date (month and year match)
@@ -184,7 +187,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     private void validateInputs(String platform, String name,
                                 BigDecimal minPrice, BigDecimal maxPrice, List<String> genres,
                                 List<String> regions, List<String> publishers, List<String> editions,
-                                List<String> languages, String startingLetter,
+                                List<String> languages, List<String> startingLetters,
                                 Pageable pageable) {
 
         // Required field validation
@@ -204,11 +207,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         if (null != name) {
             validateStringLength("name", name);
             validateStringContent("name", name);
-        }
-
-        // Optional starting letter validation
-        if (null != startingLetter) {
-            validateStartingLetter(startingLetter);
         }
 
         // Optional price validations
@@ -237,6 +235,11 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         }
         if (null != languages) {
             validateStringList("languages", languages);
+        }
+        if (null != startingLetters) {
+            for (String currentStartingLetter : startingLetters) {
+                validateStartingLetter(currentStartingLetter);
+            }
         }
     }
 

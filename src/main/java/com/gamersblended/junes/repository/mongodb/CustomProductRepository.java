@@ -20,7 +20,7 @@ public interface CustomProductRepository {
             List<String> publishers,
             List<String> editions,
             List<String> languages,
-            String startingLetter,
+            List<String> startingLetters,
             YearMonth releaseDate,
             String currentDate,
             Pageable pageable);

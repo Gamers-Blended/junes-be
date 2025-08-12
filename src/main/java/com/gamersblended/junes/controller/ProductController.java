@@ -35,7 +35,7 @@ public class ProductController {
             @RequestParam(required = false) List<String> publishers,
             @RequestParam(required = false) List<String> editions,
             @RequestParam(required = false) List<String> languages,
-            @RequestParam(required = false) String startingLetter,
+            @RequestParam(required = false) List<String> startingLetters,
             @RequestParam(required = false) String releaseDate,
             @RequestParam(required = false) String currentDate,
             Pageable pageable) {
@@ -51,7 +51,7 @@ public class ProductController {
                 publishers,
                 editions,
                 languages,
-                startingLetter,
+                startingLetters,
                 releaseDate,
                 currentDate,
                 pageable));
