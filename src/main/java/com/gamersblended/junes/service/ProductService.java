@@ -294,11 +294,12 @@ public class ProductService {
             List<ProductVariantDTO> productVariantDTOList = new ArrayList<>();
             for (Product currentProduct : productList) {
                 ProductVariantDTO productVariantDTO = new ProductVariantDTO();
-                productVariantDTO.setEdition(currentProduct.getEdition());
-                productVariantDTO.setRegion(currentProduct.getRegion());
                 productVariantDTO.setPlatform(currentProduct.getPlatform());
-                productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
+                productVariantDTO.setRegion(currentProduct.getRegion());
+                productVariantDTO.setEdition(currentProduct.getEdition());
                 productVariantDTO.setPrice(currentProduct.getPrice());
+                productVariantDTO.setStock(currentProduct.getStock());
+                productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
 
                 productVariantDTOList.add(productVariantDTO);
             }

@@ -82,7 +82,7 @@ public class FrontPageController {
         return ResponseEntity.ok(productService.getPreOrderProducts(currentDate, pageable.getPageNumber()));
     }
 
-    @Operation(summary = "Get a list of best-selling products")
+    @Operation(summary = "Get a list of best-selling products in terms of units_sold")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Best-selling products shown",
                     content = {@Content(mediaType = "application/json",
