@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 
 @Slf4j
@@ -106,7 +105,7 @@ public class FrontPageController {
             @ApiResponse(responseCode = "404", description = "Product details not found",
                     content = @Content)
     })
-    @GetMapping("quick-shop/{productID}")
+    @GetMapping("/quick-shop/{productID}")
     public ResponseEntity<ProductDTO> getQuickShopDetailsByID(@PathVariable String productID) {
         log.info("Calling get quick shop details API for productID: {}!", productID);
         return ResponseEntity.ok(productService.getQuickShopDetails(productID));
