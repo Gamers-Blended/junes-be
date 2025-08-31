@@ -4,7 +4,6 @@ import com.gamersblended.junes.annotation.RateLimit;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
-import io.github.bucket4j.Refill;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +38,10 @@ public class RateLimiterService {
     private Bucket getBucket(String key, RateLimit rateLimit) {
         Supplier<BucketConfiguration> configSupplier = () -> {
             Duration duration = convertToDuration(rateLimit.duration(), rateLimit.timeUnit());
-            Bandwidth bandwidth = Bandwidth.classic(rateLimit.requests(), Refill.intervally(rateLimit.requests(), duration));
+            Bandwidth bandwidth = Bandwidth.builder()
+                    .capacity(rateLimit.requests())
+                    .refillIntervally(rateLimit.requests(), duration)
+                    .build();
             return BucketConfiguration.builder()
                     .addLimit(bandwidth)
                     .build();
