@@ -1,5 +1,6 @@
 package com.gamersblended.junes.controller;
 
+import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDetailsDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.service.ProductService;
@@ -11,10 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
 @RequestMapping("junes/api/v1/product")
+@RateLimit(requests = 100, duration = 1, timeUnit = TimeUnit.HOURS)
 public class ProductController {
 
     private ProductService productService;

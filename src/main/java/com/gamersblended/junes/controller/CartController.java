@@ -1,5 +1,6 @@
 package com.gamersblended.junes.controller;
 
+import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CartProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.service.CartService;
@@ -15,10 +16,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
 @RequestMapping("junes/api/v1/cart")
+@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
 public class CartController {
 
     private CartService cartService;

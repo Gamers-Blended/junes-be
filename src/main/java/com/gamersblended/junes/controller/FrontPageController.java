@@ -1,5 +1,6 @@
 package com.gamersblended.junes.controller;
 
+import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
@@ -17,11 +18,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
 @RestController
 @RequestMapping("junes/api/v1/frontpage")
+@RateLimit(requests = 100, duration = 1, timeUnit = TimeUnit.HOURS)
 public class FrontPageController {
 
     private final ProductService productService;
