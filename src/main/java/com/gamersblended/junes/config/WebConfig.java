@@ -23,6 +23,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${cors.allowed-credentials}")
     private boolean allowedCredentials;
 
+    @Value("${cors.max-age}")
+    private int maxAge;
+
     private final RateLimitInterceptor rateLimitInterceptor;
 
     public WebConfig(RateLimitInterceptor rateLimitInterceptor) {
@@ -38,10 +41,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
+        registry.addMapping("/junes/api/v1/**")
                 .allowedOrigins(allowedOrigins)
                 .allowedMethods(allowedMethods)
                 .allowedHeaders(allowedHeaders)
-                .allowCredentials(allowedCredentials);
+                .allowCredentials(allowedCredentials)
+                .maxAge(maxAge);
     }
 }
