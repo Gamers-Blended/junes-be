@@ -1,8 +1,12 @@
 package com.gamersblended.junes.model;
 
+import com.gamersblended.junes.dto.AddressDTO;
+import com.gamersblended.junes.dto.PaymentInfoDTO;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,7 +26,7 @@ public class User {
     @Column(nullable = false)
     private String username;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Column(nullable = false)
@@ -31,14 +35,17 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @Column(name = "history_list", nullable = false)
+    @Column(name = "history_list", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<String> historyList;
 
-    @Column(name = "address_list", nullable = false)
-    private List<String> addressList;
+    @Column(name = "address_list", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<AddressDTO> addressList;
 
-    @Column(name = "payment_info_list", nullable = false)
-    private List<String> paymentInfoList;
+    @Column(name = "payment_info_list", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<PaymentInfoDTO> paymentInfoList;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -50,11 +57,11 @@ public class User {
         return Collections.unmodifiableList(historyList);
     }
 
-    public List<String> getAddressList() {
+    public List<AddressDTO> getAddressList() {
         return Collections.unmodifiableList(addressList);
     }
 
-    public List<String> getPaymentInfoList() {
+    public List<PaymentInfoDTO> getPaymentInfoList() {
         return Collections.unmodifiableList(paymentInfoList);
     }
 
@@ -62,11 +69,11 @@ public class User {
         this.historyList = historyList != null ? new ArrayList<>(historyList) : new ArrayList<>();
     }
 
-    public void setAddressList(List<String> addressList) {
+    public void setAddressList(List<AddressDTO> addressList) {
         this.addressList = addressList != null ? new ArrayList<>(addressList) : new ArrayList<>();
     }
 
-    public void setPaymentInfoList(List<String> paymentInfoList) {
+    public void setPaymentInfoList(List<PaymentInfoDTO> paymentInfoList) {
         this.paymentInfoList = paymentInfoList != null ? new ArrayList<>(paymentInfoList) : new ArrayList<>();
     }
 }
