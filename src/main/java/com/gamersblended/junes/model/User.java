@@ -10,20 +10,20 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Table(name = "users", schema = "customer_data")
+@Table(name = "users", schema = "junes_rel")
 @Getter
 @Setter
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long userID;
 
     @Column(nullable = false)
     private String username;
 
     @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     @Column(nullable = false)
     private String email;

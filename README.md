@@ -1,6 +1,6 @@
 # Junes Online Video Game Store
 
-Back End service for Junes dummy online video game store.
+Back End service for Junes prototype online video game store.
 
 This is a dummy online website that sells video games.
 
@@ -35,4 +35,4 @@ Open this URL in a browser
 localhost:5050
 ```
 Login with the credentials stated inside `docker-compose.yml`. <br>
-Manage the user and cart database here.
+Manage the user and cartItems database here.
