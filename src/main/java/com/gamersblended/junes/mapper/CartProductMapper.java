@@ -1,7 +1,7 @@
 package com.gamersblended.junes.mapper;
 
-import com.gamersblended.junes.dto.CartProductDTO;
-import com.gamersblended.junes.model.Cart;
+import com.gamersblended.junes.dto.CartItemDTO;
+import com.gamersblended.junes.model.CartItems;
 import com.gamersblended.junes.model.Product;
 import org.mapstruct.Mapper;
 
@@ -10,10 +10,10 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface CartProductMapper {
 
-    CartProductDTO toDTO(Cart cart);
+    CartItemDTO toDTO(CartItems cartItems);
 
-    List<CartProductDTO> toDTOList(List<Cart> cartList);
+    List<CartItemDTO> toDTOList(List<CartItems> cartItemsList);
 
-    Product toEntity(CartProductDTO dto);
+    Product toEntity(CartItemDTO dto);
 
 }

@@ -1,7 +1,7 @@
 package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.CartProductDTO;
+import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,16 +34,16 @@ public class CartController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Products inside user's cart shown",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartProductDTO.class))})
+                            schema = @Schema(implementation = CartItemDTO.class))})
     })
     @PostMapping("/products")
-    public ResponseEntity<Page<CartProductDTO>> getCartProducts(@RequestParam(required = false) Integer userID, @RequestBody(required = false) List<CartProductDTO> cartProductDTOList, Pageable pageable) {
-        if (null == cartProductDTOList) {
+    public ResponseEntity<Page<CartItemDTO>> getCartProducts(@RequestParam(required = false) Long userID, @RequestBody(required = false) List<CartItemDTO> cartItemDTOList, Pageable pageable) {
+        if (null == cartItemDTOList) {
             log.info("Calling get shopping cart product(s) API for logged user with userID = {}, page = {}, sort by = {}!", userID, pageable.getPageNumber(), pageable.getSort());
         } else {
             log.info("Calling get shopping cart product(s) API for guest user, page {}!", pageable.getPageNumber());
         }
-        return ResponseEntity.ok(cartService.getCartProducts(userID, cartProductDTOList, pageable));
+        return ResponseEntity.ok(cartService.getCartProducts(userID, cartItemDTOList, pageable));
     }
 
     @Operation(summary = "Add product to user's cart")
@@ -55,9 +55,9 @@ public class CartController {
                     content = @Content)
     })
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestParam Integer userID, @RequestBody CartProductDTO cartProductDTO) {
-        log.info("Calling add to cart API for userID = {}, product = {}!", userID, cartProductDTO);
-        return ResponseEntity.ok(cartService.addToCart(userID, cartProductDTO));
+    public ResponseEntity<String> addToCart(@RequestParam Long userID, @RequestBody CartItemDTO cartItemDTO) {
+        log.info("Calling add to cart API for userID = {}, product = {}!", userID, cartItemDTO);
+        return ResponseEntity.ok(cartService.addToCart(userID, cartItemDTO));
     }
 
     @Operation(summary = "Remove product from user's cart")
@@ -73,8 +73,8 @@ public class CartController {
                     content = @Content),
     })
     @PostMapping("/remove")
-    public ResponseEntity<String> removeFromCart(@RequestParam Integer userID, @RequestBody CartProductDTO cartProductDTO) {
-        log.info("Calling remove from cart API for userID = {}, productID = {}, quantity = {}!", userID, cartProductDTO.getProductID(), cartProductDTO.getQuantity());
-        return ResponseEntity.ok(cartService.removeFromCart(userID, cartProductDTO));
+    public ResponseEntity<String> removeFromCart(@RequestParam Long userID, @RequestBody CartItemDTO cartItemDTO) {
+        log.info("Calling remove from cart API for userID = {}, productID = {}, quantity = {}!", userID, cartItemDTO.getProductID(), cartItemDTO.getQuantity());
+        return ResponseEntity.ok(cartService.removeFromCart(userID, cartItemDTO));
     }
 }
