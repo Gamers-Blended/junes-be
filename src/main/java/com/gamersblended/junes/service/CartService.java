@@ -4,7 +4,7 @@ import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.exception.EmptyCartException;
 import com.gamersblended.junes.exception.InvalidQuantityException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
-import com.gamersblended.junes.model.CartItems;
+import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.CartRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
@@ -63,7 +63,7 @@ public class CartService {
      */
     public Page<CartItemDTO> getLoggedUserCart(Long userID, Pageable pageable) {
         // Get cart items from database
-        Page<CartItems> userCart = cartRepository.getUserCart(userID, pageable);
+        Page<CartItem> userCart = cartRepository.getUserCart(userID, pageable);
         log.info("userID {} has {} item(s) in cart.", userID, userCart.getTotalElements());
 
         if (userCart.isEmpty()) {
@@ -71,7 +71,7 @@ public class CartService {
         }
         // Extract product_IDs to fetch metadata
         List<String> productIDFromCartList = userCart.getContent().stream()
-                .map(CartItems::getProductID)
+                .map(CartItem::getProductID)
                 .collect(Collectors.toList());
 
         // Fetch product metadata from MongoDB
@@ -81,34 +81,34 @@ public class CartService {
 
         // Create DTO using cart items and metadata data
         List<CartItemDTO> productsInCartList = userCart.getContent().stream()
-                .map(currentProductInCartItems -> {
-                    Product metadata = productMap.get(currentProductInCartItems.getProductID());
+                .map(currentProductInCartItem -> {
+                    Product metadata = productMap.get(currentProductInCartItem.getProductID());
                     if (metadata != null) {
                         return new CartItemDTO(
-                                currentProductInCartItems.getProductID(),
+                                currentProductInCartItem.getProductID(),
                                 metadata.getName(),
                                 metadata.getPrice(),
                                 metadata.getPlatform(),
                                 metadata.getRegion(),
                                 metadata.getEdition(),
                                 metadata.getProductImageUrl(),
-                                currentProductInCartItems.getQuantity(),
-                                currentProductInCartItems.getUserID(),
-                                currentProductInCartItems.getCreatedOn()
+                                currentProductInCartItem.getQuantity(),
+                                currentProductInCartItem.getUserID(),
+                                currentProductInCartItem.getCreatedOn()
                         );
                     } else {
                         // Case when productID not found in MongoDB
                         return new CartItemDTO(
-                                currentProductInCartItems.getProductID(),
+                                currentProductInCartItem.getProductID(),
                                 "Unknown Product",
                                 new BigDecimal("0.00"),
                                 "Unknown Product",
                                 "Unknown Product",
                                 "Unknown Product",
                                 "",
-                                currentProductInCartItems.getQuantity(),
-                                currentProductInCartItems.getUserID(),
-                                currentProductInCartItems.getCreatedOn()
+                                currentProductInCartItem.getQuantity(),
+                                currentProductInCartItem.getUserID(),
+                                currentProductInCartItem.getCreatedOn()
                         );
                     }
                 })
@@ -209,29 +209,29 @@ public class CartService {
             }
 
             // Get user's cart from database
-            List<CartItems> userCartItemsProductList = cartRepository.getUserCart(userID);
+            List<CartItem> userCartItemProductList = cartRepository.getUserCart(userID);
 
             // If user does not have cart data in database
             // Create new record with productToAdd and save to database
-            if (userCartItemsProductList.isEmpty()) {
+            if (userCartItemProductList.isEmpty()) {
                 log.info("UserID {} has an empty cart, creating a new record...", userID);
                 addCartItemToDatabase(userID, productToAdd);
                 return "Product added to cart";
             }
 
             // Check if user already has product in cart
-            Optional<CartItems> queriedCartProduct = userCartItemsProductList.stream()
-                    .filter(cartItemsDTO -> cartItemsDTO.getProductID().equals(productToAdd.getProductID()))
+            Optional<CartItem> queriedCartProduct = userCartItemProductList.stream()
+                    .filter(cartItemDTO -> cartItemDTO.getProductID().equals(productToAdd.getProductID()))
                     .findFirst();
             if (queriedCartProduct.isPresent()) {
                 // Update quantity if record exists in database
-                CartItems existingCartItemsProduct = queriedCartProduct.get();
-                Integer newQuantity = existingCartItemsProduct.getQuantity() + productToAdd.getQuantity();
+                CartItem existingCartItemProduct = queriedCartProduct.get();
+                Integer newQuantity = existingCartItemProduct.getQuantity() + productToAdd.getQuantity();
                 log.info("UserID {} already has productID {} in their cart, updating quantity from {} to {}...", userID, productToAdd.getProductID(),
-                        existingCartItemsProduct.getQuantity(), newQuantity);
-                existingCartItemsProduct.setQuantity(newQuantity);
-                existingCartItemsProduct.setUpdatedOn(LocalDateTime.now());
-                cartRepository.save(existingCartItemsProduct);
+                        existingCartItemProduct.getQuantity(), newQuantity);
+                existingCartItemProduct.setQuantity(newQuantity);
+                existingCartItemProduct.setUpdatedOn(LocalDateTime.now());
+                cartRepository.save(existingCartItemProduct);
             } else {
                 // Create new record inside cart database
                 log.info("UserID {} doesn't have productID {} in their cart, creating a new record...", userID, productToAdd.getProductID());
@@ -253,12 +253,12 @@ public class CartService {
      */
     private void addCartItemToDatabase(Long userID, CartItemDTO productToAdd) {
         try {
-            CartItems newCartItems = new CartItems();
-            newCartItems.setUserID(userID);
-            newCartItems.setProductID(productToAdd.getProductID());
-            newCartItems.setQuantity(productToAdd.getQuantity());
-            newCartItems.setCreatedOn(productToAdd.getCreatedOn());
-            cartRepository.save(newCartItems);
+            CartItem newCartItem = new CartItem();
+            newCartItem.setUserID(userID);
+            newCartItem.setProductID(productToAdd.getProductID());
+            newCartItem.setQuantity(productToAdd.getQuantity());
+            newCartItem.setCreatedOn(productToAdd.getCreatedOn());
+            cartRepository.save(newCartItem);
         } catch (Exception ex) {
             log.error("Exception in addCartItemToDatabase: ", ex);
         }
@@ -280,33 +280,33 @@ public class CartService {
             }
 
             // Get user's cart from database
-            List<CartItems> userCartItemsProductList = cartRepository.getUserCart(userID);
+            List<CartItem> userCartItemProductList = cartRepository.getUserCart(userID);
 
             // User supposed to have cart data in database, else throw error
-            if (userCartItemsProductList.isEmpty()) {
+            if (userCartItemProductList.isEmpty()) {
                 log.error("UserID {} has an empty cart! Nothing to remove!", userID);
                 throw new EmptyCartException("UserID " + userID + " has an empty cart! Nothing to remove!");
             }
 
             // Check if user already has product in cart
-            Optional<CartItems> queriedCartProduct = userCartItemsProductList.stream()
-                    .filter(cartItemsDTO -> cartItemsDTO.getProductID().equals(productToRemove.getProductID()))
+            Optional<CartItem> queriedCartProduct = userCartItemProductList.stream()
+                    .filter(cartItemDTO -> cartItemDTO.getProductID().equals(productToRemove.getProductID()))
                     .findFirst();
             if (queriedCartProduct.isPresent()) {
                 // Update quantity
-                CartItems existingCartItemsProduct = queriedCartProduct.get();
-                Integer newQuantity = existingCartItemsProduct.getQuantity() - productToRemove.getQuantity();
+                CartItem existingCartItemProduct = queriedCartProduct.get();
+                Integer newQuantity = existingCartItemProduct.getQuantity() - productToRemove.getQuantity();
 
                 // if newQuantity is <= 0, remove record from carts database
                 if (newQuantity <= 0) {
-                    log.info("productID {} will be removed from user's ({}) cart.", existingCartItemsProduct.getProductID(), userID);
-                    cartRepository.delete(existingCartItemsProduct);
+                    log.info("productID {} will be removed from user's ({}) cart.", existingCartItemProduct.getProductID(), userID);
+                    cartRepository.delete(existingCartItemProduct);
                 } else {
                     log.info("Updating productID {} quantity from {} to {} for UserID's ({}) cart, ...", productToRemove.getProductID(),
-                            existingCartItemsProduct.getQuantity(), newQuantity, userID);
-                    existingCartItemsProduct.setQuantity(newQuantity);
-                    existingCartItemsProduct.setUpdatedOn(LocalDateTime.now());
-                    cartRepository.save(existingCartItemsProduct);
+                            existingCartItemProduct.getQuantity(), newQuantity, userID);
+                    existingCartItemProduct.setQuantity(newQuantity);
+                    existingCartItemProduct.setUpdatedOn(LocalDateTime.now());
+                    cartRepository.save(existingCartItemProduct);
                 }
             } else {
                 // User supposed to have to-be-removed product inside cart, else throw error

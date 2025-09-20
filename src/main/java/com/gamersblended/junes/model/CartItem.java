@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
         })
 @Getter
 @Setter
-public class CartItems {
+public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,7 +43,7 @@ public class CartItems {
     @UpdateTimestamp // Hibernate will automatically update this on modify
     private LocalDateTime updatedOn;
 
-     @ManyToOne(fetch = FetchType.LAZY)
-     @JoinColumn(name = "user_id", insertable = false, updatable = false)
-     private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
 }

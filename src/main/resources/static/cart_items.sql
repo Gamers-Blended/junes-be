@@ -1,4 +1,5 @@
 -- Database: junes
+-- Schema: junes_rel
 
 CREATE TABLE IF NOT EXISTS junes_rel.cart_items (
     cart_item_id BIGSERIAL PRIMARY KEY,
