@@ -5,7 +5,9 @@ import com.gamersblended.junes.dto.PaymentInfoDTO;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
@@ -21,6 +23,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long userID;
 
     @Column(nullable = false)
@@ -47,11 +50,13 @@ public class User {
     @JdbcTypeCode(SqlTypes.JSON)
     private List<PaymentInfoDTO> paymentInfoList;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_on", nullable = false)
+    @CreationTimestamp // Hibernate will automatically set this on insert
+    private LocalDateTime createdOn;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_on")
+    @UpdateTimestamp // Hibernate will automatically update this on modify
+    private LocalDateTime updatedOn;
 
     public List<String> getHistoryList() {
         return Collections.unmodifiableList(historyList);

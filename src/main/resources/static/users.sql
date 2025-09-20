@@ -1,4 +1,5 @@
 -- Database: junes
+-- Schema: junes_rel
 
 CREATE TABLE IF NOT EXISTS junes_rel.users (
     user_id BIGSERIAL PRIMARY KEY,
@@ -9,6 +10,6 @@ CREATE TABLE IF NOT EXISTS junes_rel.users (
     history_list JSONB NOT NULL DEFAULT '[]',
     address_list JSONB NOT NULL DEFAULT '[]',
     payment_info_list JSONB NOT NULL DEFAULT '[]',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP
+    created_on TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_on TIMESTAMPTZ
 );
