@@ -3,7 +3,7 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
-import com.gamersblended.junes.util.InputValidationService;
+import com.gamersblended.junes.util.EmailValidatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,7 +22,7 @@ public class UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private InputValidationService inputValidationService;
+    private EmailValidatorService emailValidator;
 
     public List<User> getAllUsers() {
         List<User> res = userRepository.getAllUsers();
@@ -33,7 +33,7 @@ public class UserService {
 
     public String addUser(CreateUserRequest createUserRequest) {
         // Validate inputs
-        boolean isValidEmail = inputValidationService.validateEmail(createUserRequest.getEmail()).isEmpty();
+        boolean isValidEmail = emailValidator.validateEmail(createUserRequest.getEmail()).isValid();
         boolean isValidPassword = validatePassword(createUserRequest.getPassword()).isValid();
 
         if (isValidEmail && isValidPassword) {

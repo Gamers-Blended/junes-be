@@ -50,7 +50,6 @@ public class PasswordValidator {
             errorList.add("Password cannot contain spaces");
         }
 
-        boolean isValid = errorList.isEmpty();
-        return new ValidationResult(PASSWORD, isValid, errorList);
+        return new ValidationResult(PASSWORD, errorList.isEmpty(), errorList);
     }
 }
