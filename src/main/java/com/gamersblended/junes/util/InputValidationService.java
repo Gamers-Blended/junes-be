@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.util;
 
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class InputValidationService {
 
-    public static final int EMAIL_LENGTH_LIMIT = 254;
+    private static final String EMAIL = "email";
+    private static final int EMAIL_MAX_LENGTH = 254;
 
     UserRepository userRepository;
 
@@ -24,7 +25,7 @@ public class InputValidationService {
 
         email = email.trim().toLowerCase();
 
-        if (email.length() > EMAIL_LENGTH_LIMIT) {
+        if (email.length() > EMAIL_MAX_LENGTH) {
             return "Email exceeds length limit";
         }
 
