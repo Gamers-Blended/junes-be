@@ -16,4 +16,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     @Query(value = "SELECT UNNEST(history_list) FROM junes_rel.users WHERE id = :id", nativeQuery = true)
     List<String> getUserHistory(@Param("id") Integer id);
+
+    @Query(value = "SELECT EXISTS(SELECT 1 FROM junes_rel.users WHERE LOWER(email) = LOWER(:email)) AS email_exists", nativeQuery = true)
+    Boolean doesEmailExistInDatabase(@Param("email") String email);
 }

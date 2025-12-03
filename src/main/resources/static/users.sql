@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS junes_rel.users (
     created_on TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_on TIMESTAMPTZ
 );
+
+CREATE INDEX idx_users_email ON junes_rel.users(email);

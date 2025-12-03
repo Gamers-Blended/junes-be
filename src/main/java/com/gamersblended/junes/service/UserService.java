@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +18,18 @@ public class UserService {
     @Qualifier("jpaUsersRepository")
     private UserRepository userRepository;
 
+    @Autowired
+    private InputValidationService inputValidationService;
+
     public List<User> getAllUsers() {
         List<User> res = userRepository.getAllUsers();
         log.info("Total number of users returned from db: {}", res.size());
         return res;
 
+    }
+
+    public String addUser(CreateUserRequest createUserRequest) {
+        // Validate inputs
+        return inputValidationService.validateEmail(createUserRequest.getEmail());
     }
 }
