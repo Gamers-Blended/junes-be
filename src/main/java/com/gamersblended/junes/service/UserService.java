@@ -4,9 +4,11 @@ import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
+import com.gamersblended.junes.util.ValidationResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +26,9 @@ public class UserService {
     @Autowired
     private EmailValidatorService emailValidator;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     public List<User> getAllUsers() {
         List<User> res = userRepository.getAllUsers();
         log.info("Total number of users returned from db: {}", res.size());
@@ -33,12 +38,25 @@ public class UserService {
 
     public String addUser(CreateUserRequest createUserRequest) {
         // Validate inputs
-        boolean isValidEmail = emailValidator.validateEmail(createUserRequest.getEmail()).isValid();
-        boolean isValidPassword = validatePassword(createUserRequest.getPassword()).isValid();
+        ValidationResult emailValidation = emailValidator.validateEmail(createUserRequest.getEmail());
+        ValidationResult passwordValidation = validatePassword(createUserRequest.getPassword());
+        boolean isValidEmail = emailValidation.isValid();
+        boolean isValidPassword = passwordValidation.isValid();
 
-        if (isValidEmail && isValidPassword) {
-            return "Inputs are valid";
+        if (!(isValidEmail && isValidPassword)) {
+            return "Inputs are not valid: (Email: " + emailValidation.getErrorMessage() + ", Password: " + passwordValidation.getErrorMessage() + ")";
         }
-        return "Inputs are not valid";
+
+        // Encode password
+        String hashedPassword = passwordEncoder.encode(createUserRequest.getPassword());
+
+        User user = new User();
+        user.setPasswordHash(hashedPassword);
+        user.setEmail(createUserRequest.getEmail());
+        user.setIsActive(true);
+        user.setIsEmailVerified(false);
+
+        userRepository.save(user);
+        return "done";
     }
 }

@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users", schema = "junes_rel")
@@ -22,12 +23,9 @@ import java.util.List;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "user_id")
-    private Long userID;
-
-    @Column(nullable = false)
-    private String username;
+    private UUID userID;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
@@ -38,17 +36,20 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    @Column(name = "is_email_verified", nullable = false)
+    private Boolean isEmailVerified = false;
+
     @Column(name = "history_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
-    private List<String> historyList;
+    private List<String> historyList = new ArrayList<>();
 
     @Column(name = "address_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
-    private List<AddressDTO> addressList;
+    private List<AddressDTO> addressList = new ArrayList<>();
 
     @Column(name = "payment_info_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
-    private List<PaymentInfoDTO> paymentInfoList;
+    private List<PaymentInfoDTO> paymentInfoList = new ArrayList<>();
 
     @Column(name = "created_on", nullable = false)
     @CreationTimestamp // Hibernate will automatically set this on insert

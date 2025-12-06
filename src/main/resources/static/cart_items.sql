@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS junes_rel.cart_items (
     cart_item_id BIGSERIAL PRIMARY KEY,
     -- user_id in cart_items must contain only values inside users.user_id (parent)
     -- when users.user_id is deleted, delete all rows in cart_items with same user_id
-    user_id BIGINT NOT NULL REFERENCES junes_rel.users(user_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES junes_rel.users(user_id) ON DELETE CASCADE,
     product_id VARCHAR(255) NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     created_on TIMESTAMPTZ NOT NULL DEFAULT NOW(),
