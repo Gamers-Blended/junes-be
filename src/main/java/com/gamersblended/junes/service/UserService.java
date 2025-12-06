@@ -7,8 +7,8 @@ import com.gamersblended.junes.util.EmailValidatorService;
 import com.gamersblended.junes.util.ValidationResult;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +20,23 @@ import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
 @Service
 public class UserService {
 
-    @Autowired
-    @Qualifier("jpaUsersRepository")
+    @Value("${baseURL:}")
+    private String baseURL;
+
     private UserRepository userRepository;
-
-    @Autowired
-    private EmailValidatorService emailValidator;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
+    private EmailValidatorService emailValidator;
+    private EmailVerificationTokenService tokenService;
+
+    public UserService(
+            @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
+            EmailValidatorService emailValidator,
+            EmailVerificationTokenService tokenService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.emailValidator = emailValidator;
+        this.tokenService = tokenService;
+    }
 
     public List<User> getAllUsers() {
         List<User> res = userRepository.getAllUsers();
@@ -60,8 +68,12 @@ public class UserService {
         user.setEmail(createUserRequest.getEmail());
         user.setIsActive(true);
         user.setIsEmailVerified(false);
-
         userRepository.save(user);
+
+        String token = tokenService.generateVerificationToken(createUserRequest.getEmail());
+
+        String verificationLink = baseURL + token;
+
         return "done";
     }
 }
