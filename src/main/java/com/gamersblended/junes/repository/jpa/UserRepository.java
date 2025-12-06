@@ -2,6 +2,7 @@ package com.gamersblended.junes.repository.jpa;
 
 import com.gamersblended.junes.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,6 +18,10 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query(value = "SELECT UNNEST(history_list) FROM junes_rel.users WHERE id = :id", nativeQuery = true)
     List<String> getUserHistory(@Param("id") Integer id);
 
-    @Query(value = "SELECT EXISTS(SELECT 1 FROM junes_rel.users WHERE LOWER(email) = LOWER(:email)) AS email_exists", nativeQuery = true)
-    Boolean doesEmailExistInDatabase(@Param("email") String email);
+    @Query(value = "SELECT EXISTS(SELECT 1 FROM junes_rel.users WHERE LOWER(email) = LOWER(:email) AND is_email_verified = true) AS email_exists", nativeQuery = true)
+    Boolean isEmailVerified(@Param("email") String email);
+
+    @Modifying
+    @Query(value = "DELETE FROM junes_rel.users WHERE email = :email AND is_email_verified = false", nativeQuery = true)
+    int deleteAllUnverifiedRecordsForEmail(@Param("email") String email);
 }

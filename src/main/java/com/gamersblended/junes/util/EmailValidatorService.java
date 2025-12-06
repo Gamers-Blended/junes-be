@@ -38,8 +38,8 @@ public class EmailValidatorService {
             errorList.add("Invalid email format");
         }
 
-        if (userRepository.doesEmailExistInDatabase(email)) {
-            errorList.add("Email already exists, please use another email");
+        if (userRepository.isEmailVerified(email)) {
+            errorList.add("Email is already verified");
         }
 
         return new ValidationResult(EMAIL, errorList.isEmpty(), errorList);

@@ -5,6 +5,7 @@ import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
 import com.gamersblended.junes.util.ValidationResult;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,6 +37,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public String addUser(CreateUserRequest createUserRequest) {
         // Validate inputs
         ValidationResult emailValidation = emailValidator.validateEmail(createUserRequest.getEmail());
@@ -46,6 +48,9 @@ public class UserService {
         if (!(isValidEmail && isValidPassword)) {
             return "Inputs are not valid: (Email: " + emailValidation.getErrorMessage() + ", Password: " + passwordValidation.getErrorMessage() + ")";
         }
+
+        // Delete unverified attempts of same email
+        userRepository.deleteAllUnverifiedRecordsForEmail(createUserRequest.getEmail());
 
         // Encode password
         String hashedPassword = passwordEncoder.encode(createUserRequest.getPassword());
