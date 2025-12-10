@@ -25,15 +25,18 @@ public class UserService {
 
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
+    private EmailService emailService;
     private EmailValidatorService emailValidator;
     private EmailVerificationTokenService tokenService;
 
     public UserService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
+            EmailService emailService,
             EmailValidatorService emailValidator,
             EmailVerificationTokenService tokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
         this.emailValidator = emailValidator;
         this.tokenService = tokenService;
     }
@@ -73,6 +76,8 @@ public class UserService {
         String token = tokenService.generateVerificationToken(createUserRequest.getEmail());
 
         String verificationLink = baseURL + token;
+
+        emailService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
 
         return "done";
     }
