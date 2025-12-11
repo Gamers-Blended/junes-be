@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository("jpaUsersRepository") // JPA repository bean
 public interface UserRepository extends JpaRepository<User, Integer> {
@@ -24,4 +25,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Modifying
     @Query(value = "DELETE FROM junes_rel.users WHERE email = :email AND is_email_verified = false", nativeQuery = true)
     int deleteAllUnverifiedRecordsForEmail(@Param("email") String email);
+
+    @Query(value = "SELECT * FROM junes_rel.users WHERE LOWER(email) = LOWER(:email)", nativeQuery = true)
+    Optional<User> getUserByEmail(@Param("email") String email);
+
 }

@@ -11,10 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
 public class UserController {
 
-    private UserService userService;
+    private final UserService userService;
 
     public UserController(UserService userService) {
         this.userService = userService;
@@ -45,4 +42,11 @@ public class UserController {
         }
     }
 
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        if (userService.verifyEmail(token)) {
+            return ResponseEntity.ok("Email verified successfully");
+        }
+        return ResponseEntity.badRequest().body("Invalid or expired verification link");
+    }
 }

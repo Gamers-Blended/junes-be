@@ -23,11 +23,11 @@ public class UserService {
     @Value("${baseURL:}")
     private String baseURL;
 
-    private UserRepository userRepository;
-    private PasswordEncoder passwordEncoder;
-    private EmailService emailService;
-    private EmailValidatorService emailValidator;
-    private EmailVerificationTokenService tokenService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final EmailValidatorService emailValidator;
+    private final EmailVerificationTokenService tokenService;
 
     public UserService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
@@ -70,15 +70,29 @@ public class UserService {
         user.setPasswordHash(hashedPassword);
         user.setEmail(createUserRequest.getEmail());
         user.setIsActive(true);
-        user.setIsEmailVerified(false);
+
+        String token = tokenService.generateVerificationToken(createUserRequest.getEmail(), user);
         userRepository.save(user);
 
-        String token = tokenService.generateVerificationToken(createUserRequest.getEmail());
-
-        String verificationLink = baseURL + token;
+        String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
 
         emailService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
 
         return "User added";
+    }
+
+    @Transactional
+    public boolean verifyEmail(String token) {
+        try {
+            if (!tokenService.isTokenValid(token)) {
+                return false;
+            }
+            tokenService.markAsVerified(token);
+        } catch (Exception ex) {
+            log.error("Exception in verifying token: ", ex);
+            return false;
+        }
+
+        return true;
     }
 }

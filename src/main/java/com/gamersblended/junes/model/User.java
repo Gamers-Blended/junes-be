@@ -39,6 +39,12 @@ public class User {
     @Column(name = "is_email_verified", nullable = false)
     private Boolean isEmailVerified = false;
 
+    @Column(name = "verification_token_hash")
+    private String verificationTokenHash;
+
+    @Column(name = "verification_token_issued_at")
+    private Long verificationTokenIssuedAt;
+
     @Column(name = "history_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> historyList = new ArrayList<>();

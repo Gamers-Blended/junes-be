@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS junes_rel.users (
     email VARCHAR(255) NOT NULL,
     is_active BOOLEAN NOT NULL,
     is_email_verified BOOLEAN NOT NULL,
+    verification_token_hash TEXT,
+    verification_token_issued_at BIGINT,
     history_list JSONB NOT NULL DEFAULT '[]',
     address_list JSONB NOT NULL DEFAULT '[]',
     payment_info_list JSONB NOT NULL DEFAULT '[]',
