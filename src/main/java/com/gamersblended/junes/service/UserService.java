@@ -79,6 +79,6 @@ public class UserService {
 
         emailService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
 
-        return "done";
+        return "User added";
     }
 }

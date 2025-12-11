@@ -38,7 +38,11 @@ public class UserController {
     })
     @PostMapping("/add-user")
     public ResponseEntity<String> addUser(@RequestBody CreateUserRequest createUserRequest) {
-        return ResponseEntity.ok(userService.addUser(createUserRequest));
+        try {
+            return ResponseEntity.ok(userService.addUser(createUserRequest));
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
 }
