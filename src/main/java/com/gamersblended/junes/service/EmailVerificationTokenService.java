@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import io.jsonwebtoken.JwtException;
@@ -78,7 +79,7 @@ public class EmailVerificationTokenService {
 
             // Retrieve user and check if latest token
             User user = userRepository.getUserByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
 
             // Check if user is already verified
             if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
@@ -116,7 +117,7 @@ public class EmailVerificationTokenService {
     public void markAsVerified(String token) {
         String email = extractEmail(token);
         User user = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         user.setIsEmailVerified(true);
         user.setVerificationTokenHash(null); // Clear token after verification

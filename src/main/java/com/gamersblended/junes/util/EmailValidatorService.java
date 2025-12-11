@@ -14,7 +14,7 @@ public class EmailValidatorService {
     private static final int EMAIL_MAX_LENGTH = 254;
 
     private static final EmailValidator emailValidator = EmailValidator.getInstance();
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     public EmailValidatorService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -38,7 +38,7 @@ public class EmailValidatorService {
             errorList.add("Invalid email format");
         }
 
-        if (userRepository.isEmailVerified(email)) {
+        if (Boolean.TRUE.equals(userRepository.isEmailVerified(email))) {
             errorList.add("Email is already verified");
         }
 

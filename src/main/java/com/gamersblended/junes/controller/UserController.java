@@ -3,6 +3,8 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.dto.UsersDTO;
+import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
+import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +41,21 @@ public class UserController {
         try {
             return ResponseEntity.ok(userService.addUser(createUserRequest));
         } catch (Exception ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerificationEmail(@RequestParam String email) {
+        try {
+            if (userService.resendVerificationEmail(email)) {
+                return ResponseEntity.ok("Verification email successfully resent");
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in resending verification email");
+        } catch (UserNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        } catch (EmailAlreadyVerifiedException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
         }
     }
 
@@ -47,6 +64,6 @@ public class UserController {
         if (userService.verifyEmail(token)) {
             return ResponseEntity.ok("Email verified successfully");
         }
-        return ResponseEntity.badRequest().body("Invalid or expired verification link");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification link");
     }
 }

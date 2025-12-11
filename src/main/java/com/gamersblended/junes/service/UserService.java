@@ -1,6 +1,8 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CreateUserRequest;
+import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
+import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
@@ -79,6 +81,31 @@ public class UserService {
         emailService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
 
         return "User added";
+    }
+
+    @Transactional
+    public boolean resendVerificationEmail(String email) {
+
+        User user = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
+            throw new EmailAlreadyVerifiedException("Email is already verified");
+        }
+
+        try {
+            String token = tokenService.generateVerificationToken(email, user);
+            userRepository.save(user);
+
+            String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
+
+            emailService.sendVerificationEmail(email, verificationLink);
+
+            return true;
+        } catch (Exception ex) {
+            log.error("Exception in resending verification email to {}: ", email, ex);
+            return false;
+        }
     }
 
     @Transactional
