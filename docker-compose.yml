@@ -66,3 +66,4 @@ volumes:
   mongodb_data:
   pgadmin_data:
   redis-data:
+  rabbitmq_data:
