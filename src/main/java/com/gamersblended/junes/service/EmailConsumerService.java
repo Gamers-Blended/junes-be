@@ -1,29 +1,20 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.dto.EmailRequest;
 import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.client.MailgunClient;
 import com.mailgun.model.message.Message;
 import com.mailgun.model.message.MessageResponse;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
-
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
-public class EmailService {
-
-    @Value("${app.name:Junes}")
-    private String appName;
-
-    @Value("${app.support.email:support@junes.com}")
-    private String supportEmail;
+public class EmailConsumerService {
 
     @Value("${mailgun.domain}")
     private String domain;
@@ -31,46 +22,27 @@ public class EmailService {
     @Value("${mailgun.from.email}")
     private String fromEmail;
 
-    private final TemplateEngine templateEngine;
     private final MailgunMessagesApi mailgunMessagesApi;
 
     private static final int MAX_RETRY_ATTEMPTS = 3;
     private static final long RETRY_DELAY_MS = 2000;
 
-    public EmailService(TemplateEngine templateEngine, @Value("${mailgun.api.key}") String apiKey) {
-        this.templateEngine = templateEngine;
+    public EmailConsumerService(@Value("${mailgun.api.key}") String apiKey) {
         this.mailgunMessagesApi = MailgunClient.config(apiKey).createApi(MailgunMessagesApi.class);
     }
 
-    @Async
-    public CompletableFuture<Boolean> sendVerificationEmail(String toEmail, String verificationLink) {
-        log.info("Preparing verification email for {}", toEmail);
+    @RabbitListener(queues = "${email.queue.name}")
+    public void consumeEmailRequest(EmailRequest emailRequest) {
+        log.info("Received email request from queue: {}", emailRequest.getTo());
 
-        try {
-            Context context = new Context();
-            context.setVariable("appName", appName);
-            context.setVariable("verificationLink", verificationLink);
-            context.setVariable("supportEmail", supportEmail);
+        boolean isSentSuccessfully = sendEmailWithRetry(
+                emailRequest.getTo(),
+                emailRequest.getSubject(),
+                emailRequest.getBody()
+        );
 
-            String htmlContent = templateEngine.process("email/verification", context);
-
-            boolean sent = sendEmailWithRetry(
-                    toEmail,
-                    "Verify Your Email - " + appName,
-                    htmlContent
-            );
-
-            if (sent) {
-                log.info("Verification email sent successfully to: {}", toEmail);
-            } else {
-                log.error("Failed to send verification email to: {}", toEmail);
-            }
-
-            return CompletableFuture.completedFuture(sent);
-
-        } catch (Exception ex) {
-            log.error("Error preparing verification email for {}: {}", toEmail, ex.getMessage(), ex);
-            return CompletableFuture.completedFuture(false);
+        if (!isSentSuccessfully) {
+            log.error("Failed to send email to: {} after all retry attempts", emailRequest.getTo());
         }
     }
 
@@ -119,7 +91,6 @@ public class EmailService {
 
         MessageResponse response = mailgunMessagesApi.sendMessage(domain, message);
         log.info("Email sent successfully to: {}, Message ID: {}", to, response.getId());
-
     }
 
     /**

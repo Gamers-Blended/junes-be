@@ -27,18 +27,18 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
+    private final EmailProducerService emailProducerService;
     private final EmailValidatorService emailValidator;
     private final EmailVerificationTokenService tokenService;
 
     public UserService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
-            EmailService emailService,
+            EmailProducerService emailProducerService,
             EmailValidatorService emailValidator,
             EmailVerificationTokenService tokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
+        this.emailProducerService = emailProducerService;
         this.emailValidator = emailValidator;
         this.tokenService = tokenService;
     }
@@ -78,7 +78,7 @@ public class UserService {
 
         String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
 
-        emailService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
+        emailProducerService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
 
         return "User added";
     }
@@ -99,7 +99,7 @@ public class UserService {
 
             String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
 
-            emailService.sendVerificationEmail(email, verificationLink);
+            emailProducerService.sendVerificationEmail(email, verificationLink);
 
             return true;
         } catch (Exception ex) {
