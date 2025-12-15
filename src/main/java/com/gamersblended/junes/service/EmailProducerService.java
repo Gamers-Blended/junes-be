@@ -11,6 +11,8 @@ import org.thymeleaf.context.Context;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.EXPIRY_HOURS;
+
 @Slf4j
 @Service
 public class EmailProducerService {
@@ -69,6 +71,35 @@ public class EmailProducerService {
         } catch (Exception ex) {
             log.error("Exception in queuing verification email for {}: {}", toEmail, ex.getMessage(), ex);
             throw new RuntimeException("Failed to queue verification email", ex);
+        }
+    }
+
+    public void sendPasswordResetEmail(String toEmail, String resetLink) {
+        log.info("Queuing for password reset email for: {}", toEmail);
+
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("appName", appName);
+            variables.put("supportEmail", appName);
+            variables.put("resetLink", resetLink);
+            variables.put("expiryHours", EXPIRY_HOURS);
+
+            Context context = new Context();
+            context.setVariables(variables);
+            String htmlContent = templateEngine.process("email/password-reset", context);
+
+            EmailRequest emailRequest = EmailRequest.builder()
+                    .to(toEmail)
+                    .subject("Password Reset Request - " + appName)
+                    .body(htmlContent)
+                    .build();
+
+            // Send to queue
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            log.info("Password reset email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing password reset email for {}: {}", toEmail, ex.getMessage(), ex);
+            throw new RuntimeException("Failed to queue password reset email", ex);
         }
     }
 }

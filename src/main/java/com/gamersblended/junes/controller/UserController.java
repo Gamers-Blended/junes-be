@@ -2,15 +2,18 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
+import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.UsersDTO;
 import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
 import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +28,11 @@ import java.util.concurrent.TimeUnit;
 public class UserController {
 
     private final UserService userService;
+    private final PasswordResetService passwordResetService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, PasswordResetService passwordResetService) {
         this.userService = userService;
+        this.passwordResetService = passwordResetService;
     }
 
     @Operation(summary = "Adds a new user to database")
@@ -65,5 +70,14 @@ public class UserController {
             return ResponseEntity.ok("Email verified successfully");
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification link");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody PasswordResetRequestDTO resetRequestDTO) {
+        try {
+            return ResponseEntity.ok(passwordResetService.initiatePasswordReset(resetRequestDTO.getEmail()));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in sending password reset email");
+        }
     }
 }
