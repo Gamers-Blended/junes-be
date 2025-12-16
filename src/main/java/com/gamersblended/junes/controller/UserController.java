@@ -3,6 +3,7 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.dto.PasswordResetRequestDTO;
+import com.gamersblended.junes.dto.ForgotPasswordRequestDTO;
 import com.gamersblended.junes.dto.UsersDTO;
 import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
 import com.gamersblended.junes.exception.UserNotFoundException;
@@ -73,11 +74,21 @@ public class UserController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@Valid @RequestBody PasswordResetRequestDTO resetRequestDTO) {
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO resetRequestDTO) {
         try {
             return ResponseEntity.ok(passwordResetService.initiatePasswordReset(resetRequestDTO.getEmail()));
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in sending password reset email");
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordResetRequestDTO resetDTO) {
+        try {
+            return ResponseEntity.ok(passwordResetService.resetPassword(resetDTO.getToken(), resetDTO.getNewPassword()));
+        } catch (Exception ex) {
+            log.error("Exception in resetting password: ", ex);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in resetting password: " + ex.getMessage());
         }
     }
 }
