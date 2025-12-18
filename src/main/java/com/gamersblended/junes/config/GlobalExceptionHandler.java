@@ -1,5 +1,6 @@
 package com.gamersblended.junes.config;
 
+import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -57,4 +58,10 @@ public class GlobalExceptionHandler {
         body.put(PATH, request.getDescription(false).replace("uri=", ""));
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(InputValidationException.class)
+    public ResponseEntity<String> handlerInputValidation(InputValidationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
 }

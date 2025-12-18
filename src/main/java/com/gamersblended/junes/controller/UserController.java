@@ -44,11 +44,8 @@ public class UserController {
     })
     @PostMapping("/add-user")
     public ResponseEntity<String> addUser(@RequestBody CreateUserRequest createUserRequest) {
-        try {
-            return ResponseEntity.ok(userService.addUser(createUserRequest));
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        }
+        userService.addUser(createUserRequest);
+        return ResponseEntity.ok("User added with unverified email");
     }
 
     @PostMapping("/resend-verification")

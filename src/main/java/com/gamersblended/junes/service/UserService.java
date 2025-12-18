@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
+import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
@@ -51,7 +52,7 @@ public class UserService {
     }
 
     @Transactional
-    public String addUser(CreateUserRequest createUserRequest) {
+    public void addUser(CreateUserRequest createUserRequest) {
         // Validate inputs
         ValidationResult emailValidation = emailValidator.validateEmail(createUserRequest.getEmail());
         ValidationResult passwordValidation = validatePassword(createUserRequest.getPassword());
@@ -59,7 +60,7 @@ public class UserService {
         boolean isValidPassword = passwordValidation.isValid();
 
         if (!(isValidEmail && isValidPassword)) {
-            return "Inputs are not valid: (Email: " + emailValidation.getErrorMessage() + ", Password: " + passwordValidation.getErrorMessage() + ")";
+            throw new InputValidationException("Inputs are not valid: (Email: " + emailValidation.getErrorMessage() + ", Password: " + passwordValidation.getErrorMessage() + ")");
         }
 
         // Delete unverified attempts of same email
@@ -79,8 +80,6 @@ public class UserService {
         String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
 
         emailProducerService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
-
-        return "User added";
     }
 
     @Transactional
