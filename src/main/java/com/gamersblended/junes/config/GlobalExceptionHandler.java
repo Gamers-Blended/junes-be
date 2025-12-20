@@ -3,6 +3,7 @@ package com.gamersblended.junes.config;
 import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
+import com.gamersblended.junes.exception.QueueEmailException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -30,7 +31,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, LocalDateTime.now());
         body.put(STATUS, HttpStatus.NOT_FOUND.value());
-        body.put(ERROR, "Not Found");
+        body.put(ERROR, HttpStatus.NOT_FOUND.getReasonPhrase());
         body.put(MESSAGE, ex.getMessage());
         body.put(PATH, request.getDescription(false).replace("uri=", ""));
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
@@ -41,10 +42,32 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, LocalDateTime.now());
         body.put(STATUS, HttpStatus.BAD_REQUEST.value());
-        body.put(ERROR, "Bad Request");
+        body.put(ERROR, HttpStatus.BAD_REQUEST.getReasonPhrase());
         body.put(MESSAGE, ex.getMessage());
         body.put(PATH, request.getDescription(false).replace("uri=", ""));
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InputValidationException.class)
+    public ResponseEntity<Object> handleInputValidation(InputValidationException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, LocalDateTime.now());
+        body.put(STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR, HttpStatus.BAD_REQUEST.getReasonPhrase());
+        body.put(MESSAGE, ex.getMessage());
+        body.put(PATH, request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(QueueEmailException.class)
+    public ResponseEntity<Object> handleQueueEmail(QueueEmailException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, LocalDateTime.now());
+        body.put(STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put(ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        body.put(MESSAGE, ex.getMessage());
+        body.put(PATH, request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // Generic exception handler for unhandled exceptions
@@ -53,15 +76,9 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, LocalDateTime.now());
         body.put(STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put(ERROR, "Internal Server Error");
+        body.put(ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
         body.put(MESSAGE, "An unexpected error occurred: " + ex.getMessage());
         body.put(PATH, request.getDescription(false).replace("uri=", ""));
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    @ExceptionHandler(InputValidationException.class)
-    public ResponseEntity<String> handlerInputValidation(InputValidationException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-    }
-
 }

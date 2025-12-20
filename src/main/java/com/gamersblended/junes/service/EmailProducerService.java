@@ -1,6 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.EmailRequest;
+import com.gamersblended.junes.exception.QueueEmailException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,7 +71,7 @@ public class EmailProducerService {
             log.info("Verification email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
             log.error("Exception in queuing verification email for {}: {}", toEmail, ex.getMessage(), ex);
-            throw new RuntimeException("Failed to queue verification email", ex);
+            throw new QueueEmailException("Failed to queue verification email");
         }
     }
 
@@ -99,7 +100,7 @@ public class EmailProducerService {
             log.info("Password reset email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
             log.error("Exception in queuing password reset email for {}: {}", toEmail, ex.getMessage(), ex);
-            throw new RuntimeException("Failed to queue password reset email", ex);
+            throw new QueueEmailException("Failed to queue password reset email");
         }
     }
 }
