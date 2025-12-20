@@ -20,10 +20,10 @@ import java.util.Date;
 @Service
 public class EmailVerificationTokenService {
 
-    @Value("${jwt.verification.secret}")
-    private String secretKey;
+    @Value("${jwt.verification.email.secret}")
+    private String emailSecretKey;
 
-    @Value("${jwt.verification.expiration:86400000}") // 24 hours default
+    @Value("${jwt.verification.email.expiration:86400000}") // 24 hours default
     private long expirationTime;
 
     private final UserRepository userRepository;
@@ -34,7 +34,7 @@ public class EmailVerificationTokenService {
     }
 
     public SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(emailSecretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

@@ -30,8 +30,8 @@ import java.util.Map;
 @Component
 public class RateLimitAspect {
 
-    @Value("${jwt.verification.secret}")
-    private String secretKey;
+    @Value("${jwt.verification.access.secret}")
+    private String accessSecretKey;
 
     private final RateLimiterService rateLimiterService;
     private final EmailVerificationTokenService tokenService;
