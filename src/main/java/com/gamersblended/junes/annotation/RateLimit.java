@@ -26,4 +26,7 @@ public @interface RateLimit {
     // Whether to use per-user rate limiting
     // If true, append user identifier to the key
     boolean perUser() default false;
+
+    // Field name from request body to use as key
+    String keyFromRequestBody() default "";
 }

@@ -33,7 +33,7 @@ public class EmailVerificationTokenService {
         this.userRepository = userRepository;
     }
 
-    private SecretKey getSigningKey() {
+    public SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }

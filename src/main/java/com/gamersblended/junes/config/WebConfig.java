@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -25,19 +24,6 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Value("${cors.max-age}")
     private int maxAge;
-
-    private final RateLimitInterceptor rateLimitInterceptor;
-
-    public WebConfig(RateLimitInterceptor rateLimitInterceptor) {
-        this.rateLimitInterceptor = rateLimitInterceptor;
-    }
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(rateLimitInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns("/actuator/**");
-    }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {

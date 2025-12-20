@@ -43,6 +43,7 @@ public class UserController {
                             schema = @Schema(implementation = UsersDTO.class))})
     })
     @PostMapping("/add-user")
+    @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
     public ResponseEntity<String> addUser(@RequestBody CreateUserRequest createUserRequest) {
         userService.addUser(createUserRequest);
         return ResponseEntity.ok("User added with unverified email");
