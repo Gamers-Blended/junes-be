@@ -70,7 +70,7 @@ public class EmailProducerService {
             rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
             log.info("Verification email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
-            log.error("Exception in queuing verification email for {}: {}", toEmail, ex.getMessage(), ex);
+            log.error("Exception in queuing verification email for {}: {}", toEmail, ex.getMessage());
             throw new QueueEmailException("Failed to queue verification email");
         }
     }
@@ -99,7 +99,7 @@ public class EmailProducerService {
             rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
             log.info("Password reset email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
-            log.error("Exception in queuing password reset email for {}: {}", toEmail, ex.getMessage(), ex);
+            log.error("Exception in queuing password reset email for {}: {}", toEmail, ex.getMessage());
             throw new QueueEmailException("Failed to queue password reset email");
         }
     }

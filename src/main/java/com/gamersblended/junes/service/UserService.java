@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
+import com.gamersblended.junes.exception.EmailDeliveryException;
 import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.User;
@@ -31,6 +32,7 @@ public class UserService {
     private final EmailProducerService emailProducerService;
     private final EmailValidatorService emailValidator;
     private final EmailVerificationTokenService tokenService;
+    public static final String VERIFY_EMAIL_ENDPOINT = "junes/api/v1/user/verify?token=";
 
     public UserService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
@@ -53,58 +55,65 @@ public class UserService {
 
     @Transactional
     public void addUser(CreateUserRequest createUserRequest) {
-        // Validate inputs
-        ValidationResult emailValidation = emailValidator.validateEmail(createUserRequest.getEmail());
+        String userEmail = createUserRequest.getEmail();
+        ValidationResult emailValidation = emailValidator.validateEmail(userEmail);
         ValidationResult passwordValidation = validatePassword(createUserRequest.getPassword());
         boolean isValidEmail = emailValidation.isValid();
         boolean isValidPassword = passwordValidation.isValid();
 
         if (!(isValidEmail && isValidPassword)) {
+            log.error("Inputs are not valid: (Email: {}, Password: {})", emailValidation.getErrorMessage(), passwordValidation.getErrorMessage());
             throw new InputValidationException("Inputs are not valid: (Email: " + emailValidation.getErrorMessage() + ", Password: " + passwordValidation.getErrorMessage() + ")");
         }
 
         // Delete unverified attempts of same email
-        userRepository.deleteAllUnverifiedRecordsForEmail(createUserRequest.getEmail());
+        userRepository.deleteAllUnverifiedRecordsForEmail(userEmail);
 
-        // Encode password
         String hashedPassword = passwordEncoder.encode(createUserRequest.getPassword());
 
         User user = new User();
         user.setPasswordHash(hashedPassword);
-        user.setEmail(createUserRequest.getEmail());
+        user.setEmail(userEmail);
         user.setIsActive(true);
 
-        String token = tokenService.generateVerificationToken(createUserRequest.getEmail(), user);
-        userRepository.save(user);
+        try {
+            sendVerificationEmail(userEmail, user);
+        } catch (Exception ex) {
+            log.error("Exception in creating new user with email: {}: {}", userEmail, ex.getMessage());
+            throw new EmailDeliveryException("Unable to send verification email");
+        }
 
-        String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
-
-        emailProducerService.sendVerificationEmail(createUserRequest.getEmail(), verificationLink);
     }
 
     @Transactional
-    public boolean resendVerificationEmail(String email) {
-
+    public void resendVerificationEmail(String email) {
         User user = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found with email: {}", email);
+                    return new UserNotFoundException("User not found with email: " + email);
+                });
 
         if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
-            throw new EmailAlreadyVerifiedException("Email is already verified");
+            log.error("{} is already verified", email);
+            throw new EmailAlreadyVerifiedException(email + " is already verified");
         }
 
         try {
-            String token = tokenService.generateVerificationToken(email, user);
-            userRepository.save(user);
-
-            String verificationLink = baseURL + "junes/api/v1/user/verify?token=" + token;
-
-            emailProducerService.sendVerificationEmail(email, verificationLink);
-
-            return true;
+            sendVerificationEmail(email, user);
         } catch (Exception ex) {
-            log.error("Exception in resending verification email to {}: ", email, ex);
-            return false;
+            log.error("Exception in resending verification email to {}: {}", email, ex.getMessage());
+            throw new EmailDeliveryException("Unable to resent verification email");
         }
+
+    }
+
+    private void sendVerificationEmail(String email, User user) {
+        String token = tokenService.generateVerificationToken(email, user);
+        userRepository.save(user);
+
+        String verificationLink = baseURL + VERIFY_EMAIL_ENDPOINT + token;
+
+        emailProducerService.sendVerificationEmail(email, verificationLink);
     }
 
     @Transactional

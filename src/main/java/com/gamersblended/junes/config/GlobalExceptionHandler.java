@@ -1,9 +1,6 @@
 package com.gamersblended.junes.config;
 
-import com.gamersblended.junes.exception.InputValidationException;
-import com.gamersblended.junes.exception.InvalidProductIdException;
-import com.gamersblended.junes.exception.ProductNotFoundException;
-import com.gamersblended.junes.exception.QueueEmailException;
+import com.gamersblended.junes.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -49,7 +46,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InputValidationException.class)
-    public ResponseEntity<Object> handleInputValidation(InputValidationException ex, WebRequest request) {
+    public ResponseEntity<Object> handleInputValidationException(InputValidationException ex, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, LocalDateTime.now());
         body.put(STATUS, HttpStatus.BAD_REQUEST.value());
@@ -60,7 +57,40 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(QueueEmailException.class)
-    public ResponseEntity<Object> handleQueueEmail(QueueEmailException ex, WebRequest request) {
+    public ResponseEntity<Object> handleQueueEmailException(QueueEmailException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, LocalDateTime.now());
+        body.put(STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put(ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        body.put(MESSAGE, ex.getMessage());
+        body.put(PATH, request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Object> handleUserNotFoundException(UserNotFoundException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, LocalDateTime.now());
+        body.put(STATUS, HttpStatus.NOT_FOUND.value());
+        body.put(ERROR, HttpStatus.NOT_FOUND.getReasonPhrase());
+        body.put(MESSAGE, ex.getMessage());
+        body.put(PATH, request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(EmailAlreadyVerifiedException.class)
+    public ResponseEntity<Object> handleEmailAlreadyVerifiedException(EmailAlreadyVerifiedException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, LocalDateTime.now());
+        body.put(STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(ERROR, HttpStatus.BAD_REQUEST.getReasonPhrase());
+        body.put(MESSAGE, ex.getMessage());
+        body.put(PATH, request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EmailDeliveryException.class)
+    public ResponseEntity<Object> handleEmailDeliveryException(EmailDeliveryException ex, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, LocalDateTime.now());
         body.put(STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());

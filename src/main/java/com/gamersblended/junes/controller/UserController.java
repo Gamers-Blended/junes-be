@@ -2,11 +2,9 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.ForgotPasswordRequestDTO;
-import com.gamersblended.junes.dto.UsersDTO;
-import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
-import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.dto.PasswordResetRequestDTO;
+import com.gamersblended.junes.dto.ResponseMessage;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,27 +38,27 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User added, but not verified",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UsersDTO.class))})
+                            schema = @Schema(implementation = ResponseMessage.class))})
     })
     @PostMapping("/add-user")
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
-    public ResponseEntity<String> addUser(@RequestBody CreateUserRequest createUserRequest) {
+    public ResponseEntity<ResponseMessage> addUser(@RequestBody CreateUserRequest createUserRequest) {
+        log.info("Adding new user with email: {}", createUserRequest.getEmail());
         userService.addUser(createUserRequest);
-        return ResponseEntity.ok("User added with unverified email");
+        return ResponseEntity.ok(new ResponseMessage("User added with unverified email"));
     }
 
+    @Operation(summary = "Resend verification link to new user's email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Verification email successfully resent",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))})
+    })
     @PostMapping("/resend-verification")
-    public ResponseEntity<String> resendVerificationEmail(@RequestParam String email) {
-        try {
-            if (userService.resendVerificationEmail(email)) {
-                return ResponseEntity.ok("Verification email successfully resent");
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in resending verification email");
-        } catch (UserNotFoundException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-        } catch (EmailAlreadyVerifiedException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        }
+    public ResponseEntity<ResponseMessage> resendVerificationEmail(@RequestParam String email) {
+        log.info("Resending verification email to: {}", email);
+        userService.resendVerificationEmail(email);
+        return ResponseEntity.ok(new ResponseMessage("Verification email successfully resent"));
     }
 
     @GetMapping("/verify")
