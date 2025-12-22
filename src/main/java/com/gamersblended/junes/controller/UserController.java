@@ -55,6 +55,7 @@ public class UserController {
                             schema = @Schema(implementation = ResponseMessage.class))})
     })
     @PostMapping("/resend-verification")
+    @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
     public ResponseEntity<ResponseMessage> resendVerificationEmail(@RequestParam String email) {
         log.info("Resending verification email to: {}", email);
         userService.resendVerificationEmail(email);
