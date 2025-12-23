@@ -1,10 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
-import com.gamersblended.junes.exception.EmailDeliveryException;
-import com.gamersblended.junes.exception.InputValidationException;
-import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
@@ -16,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
@@ -79,7 +77,7 @@ public class UserService {
         try {
             sendVerificationEmail(userEmail, user);
         } catch (Exception ex) {
-            log.error("Exception in creating new user with email: {}: {}", userEmail, ex.getMessage());
+            log.error("Exception in creating new user with email: {}: ", userEmail, ex);
             throw new EmailDeliveryException("Unable to send verification email");
         }
 
@@ -101,33 +99,30 @@ public class UserService {
         try {
             sendVerificationEmail(email, user);
         } catch (Exception ex) {
-            log.error("Exception in resending verification email to {}: {}", email, ex.getMessage());
+            log.error("Exception in resending verification email to {}: ", email, ex);
             throw new EmailDeliveryException("Unable to resent verification email");
         }
 
     }
 
-    private void sendVerificationEmail(String email, User user) {
+    private void sendVerificationEmail(String email, User user) throws NoSuchAlgorithmException {
         String token = tokenService.generateVerificationToken(email, user);
         userRepository.save(user);
 
         String verificationLink = baseURL + VERIFY_EMAIL_ENDPOINT + token;
 
         emailProducerService.sendVerificationEmail(email, verificationLink);
+
     }
 
     @Transactional
-    public boolean verifyEmail(String token) {
-        try {
-            if (!tokenService.isTokenValid(token)) {
-                return false;
-            }
-            tokenService.markAsVerified(token);
-        } catch (Exception ex) {
-            log.error("Exception in verifying token: ", ex);
-            return false;
+    public void verifyEmail(String token) {
+        if (!tokenService.isTokenValid(token)) {
+            log.error("Invalid or expired token");
+            throw new InvalidTokenException("Invalid or expired token");
         }
 
-        return true;
+        tokenService.markAsVerified(token);
+
     }
 }

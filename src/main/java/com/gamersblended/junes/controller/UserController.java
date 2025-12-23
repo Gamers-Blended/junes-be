@@ -62,12 +62,17 @@ public class UserController {
         return ResponseEntity.ok(new ResponseMessage("Verification email successfully resent"));
     }
 
+    @Operation(summary = "Verify email using token from verification link")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Email verified successfully",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))})
+    })
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-        if (userService.verifyEmail(token)) {
-            return ResponseEntity.ok("Email verified successfully");
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired verification link");
+    public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) {
+        log.info("Verifying email from token...");
+        userService.verifyEmail(token);
+        return ResponseEntity.ok(new ResponseMessage("Email verified successfully"));
     }
 
     @PostMapping("/forgot-password")

@@ -1,12 +1,14 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.exception.VerificationException;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 
+@Slf4j
 @Service
 public class EmailVerificationTokenService {
 
@@ -38,7 +41,7 @@ public class EmailVerificationTokenService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateVerificationToken(String email, User user) {
+    public String generateVerificationToken(String email, User user) throws NoSuchAlgorithmException {
         long issuedAtTime = System.currentTimeMillis();
 
         String token = Jwts.builder()
@@ -98,30 +101,41 @@ public class EmailVerificationTokenService {
             }
 
             return true;
-        } catch (JwtException | IllegalArgumentException ex) {
+        } catch (JwtException | IllegalArgumentException | NoSuchAlgorithmException ex) {
+            log.error("Exception in verifying token: ", ex);
             return false;
         }
     }
 
-    private String hashToken(String token) {
+    private String hashToken(String token) throws NoSuchAlgorithmException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
 
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException ex) {
-            throw new RuntimeException("SHA-256 algorithm not available", ex);
+            log.error("Exception in hashing token: {}", ex);
+            throw new NoSuchAlgorithmException("SHA-256 algorithm not available", ex);
         }
     }
 
     public void markAsVerified(String token) {
         String email = extractEmail(token);
         User user = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found with email: {}", email);
+                    return new UserNotFoundException("User not found with email: " + email);
+                });
 
-        user.setIsEmailVerified(true);
-        user.setVerificationTokenHash(null); // Clear token after verification
-        user.setVerificationTokenIssuedAt(null);
-        userRepository.save(user);
+        try {
+            user.setIsEmailVerified(true);
+            user.setVerificationTokenHash(null); // Clear token after verification
+            user.setVerificationTokenIssuedAt(null);
+            userRepository.save(user);
+        } catch (Exception ex) {
+            log.error("Exception in verifying token in markAsVerified: {}", ex.getMessage());
+            throw new VerificationException("Error in trying to verify : " + user.getEmail());
+        }
+
     }
 }
