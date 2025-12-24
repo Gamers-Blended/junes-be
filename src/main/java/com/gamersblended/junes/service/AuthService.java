@@ -14,13 +14,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 
 import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
 
 @Slf4j
 @Service
-public class UserService {
+public class AuthService {
 
     @Value("${baseURL:}")
     private String baseURL;
@@ -30,9 +29,9 @@ public class UserService {
     private final EmailProducerService emailProducerService;
     private final EmailValidatorService emailValidator;
     private final EmailVerificationTokenService tokenService;
-    public static final String VERIFY_EMAIL_ENDPOINT = "junes/api/v1/user/verify?token=";
+    public static final String VERIFY_EMAIL_ENDPOINT = "junes/api/v1/auth/verify?token=";
 
-    public UserService(
+    public AuthService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
             EmailProducerService emailProducerService,
             EmailValidatorService emailValidator,
@@ -42,13 +41,6 @@ public class UserService {
         this.emailProducerService = emailProducerService;
         this.emailValidator = emailValidator;
         this.tokenService = tokenService;
-    }
-
-    public List<User> getAllUsers() {
-        List<User> res = userRepository.getAllUsers();
-        log.info("Total number of users returned from db: {}", res.size());
-        return res;
-
     }
 
     @Transactional

@@ -52,7 +52,7 @@ public class PasswordResetService {
         resetToken.setExpiryDate(LocalDateTime.now().plusHours(EXPIRY_HOURS));
         tokenRepository.saveAndFlush(resetToken);
 
-        String resetLink = baseURL + "junes/api/v1/user/reset-password?token=" + token;
+        String resetLink = baseURL + "junes/api/v1/auth/reset-password?token=" + token;
 
         emailProducerService.sendPasswordResetEmail(email, resetLink);
 

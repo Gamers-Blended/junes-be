@@ -6,7 +6,7 @@ import com.gamersblended.junes.dto.ForgotPasswordRequestDTO;
 import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.ResponseMessage;
 import com.gamersblended.junes.service.PasswordResetService;
-import com.gamersblended.junes.service.UserService;
+import com.gamersblended.junes.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,15 +22,15 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
-@RequestMapping("junes/api/v1/user")
+@RequestMapping("junes/api/v1/auth")
 @RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
-public class UserController {
+public class AuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
     private final PasswordResetService passwordResetService;
 
-    public UserController(UserService userService, PasswordResetService passwordResetService) {
-        this.userService = userService;
+    public AuthController(AuthService authService, PasswordResetService passwordResetService) {
+        this.authService = authService;
         this.passwordResetService = passwordResetService;
     }
 
@@ -44,7 +44,7 @@ public class UserController {
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
     public ResponseEntity<ResponseMessage> addUser(@RequestBody CreateUserRequest createUserRequest) {
         log.info("Adding new user with email: {}", createUserRequest.getEmail());
-        userService.addUser(createUserRequest);
+        authService.addUser(createUserRequest);
         return ResponseEntity.ok(new ResponseMessage("User added with unverified email"));
     }
 
@@ -58,7 +58,7 @@ public class UserController {
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
     public ResponseEntity<ResponseMessage> resendVerificationEmail(@RequestParam String email) {
         log.info("Resending verification email to: {}", email);
-        userService.resendVerificationEmail(email);
+        authService.resendVerificationEmail(email);
         return ResponseEntity.ok(new ResponseMessage("Verification email successfully resent"));
     }
 
@@ -71,7 +71,7 @@ public class UserController {
     @GetMapping("/verify")
     public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) {
         log.info("Verifying email from token...");
-        userService.verifyEmail(token);
+        authService.verifyEmail(token);
         return ResponseEntity.ok(new ResponseMessage("Email verified successfully"));
     }
 
