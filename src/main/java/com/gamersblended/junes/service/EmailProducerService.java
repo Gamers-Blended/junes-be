@@ -1,6 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.EmailRequest;
+import com.gamersblended.junes.exception.InvalidTemplateException;
 import com.gamersblended.junes.exception.QueueEmailException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.EXPIRY_HOURS;
+import static com.gamersblended.junes.constant.EmailTemplateConstants.*;
 
 @Slf4j
 @Service
@@ -27,6 +29,9 @@ public class EmailProducerService {
     @Value("${app.name:Junes}")
     private String appName;
 
+    @Value("${app.url:}")
+    private String appUrl;
+
     @Value("${app.support.email:support@junes.com}")
     private String supportEmail;
 
@@ -40,37 +45,60 @@ public class EmailProducerService {
 
     public void sendEmailRequest(EmailRequest emailRequest) {
         log.info("Sending email request to queue for: {}", emailRequest.getTo());
+
         rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
         log.info("Email request queued successfully");
+    }
+
+    private Map<String, Object> getCommonVariableMap() {
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("appName", appName);
+        variables.put("supportEmail", appName);
+
+        return variables;
+    }
+
+    private String processTemplate(String type, Map<String, Object> variables) {
+
+        Context context = new Context();
+        context.setVariables(variables);
+
+        return switch (type) {
+            case VERIFICATION -> templateEngine.process("email/verification", context);
+            case PASSWORD_RESET -> templateEngine.process("email/password-reset", context);
+            case WELCOME -> templateEngine.process("email/welcome", context);
+            default -> {
+                log.error("Invalid email template: {}", type);
+                throw new InvalidTemplateException("Invalid email template: " + type);
+            }
+        };
+    }
+
+    private EmailRequest getEmailRequest(String htmlContent, String toEmail, String subject) {
+
+        return EmailRequest.builder()
+                .to(toEmail)
+                .subject(subject)
+                .body(htmlContent)
+                .build();
     }
 
     public void sendVerificationEmail(String toEmail, String verificationLink) {
         log.info("Queuing verification email for {}", toEmail);
 
         try {
-            // Prepare template variables
-            Map<String, Object> variables = new HashMap<>();
-            variables.put("appName", appName);
-            variables.put("supportEmail", appName);
+            Map<String, Object> variables = getCommonVariableMap();
             variables.put("verificationLink", verificationLink);
 
-            // Process template
-            Context context = new Context();
-            context.setVariables(variables);
-            String htmlContent = templateEngine.process("email/verification", context);
+            String htmlContent = processTemplate(VERIFICATION, variables);
 
-            // Create email request
-            EmailRequest emailRequest = EmailRequest.builder()
-                    .to(toEmail)
-                    .subject("Verify Your Email - " + appName)
-                    .body(htmlContent)
-                    .build();
+            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Verify Your Email - " + appName);
 
-            // Send to queue
             rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
             log.info("Verification email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
-            log.error("Exception in queuing verification email for {}: {}", toEmail, ex.getMessage());
+            log.error("Exception in queuing verification email for {}: ", toEmail, ex);
             throw new QueueEmailException("Failed to queue verification email");
         }
     }
@@ -79,28 +107,38 @@ public class EmailProducerService {
         log.info("Queuing for password reset email for: {}", toEmail);
 
         try {
-            Map<String, Object> variables = new HashMap<>();
-            variables.put("appName", appName);
-            variables.put("supportEmail", appName);
+            Map<String, Object> variables = getCommonVariableMap();
             variables.put("resetLink", resetLink);
             variables.put("expiryHours", EXPIRY_HOURS);
 
-            Context context = new Context();
-            context.setVariables(variables);
-            String htmlContent = templateEngine.process("email/password-reset", context);
+            String htmlContent = processTemplate(PASSWORD_RESET, variables);
 
-            EmailRequest emailRequest = EmailRequest.builder()
-                    .to(toEmail)
-                    .subject("Password Reset Request - " + appName)
-                    .body(htmlContent)
-                    .build();
+            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Password Reset Request - " + appName);
 
-            // Send to queue
             rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
             log.info("Password reset email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
-            log.error("Exception in queuing password reset email for {}: {}", toEmail, ex.getMessage());
+            log.error("Exception in queuing password reset email for {}: ", toEmail, ex);
             throw new QueueEmailException("Failed to queue password reset email");
+        }
+    }
+
+    public void sendWelcomeEmail(String toEmail) {
+        log.info("Queuing for welcome email for: {}", toEmail);
+
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("appUrl", appUrl);
+
+            String htmlContent = processTemplate(WELCOME, variables);
+
+            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Welcome to " + appName + "!");
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            log.info("Welcome email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing welcome email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue welcome email");
         }
     }
 }

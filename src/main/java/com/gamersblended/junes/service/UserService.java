@@ -124,5 +124,9 @@ public class UserService {
 
         tokenService.markAsVerified(token);
 
+        String email = tokenService.extractEmail(token);
+
+        emailProducerService.sendWelcomeEmail(email);
+
     }
 }

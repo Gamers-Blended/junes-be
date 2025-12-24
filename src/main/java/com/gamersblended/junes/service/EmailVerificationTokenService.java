@@ -114,7 +114,7 @@ public class EmailVerificationTokenService {
 
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException ex) {
-            log.error("Exception in hashing token: {}", ex);
+            log.error("Exception in hashing token: ", ex);
             throw new NoSuchAlgorithmException("SHA-256 algorithm not available", ex);
         }
     }
@@ -133,7 +133,7 @@ public class EmailVerificationTokenService {
             user.setVerificationTokenIssuedAt(null);
             userRepository.save(user);
         } catch (Exception ex) {
-            log.error("Exception in verifying token in markAsVerified: {}", ex.getMessage());
+            log.error("Exception in verifying token in markAsVerified: ", ex);
             throw new VerificationException("Error in trying to verify : " + user.getEmail());
         }
 

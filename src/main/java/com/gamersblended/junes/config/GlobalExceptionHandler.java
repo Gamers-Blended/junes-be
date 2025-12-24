@@ -122,6 +122,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidTemplateException.class)
+    public ResponseEntity<Object> handleInvalidTemplateException(InvalidTemplateException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, LocalDateTime.now());
+        body.put(STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put(ERROR, HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        body.put(MESSAGE, ex.getMessage());
+        body.put(PATH, request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     // Generic exception handler for unhandled exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
