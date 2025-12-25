@@ -53,7 +53,7 @@ public class AuthController {
     })
     @PostMapping("/add-user")
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
-    public ResponseEntity<ResponseMessage> addUser(@RequestBody CreateUserRequest createUserRequest) {
+    public ResponseEntity<ResponseMessage> addUser(@Valid @RequestBody CreateUserRequest createUserRequest) {
         log.info("Adding new user with email: {}", createUserRequest.getEmail());
         authService.addUser(createUserRequest);
         return ResponseEntity.ok(new ResponseMessage("User added with unverified email"));
