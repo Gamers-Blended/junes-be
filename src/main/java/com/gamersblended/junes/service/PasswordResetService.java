@@ -21,13 +21,14 @@ import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PAS
 @Service
 public class PasswordResetService {
 
-    @Value("${baseURL:}")
-    private String baseURL;
+    @Value("${app.url:}")
+    private String appUrl;
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailProducerService emailProducerService;
     private final PasswordEncoder passwordEncoder;
+    public static final String VERIFY_EMAIL_ENDPOINT = "/resetpassword/";
 
     public PasswordResetService(UserRepository userRepository, PasswordResetTokenRepository tokenRepository,
                                 EmailProducerService emailProducerService, PasswordEncoder passwordEncoder) {
@@ -56,7 +57,8 @@ public class PasswordResetService {
         tokenRepository.saveAndFlush(resetToken);
         log.info("New token generated and saved to database for userID: {}", user.getUserID());
 
-        String resetLink = baseURL + "junes/api/v1/auth/reset-password?token=" + token;
+        // Send to frontend route instead of backend API
+        String resetLink = appUrl + VERIFY_EMAIL_ENDPOINT + token;
 
         emailProducerService.sendPasswordResetEmail(email, resetLink);
 
