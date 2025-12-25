@@ -5,6 +5,7 @@ import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.dto.ForgotPasswordRequest;
 import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.ResponseMessage;
+import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
 import com.gamersblended.junes.exception.EmailDeliveryException;
 import com.gamersblended.junes.exception.QueueEmailException;
 import com.gamersblended.junes.exception.UserNotFoundException;
@@ -62,7 +63,16 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Verification email successfully resent",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ResponseMessage.class))})
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "404", description = "User with given email not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserNotFoundException.class))}),
+            @ApiResponse(responseCode = "400", description = "Email is already verified, no need to verify again",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EmailAlreadyVerifiedException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in sending email",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EmailDeliveryException.class))})
     })
     @PostMapping("/resend-verification")
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
