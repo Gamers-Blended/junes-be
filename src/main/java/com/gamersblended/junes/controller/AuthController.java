@@ -82,9 +82,9 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Reset password successfully sent",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ResponseMessage.class))}),
-            @ApiResponse(responseCode = "404", description = "", content = {@Content(mediaType = "application/json",
+            @ApiResponse(responseCode = "404", description = "User with given email not found", content = {@Content(mediaType = "application/json",
                     schema = @Schema(implementation = UserNotFoundException.class))}),
-            @ApiResponse(responseCode = "500", description = "", content = {@Content(mediaType = "application/json",
+            @ApiResponse(responseCode = "500", description = "Error in queuing email", content = {@Content(mediaType = "application/json",
                     schema = @Schema(implementation = QueueEmailException.class))})
     })
     @PostMapping("/forgot-password")
