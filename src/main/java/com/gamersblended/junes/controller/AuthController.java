@@ -2,7 +2,6 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.dto.ForgotPasswordRequest;
 import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.ResponseMessage;
 import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
@@ -108,9 +107,12 @@ public class AuthController {
                             schema = @Schema(implementation = QueueEmailException.class))})
     })
     @PostMapping("/forgot-password")
-    public ResponseEntity<ResponseMessage> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
-        log.info("Sending reset password email to {}", forgotPasswordRequest.getEmail());
-        passwordResetService.initiatePasswordReset(forgotPasswordRequest.getEmail());
+    public ResponseEntity<ResponseMessage> forgotPassword(@RequestParam
+                                                          @NotBlank(message = "Email is required")
+                                                          @Email(message = "Invalid email format")
+                                                          String email) {
+        log.info("Password reset requested for: {}", email);
+        passwordResetService.initiatePasswordReset(email);
         return ResponseEntity.ok(new ResponseMessage("Reset password successfully sent"));
     }
 
