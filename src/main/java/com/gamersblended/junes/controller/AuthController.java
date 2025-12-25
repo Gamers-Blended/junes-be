@@ -5,10 +5,12 @@ import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.dto.ForgotPasswordRequest;
 import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.ResponseMessage;
+import com.gamersblended.junes.exception.EmailDeliveryException;
 import com.gamersblended.junes.exception.QueueEmailException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.service.AuthService;
 import com.gamersblended.junes.service.PasswordResetService;
+import com.gamersblended.junes.util.ValidationResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -40,7 +42,13 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User added, but not verified",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ResponseMessage.class))})
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Validation checks fail for email and/or password",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationResult.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in sending email",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EmailDeliveryException.class))})
     })
     @PostMapping("/add-user")
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
@@ -82,10 +90,12 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Reset password successfully sent",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ResponseMessage.class))}),
-            @ApiResponse(responseCode = "404", description = "User with given email not found", content = {@Content(mediaType = "application/json",
-                    schema = @Schema(implementation = UserNotFoundException.class))}),
-            @ApiResponse(responseCode = "500", description = "Error in queuing email", content = {@Content(mediaType = "application/json",
-                    schema = @Schema(implementation = QueueEmailException.class))})
+            @ApiResponse(responseCode = "404", description = "User with given email not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserNotFoundException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in queuing email",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = QueueEmailException.class))})
     })
     @PostMapping("/forgot-password")
     public ResponseEntity<ResponseMessage> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
