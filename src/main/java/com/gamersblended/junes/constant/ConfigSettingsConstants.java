@@ -5,6 +5,6 @@ public class ConfigSettingsConstants {
     private ConfigSettingsConstants() {
     }
 
-    public static final int EXPIRY_HOURS = 2;
+    public static final int RESET_PASSWORD_EXPIRY_HOURS = 24;
 
 }

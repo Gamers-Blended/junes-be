@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static com.gamersblended.junes.constant.ConfigSettingsConstants.EXPIRY_HOURS;
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PASSWORD_EXPIRY_HOURS;
 
 @Slf4j
 @Service
@@ -38,10 +38,13 @@ public class PasswordResetService {
     }
 
     @Transactional
-    public String initiatePasswordReset(String email) {
+    public void initiatePasswordReset(String email) {
 
         User user = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found with email: {}", email);
+                    return new UserNotFoundException("User not found");
+                });
 
         tokenRepository.deleteByUserID(user.getUserID());
 
@@ -49,14 +52,14 @@ public class PasswordResetService {
         PasswordResetToken resetToken = new PasswordResetToken();
         resetToken.setToken(token);
         resetToken.setUser(user);
-        resetToken.setExpiryDate(LocalDateTime.now().plusHours(EXPIRY_HOURS));
+        resetToken.setExpiryDate(LocalDateTime.now().plusHours(RESET_PASSWORD_EXPIRY_HOURS));
         tokenRepository.saveAndFlush(resetToken);
+        log.info("New token generated and saved to database for userID: {}", user.getUserID());
 
         String resetLink = baseURL + "junes/api/v1/auth/reset-password?token=" + token;
 
         emailProducerService.sendPasswordResetEmail(email, resetLink);
 
-        return "If the email exists, a reset link has been sent";
     }
 
     public String resetPassword(String token, String newPassword) {

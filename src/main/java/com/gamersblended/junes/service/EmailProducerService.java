@@ -13,7 +13,7 @@ import org.thymeleaf.context.Context;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.gamersblended.junes.constant.ConfigSettingsConstants.EXPIRY_HOURS;
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PASSWORD_EXPIRY_HOURS;
 import static com.gamersblended.junes.constant.EmailTemplateConstants.*;
 
 @Slf4j
@@ -50,6 +50,64 @@ public class EmailProducerService {
         log.info("Email request queued successfully");
     }
 
+    public void sendVerificationEmail(String toEmail, String verificationLink) {
+        log.info("Queuing verification email for {}", toEmail);
+
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("verificationLink", verificationLink);
+
+            String htmlContent = processTemplate(VERIFICATION, variables);
+
+            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Verify Your Email - " + appName);
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            log.info("Verification email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing verification email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue verification email");
+        }
+    }
+
+    public void sendPasswordResetEmail(String toEmail, String resetLink) {
+        log.info("Queuing for password reset email for: {}", toEmail);
+
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("resetLink", resetLink);
+            variables.put("expiryHours", RESET_PASSWORD_EXPIRY_HOURS);
+
+            String htmlContent = processTemplate(PASSWORD_RESET, variables);
+
+            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Password Reset Request - " + appName);
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            log.info("Password reset email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing password reset email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue password reset email");
+        }
+    }
+
+    public void sendWelcomeEmail(String toEmail) {
+        log.info("Queuing for welcome email for: {}", toEmail);
+
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("appUrl", appUrl);
+
+            String htmlContent = processTemplate(WELCOME, variables);
+
+            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Welcome to " + appName + "!");
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            log.info("Welcome email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing welcome email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue welcome email");
+        }
+    }
+
     private Map<String, Object> getCommonVariableMap() {
 
         Map<String, Object> variables = new HashMap<>();
@@ -82,63 +140,5 @@ public class EmailProducerService {
                 .subject(subject)
                 .body(htmlContent)
                 .build();
-    }
-
-    public void sendVerificationEmail(String toEmail, String verificationLink) {
-        log.info("Queuing verification email for {}", toEmail);
-
-        try {
-            Map<String, Object> variables = getCommonVariableMap();
-            variables.put("verificationLink", verificationLink);
-
-            String htmlContent = processTemplate(VERIFICATION, variables);
-
-            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Verify Your Email - " + appName);
-
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
-            log.info("Verification email queued successfully for: {}", toEmail);
-        } catch (Exception ex) {
-            log.error("Exception in queuing verification email for {}: ", toEmail, ex);
-            throw new QueueEmailException("Failed to queue verification email");
-        }
-    }
-
-    public void sendPasswordResetEmail(String toEmail, String resetLink) {
-        log.info("Queuing for password reset email for: {}", toEmail);
-
-        try {
-            Map<String, Object> variables = getCommonVariableMap();
-            variables.put("resetLink", resetLink);
-            variables.put("expiryHours", EXPIRY_HOURS);
-
-            String htmlContent = processTemplate(PASSWORD_RESET, variables);
-
-            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Password Reset Request - " + appName);
-
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
-            log.info("Password reset email queued successfully for: {}", toEmail);
-        } catch (Exception ex) {
-            log.error("Exception in queuing password reset email for {}: ", toEmail, ex);
-            throw new QueueEmailException("Failed to queue password reset email");
-        }
-    }
-
-    public void sendWelcomeEmail(String toEmail) {
-        log.info("Queuing for welcome email for: {}", toEmail);
-
-        try {
-            Map<String, Object> variables = getCommonVariableMap();
-            variables.put("appUrl", appUrl);
-
-            String htmlContent = processTemplate(WELCOME, variables);
-
-            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Welcome to " + appName + "!");
-
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
-            log.info("Welcome email queued successfully for: {}", toEmail);
-        } catch (Exception ex) {
-            log.error("Exception in queuing welcome email for {}: ", toEmail, ex);
-            throw new QueueEmailException("Failed to queue welcome email");
-        }
     }
 }

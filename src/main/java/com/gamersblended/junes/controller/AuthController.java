@@ -2,11 +2,13 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.dto.ForgotPasswordRequestDTO;
+import com.gamersblended.junes.dto.ForgotPasswordRequest;
 import com.gamersblended.junes.dto.PasswordResetRequestDTO;
 import com.gamersblended.junes.dto.ResponseMessage;
-import com.gamersblended.junes.service.PasswordResetService;
+import com.gamersblended.junes.exception.QueueEmailException;
+import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.service.AuthService;
+import com.gamersblended.junes.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -75,13 +77,21 @@ public class AuthController {
         return ResponseEntity.ok(new ResponseMessage("Email verified successfully"));
     }
 
+    @Operation(summary = "Send reset password email to user's email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reset password successfully sent",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "404", description = "", content = {@Content(mediaType = "application/json",
+                    schema = @Schema(implementation = UserNotFoundException.class))}),
+            @ApiResponse(responseCode = "500", description = "", content = {@Content(mediaType = "application/json",
+                    schema = @Schema(implementation = QueueEmailException.class))})
+    })
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO resetRequestDTO) {
-        try {
-            return ResponseEntity.ok(passwordResetService.initiatePasswordReset(resetRequestDTO.getEmail()));
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in sending password reset email");
-        }
+    public ResponseEntity<ResponseMessage> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+        log.info("Sending reset password email to {}", forgotPasswordRequest.getEmail());
+        passwordResetService.initiatePasswordReset(forgotPasswordRequest.getEmail());
+        return ResponseEntity.ok(new ResponseMessage("Reset password successfully sent"));
     }
 
     @PostMapping("/reset-password")
