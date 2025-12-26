@@ -119,8 +119,7 @@ public class EmailVerificationTokenService {
         }
     }
 
-    public void markAsVerified(String token) {
-        String email = extractEmail(token);
+    public void markAsVerified(String email) {
         User user = userRepository.getUserByEmail(email)
                 .orElseThrow(() -> {
                     log.error("User not found with email: {}", email);

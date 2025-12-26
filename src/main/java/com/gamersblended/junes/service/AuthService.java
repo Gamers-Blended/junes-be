@@ -114,9 +114,9 @@ public class AuthService {
             throw new InvalidTokenException("Invalid or expired token");
         }
 
-        tokenService.markAsVerified(token);
-
         String email = tokenService.extractEmail(token);
+
+        tokenService.markAsVerified(email);
 
         emailProducerService.sendWelcomeEmail(email);
 
