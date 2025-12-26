@@ -2,12 +2,9 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.dto.PasswordResetRequestDTO;
+import com.gamersblended.junes.dto.PasswordResetRequest;
 import com.gamersblended.junes.dto.ResponseMessage;
-import com.gamersblended.junes.exception.EmailAlreadyVerifiedException;
-import com.gamersblended.junes.exception.EmailDeliveryException;
-import com.gamersblended.junes.exception.QueueEmailException;
-import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.AuthService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.util.ValidationResult;
@@ -17,8 +14,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -116,13 +114,19 @@ public class AuthController {
         return ResponseEntity.ok(new ResponseMessage("Reset password successfully sent"));
     }
 
+    @Operation(summary = "Reset user's password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reset password successfully sent",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))})
+    })
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordResetRequestDTO resetDTO) {
-        try {
-            return ResponseEntity.ok(passwordResetService.resetPassword(resetDTO.getToken(), resetDTO.getNewPassword()));
-        } catch (Exception ex) {
-            log.error("Exception in resetting password: ", ex);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in resetting password: " + ex.getMessage());
-        }
+    public ResponseEntity<ResponseMessage> resetPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest) {
+        log.info("Triggering password reset...");
+        passwordResetService.resetPassword(passwordResetRequest.getToken(), passwordResetRequest.getNewPassword());
+        return ResponseEntity.ok(new ResponseMessage("Password has been reset successfully"));
     }
 }

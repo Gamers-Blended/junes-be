@@ -64,16 +64,21 @@ public class PasswordResetService {
 
     }
 
-    public String resetPassword(String token, String newPassword) {
+    public void resetPassword(String token, String newPassword) {
 
         PasswordResetToken resetToken = tokenRepository.getTokenEntityByToken(token)
-                .orElseThrow(() -> new InvalidTokenException("Invalid or expired token"));
+                .orElseThrow(() -> {
+                    log.error("Invalid or expired token");
+                    return new InvalidTokenException("Invalid or expired token");
+                });
 
         if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            log.error("Token has expired");
             throw new InvalidTokenException("Token has expired");
         }
 
         if (resetToken.isUsed()) {
+            log.error("Token has already been used");
             throw new InvalidTokenException("Token has already been used");
         }
 
@@ -84,7 +89,6 @@ public class PasswordResetService {
         resetToken.setUsed(true);
         tokenRepository.save(resetToken);
 
-        return "Password has been reset successfully";
     }
 
     private String generateSecureToken() {

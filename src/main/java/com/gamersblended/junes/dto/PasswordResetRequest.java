@@ -8,7 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class PasswordResetRequestDTO {
+public class PasswordResetRequest {
 
     @NotBlank(message = "Token is required")
     private String token;
