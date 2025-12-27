@@ -126,6 +126,7 @@ public class AuthService {
 
     }
 
+    @Transactional
     public LoginResponse login(LoginRequest loginRequest) {
         String email = loginRequest.getEmail();
         User user = userRepository.getUserByEmail(email)
