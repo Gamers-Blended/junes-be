@@ -128,6 +128,24 @@ public class AuthController {
         return ResponseEntity.ok(new ResponseMessage("Password has been reset successfully"));
     }
 
+    @Operation(summary = "Login user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User successfully logged in",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoginResponse.class))}),
+            @ApiResponse(responseCode = "404", description = "User with given email not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserNotFoundException.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid password given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "403", description = "User's account is disabled",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserDisabledException.class))}),
+            @ApiResponse(responseCode = "403", description = "User's email is not verified",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserNotVerifiedException.class))})
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         log.info("Triggering login for user with email: {}...", loginRequest.getEmail());
