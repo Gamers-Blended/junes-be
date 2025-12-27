@@ -1,6 +1,5 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.CreateUserRequest;
 import com.gamersblended.junes.dto.LoginRequest;
 import com.gamersblended.junes.dto.LoginResponse;
 import com.gamersblended.junes.exception.*;
@@ -50,10 +49,9 @@ public class AuthService {
     }
 
     @Transactional
-    public void addUser(CreateUserRequest createUserRequest) {
-        String userEmail = createUserRequest.getEmail();
-        ValidationResult emailValidation = emailValidator.validateEmail(userEmail);
-        ValidationResult passwordValidation = validatePassword(createUserRequest.getPassword());
+    public void addUser(String email, String password) {
+        ValidationResult emailValidation = emailValidator.validateEmail(email);
+        ValidationResult passwordValidation = validatePassword(password);
         boolean isValidEmail = emailValidation.isValid();
         boolean isValidPassword = passwordValidation.isValid();
 
@@ -63,19 +61,19 @@ public class AuthService {
         }
 
         // Delete unverified attempts of same email
-        userRepository.deleteAllUnverifiedRecordsForEmail(userEmail);
+        userRepository.deleteAllUnverifiedRecordsForEmail(email);
 
-        String hashedPassword = passwordEncoder.encode(createUserRequest.getPassword());
+        String hashedPassword = passwordEncoder.encode(password);
 
         User user = new User();
         user.setPasswordHash(hashedPassword);
-        user.setEmail(userEmail);
+        user.setEmail(email);
         user.setIsActive(true);
 
         try {
-            sendVerificationEmail(userEmail, user);
+            sendVerificationEmail(email, user);
         } catch (Exception ex) {
-            log.error("Exception in creating new user with email: {}: ", userEmail, ex);
+            log.error("Exception in creating new user with email: {}: ", email, ex);
             throw new EmailDeliveryException("Unable to send verification email");
         }
 
