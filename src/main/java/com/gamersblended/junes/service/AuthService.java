@@ -1,6 +1,8 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CreateUserRequest;
+import com.gamersblended.junes.dto.LoginRequest;
+import com.gamersblended.junes.dto.LoginResponse;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 
 import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
 
@@ -28,19 +31,22 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final EmailProducerService emailProducerService;
     private final EmailValidatorService emailValidator;
-    private final EmailVerificationTokenService tokenService;
+    private final EmailVerificationTokenService emailTokenService;
+    private final AccessTokenService accessTokenService;
     public static final String VERIFY_EMAIL_ENDPOINT = "junes/api/v1/auth/verify?token=";
 
     public AuthService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
             EmailProducerService emailProducerService,
             EmailValidatorService emailValidator,
-            EmailVerificationTokenService tokenService) {
+            EmailVerificationTokenService emailTokenService,
+            AccessTokenService accessTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailProducerService = emailProducerService;
         this.emailValidator = emailValidator;
-        this.tokenService = tokenService;
+        this.emailTokenService = emailTokenService;
+        this.accessTokenService = accessTokenService;
     }
 
     @Transactional
@@ -98,7 +104,7 @@ public class AuthService {
     }
 
     private void sendVerificationEmail(String email, User user) throws NoSuchAlgorithmException {
-        String token = tokenService.generateVerificationToken(email, user);
+        String token = emailTokenService.generateVerificationToken(email, user);
         userRepository.save(user);
 
         String verificationLink = baseURL + VERIFY_EMAIL_ENDPOINT + token;
@@ -109,16 +115,54 @@ public class AuthService {
 
     @Transactional
     public void verifyEmail(String token) {
-        if (!tokenService.isTokenValid(token)) {
+        if (!emailTokenService.isTokenValid(token)) {
             log.error("Invalid or expired token");
             throw new InvalidTokenException("Invalid or expired token");
         }
 
-        String email = tokenService.extractEmail(token);
+        String email = emailTokenService.extractEmail(token);
 
-        tokenService.markAsVerified(email);
+        emailTokenService.markAsVerified(email);
 
         emailProducerService.sendWelcomeEmail(email);
+
+    }
+
+    public LoginResponse login(LoginRequest loginRequest) {
+        String email = loginRequest.getEmail();
+        User user = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("User not found with email: {}", email);
+                    return new UserNotFoundException("User not found with email: " + email);
+                });
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
+            log.error("Invalid password");
+            throw new InputValidationException("Invalid email or password");
+        }
+
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            log.error("Account is disabled, userID: {}", user.getUserID());
+            throw new UserDisabledException("Account is disabled");
+        }
+
+        if (Boolean.FALSE.equals(user.getIsEmailVerified())) {
+            log.error("User's email is not verified, email: {}", user.getEmail());
+            throw new UserNotVerifiedException("User's email is not verified");
+        }
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        String token = accessTokenService.generateAccessToken(user.getEmail());
+
+        LoginResponse loginResponse = new LoginResponse();
+        loginResponse.setToken(token);
+        loginResponse.setUserID(user.getUserID());
+        loginResponse.setEmail(user.getEmail());
+
+        log.info("User successfully logged in, userID: {}", user.getUserID());
+        return loginResponse;
 
     }
 }

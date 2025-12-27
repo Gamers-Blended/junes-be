@@ -1,9 +1,7 @@
 package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.dto.PasswordResetRequest;
-import com.gamersblended.junes.dto.ResponseMessage;
+import com.gamersblended.junes.dto.*;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.AuthService;
 import com.gamersblended.junes.service.PasswordResetService;
@@ -128,5 +126,11 @@ public class AuthController {
         log.info("Triggering password reset...");
         passwordResetService.resetPassword(passwordResetRequest.getToken(), passwordResetRequest.getNewPassword());
         return ResponseEntity.ok(new ResponseMessage("Password has been reset successfully"));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        log.info("Triggering login for user with email: {}...", loginRequest.getEmail());
+        return ResponseEntity.ok(authService.login(loginRequest));
     }
 }

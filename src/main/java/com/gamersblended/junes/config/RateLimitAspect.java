@@ -2,8 +2,8 @@ package com.gamersblended.junes.config;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CreateUserRequest;
-import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.RateLimiterService;
+import com.gamersblended.junes.util.JwtUtils;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +34,11 @@ public class RateLimitAspect {
     private String accessSecretKey;
 
     private final RateLimiterService rateLimiterService;
-    private final EmailVerificationTokenService tokenService;
+    private final JwtUtils jwtUtils;
 
-    public RateLimitAspect(RateLimiterService rateLimiterService, EmailVerificationTokenService tokenService) {
+    public RateLimitAspect(RateLimiterService rateLimiterService, JwtUtils jwtUtils) {
         this.rateLimiterService = rateLimiterService;
-        this.tokenService = tokenService;
+        this.jwtUtils = jwtUtils;
     }
 
     @Around("@annotation(com.gamersblended.junes.annotation.RateLimit) || " +
@@ -152,7 +152,7 @@ public class RateLimitAspect {
                 String token = authHeader.substring(7);
                 // Extract email (subject) from JWT
                 return Jwts.parser()
-                        .verifyWith(tokenService.getSigningKey())
+                        .verifyWith(jwtUtils.getSigningKey(accessSecretKey))
                         .build()
                         .parseSignedClaims(token)
                         .getPayload()

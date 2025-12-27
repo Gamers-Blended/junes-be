@@ -45,6 +45,9 @@ public class User {
     @Column(name = "verification_token_issued_at")
     private Long verificationTokenIssuedAt;
 
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     @Column(name = "history_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     private List<String> historyList = new ArrayList<>();

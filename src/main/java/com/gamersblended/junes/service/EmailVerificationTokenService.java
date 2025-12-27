@@ -4,20 +4,20 @@ import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.exception.VerificationException;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.util.JwtUtils;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
+
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.IAT_TIMESTAMP;
 
 @Slf4j
 @Service
@@ -30,15 +30,11 @@ public class EmailVerificationTokenService {
     private long expirationTime;
 
     private final UserRepository userRepository;
-    private static final String IAT_TIMESTAMP = "iat_timestamp";
+    private final JwtUtils jwtUtils;
 
-    public EmailVerificationTokenService(UserRepository userRepository) {
+    public EmailVerificationTokenService(UserRepository userRepository, JwtUtils jwtUtils) {
         this.userRepository = userRepository;
-    }
-
-    public SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(emailSecretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        this.jwtUtils = jwtUtils;
     }
 
     public String generateVerificationToken(String email, User user) throws NoSuchAlgorithmException {
@@ -49,7 +45,7 @@ public class EmailVerificationTokenService {
                 .issuedAt(new Date(issuedAtTime))
                 .expiration(new Date(issuedAtTime + expirationTime))
                 .claim(IAT_TIMESTAMP, issuedAtTime)
-                .signWith(getSigningKey())
+                .signWith(jwtUtils.getSigningKey(emailSecretKey))
                 .compact();
 
         String tokenHash = hashToken(token);
@@ -57,12 +53,13 @@ public class EmailVerificationTokenService {
         user.setVerificationTokenHash(tokenHash);
         user.setVerificationTokenIssuedAt(issuedAtTime);
 
+        log.info("Email verification token generated for {}", email);
         return token;
     }
 
     public String extractEmail(String token) {
         return Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(jwtUtils.getSigningKey(emailSecretKey))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -73,7 +70,7 @@ public class EmailVerificationTokenService {
         try {
             // Verify JWT signature and expiration
             var claims = Jwts.parser()
-                    .verifyWith(getSigningKey())
+                    .verifyWith(jwtUtils.getSigningKey(emailSecretKey))
                     .build()
                     .parseSignedClaims(token);
 
@@ -82,21 +79,27 @@ public class EmailVerificationTokenService {
 
             // Retrieve user and check if latest token
             User user = userRepository.getUserByEmail(email)
-                    .orElseThrow(() -> new UserNotFoundException("User not found"));
+                    .orElseThrow(() -> {
+                        log.error("User not found with email: {}", email);
+                        return new UserNotFoundException("User not found with email: " + email);
+                    });
 
             // Check if user is already verified
             if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
+                log.error("{} is already verified", email);
                 return false;
             }
 
             // Check if token is the latest one
             if (null == tokenIssuedAt || !tokenIssuedAt.equals(user.getVerificationTokenIssuedAt())) {
+                log.error("Token is not the latest one issued to user: {}", user.getUserID());
                 return false;
             }
 
             // Check token hash
             String tokenHash = hashToken(token);
             if (!tokenHash.equals(user.getVerificationTokenHash())) {
+                log.error("Token hash do not match");
                 return false;
             }
 
@@ -131,6 +134,8 @@ public class EmailVerificationTokenService {
             user.setVerificationTokenHash(null); // Clear token after verification
             user.setVerificationTokenIssuedAt(null);
             userRepository.save(user);
+
+            log.info("The email: {} has been verified, userID: {}", email, user.getUserID());
         } catch (Exception ex) {
             log.error("Exception in verifying token in markAsVerified: ", ex);
             throw new VerificationException("Error in trying to verify : " + user.getEmail());
