@@ -1,6 +1,6 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.EmailRequest;
+import com.gamersblended.junes.dto.EmailRequestDTO;
 import com.gamersblended.junes.exception.InvalidTemplateException;
 import com.gamersblended.junes.exception.QueueEmailException;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +43,10 @@ public class EmailProducerService {
         this.templateEngine = templateEngine;
     }
 
-    public void sendEmailRequest(EmailRequest emailRequest) {
-        log.info("Sending email request to queue for: {}", emailRequest.getTo());
+    public void sendEmailRequest(EmailRequestDTO emailRequestDTO) {
+        log.info("Sending email request to queue for: {}", emailRequestDTO.getTo());
 
-        rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+        rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
         log.info("Email request queued successfully");
     }
 
@@ -59,9 +59,9 @@ public class EmailProducerService {
 
             String htmlContent = processTemplate(VERIFICATION, variables);
 
-            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Verify Your Email - " + appName);
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Verify Your Email - " + appName);
 
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
             log.info("Verification email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
             log.error("Exception in queuing verification email for {}: ", toEmail, ex);
@@ -79,9 +79,9 @@ public class EmailProducerService {
 
             String htmlContent = processTemplate(PASSWORD_RESET, variables);
 
-            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Password Reset Request - " + appName);
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Password Reset Request - " + appName);
 
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
             log.info("Password reset email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
             log.error("Exception in queuing password reset email for {}: ", toEmail, ex);
@@ -98,9 +98,9 @@ public class EmailProducerService {
 
             String htmlContent = processTemplate(WELCOME, variables);
 
-            EmailRequest emailRequest = getEmailRequest(htmlContent, toEmail, "Welcome to " + appName + "!");
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Welcome to " + appName + "!");
 
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequest);
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
             log.info("Welcome email queued successfully for: {}", toEmail);
         } catch (Exception ex) {
             log.error("Exception in queuing welcome email for {}: ", toEmail, ex);
@@ -133,9 +133,9 @@ public class EmailProducerService {
         };
     }
 
-    private EmailRequest getEmailRequest(String htmlContent, String toEmail, String subject) {
+    private EmailRequestDTO getEmailRequest(String htmlContent, String toEmail, String subject) {
 
-        return EmailRequest.builder()
+        return EmailRequestDTO.builder()
                 .to(toEmail)
                 .subject(subject)
                 .body(htmlContent)

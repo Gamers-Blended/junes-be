@@ -1,6 +1,6 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.EmailRequest;
+import com.gamersblended.junes.dto.EmailRequestDTO;
 import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.client.MailgunClient;
 import com.mailgun.model.message.Message;
@@ -32,17 +32,17 @@ public class EmailConsumerService {
     }
 
     @RabbitListener(queues = "${email.queue.name}")
-    public void consumeEmailRequest(EmailRequest emailRequest) {
-        log.info("Received email request from queue: {}", emailRequest.getTo());
+    public void consumeEmailRequest(EmailRequestDTO emailRequestDTO) {
+        log.info("Received email request from queue: {}", emailRequestDTO.getTo());
 
         boolean isSentSuccessfully = sendEmailWithRetry(
-                emailRequest.getTo(),
-                emailRequest.getSubject(),
-                emailRequest.getBody()
+                emailRequestDTO.getTo(),
+                emailRequestDTO.getSubject(),
+                emailRequestDTO.getBody()
         );
 
         if (!isSentSuccessfully) {
-            log.error("Failed to send email to: {} after all retry attempts", emailRequest.getTo());
+            log.error("Failed to send email to: {} after all retry attempts", emailRequestDTO.getTo());
         }
     }
 
