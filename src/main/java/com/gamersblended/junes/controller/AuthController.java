@@ -70,7 +70,7 @@ public class AuthController {
                             schema = @Schema(implementation = EmailDeliveryException.class))})
     })
     @PostMapping("/resend-verification")
-    @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
+    @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestParam = "email")
     public ResponseEntity<ResponseMessage> resendVerificationEmail(@RequestParam String email) {
         log.info("Resending verification email to: {}", email);
         authService.resendVerificationEmail(email);
