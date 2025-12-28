@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository("jpaUsersRepository") // JPA repository bean
 public interface UserRepository extends JpaRepository<User, Integer> {
@@ -26,4 +27,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query(value = "SELECT * FROM junes_rel.users WHERE LOWER(email) = LOWER(:email)", nativeQuery = true)
     Optional<User> getUserByEmail(@Param("email") String email);
 
+    @Query(value = "SELECT email FROM junes_rel.users WHERE user_id = :userID", nativeQuery = true)
+    Optional<String> getUserEmail(@Param("userID") UUID userID);
 }
