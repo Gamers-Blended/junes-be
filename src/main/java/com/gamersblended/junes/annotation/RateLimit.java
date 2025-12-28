@@ -29,4 +29,7 @@ public @interface RateLimit {
 
     // Field name from request body to use as key
     String keyFromRequestBody() default "";
+
+    // Field name from request param to use as key
+    String keyFromRequestParam() default "";
 }

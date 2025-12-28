@@ -16,10 +16,12 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -96,6 +98,15 @@ public class RateLimitAspect {
             }
         }
 
+        // Add request param field value if specified
+        if (!rateLimit.keyFromRequestParam().isEmpty()) {
+            String fieldValue = extractFieldFromRequestParam(joinPoint, method, rateLimit.keyFromRequestParam());
+            if (null != fieldValue) {
+                keyBuilder.append(":").append(fieldValue);
+                return keyBuilder.toString();
+            }
+        }
+
         // Add per-user identifier if specified
         if (rateLimit.perUser()) {
             String userID = getUserIdentifier(request);
@@ -140,6 +151,38 @@ public class RateLimitAspect {
                 return request.getEmail();
             }
 
+        }
+
+        return null;
+    }
+
+    private String extractFieldFromRequestParam(ProceedingJoinPoint joinPoint, Method method, String fieldName) {
+        Parameter[] parameters = method.getParameters();
+        Object[] args = joinPoint.getArgs();
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter parameter = parameters[i];
+            RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
+
+            if (null != requestParam) {
+                // Get parameter name from @RequestParam or parameter name
+                String paramName;
+                if (!requestParam.value().isEmpty()) {
+                    // @RequestParam("fieldName")
+                    paramName = requestParam.value();
+                } else if (!requestParam.name().isEmpty()) {
+                    // @RequestParam(name = "fieldName")
+                    paramName = requestParam.name();
+                } else {
+                    // @RequestParam(String fieldName)
+                    paramName = parameter.getName();
+                }
+
+                // Check if field is the correct one
+                if (fieldName.equals(paramName) && null != args[i]) {
+                    return args[i].toString();
+                }
+            }
         }
 
         return null;
