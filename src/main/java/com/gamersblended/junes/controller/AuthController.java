@@ -151,4 +151,10 @@ public class AuthController {
         log.info("Triggering login for user with email: {}...", loginRequest.getEmail());
         return ResponseEntity.ok(authService.login(loginRequest));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<LogoutResponse> logout(@RequestHeader("Authorization") String authHeader) {
+        log.info("Triggering logout...");
+        return ResponseEntity.ok(authService.logout(authHeader));
+    }
 }

@@ -105,7 +105,7 @@ public class EmailVerificationTokenService {
 
             return true;
         } catch (JwtException | IllegalArgumentException | NoSuchAlgorithmException ex) {
-            log.error("Exception in verifying token: ", ex);
+            log.error("Exception in verifying email token: ", ex);
             return false;
         }
     }

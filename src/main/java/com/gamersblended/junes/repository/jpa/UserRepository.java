@@ -13,9 +13,6 @@ import java.util.Optional;
 @Repository("jpaUsersRepository") // JPA repository bean
 public interface UserRepository extends JpaRepository<User, Integer> {
 
-    @Query(value = "SELECT * FROM junes_rel.users", nativeQuery = true)
-    List<User> getAllUsers();
-
     @Query(value = "SELECT UNNEST(history_list) FROM junes_rel.users WHERE id = :id", nativeQuery = true)
     List<String> getUserHistory(@Param("id") Integer id);
 

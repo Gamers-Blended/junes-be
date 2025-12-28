@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.LoginRequest;
 import com.gamersblended.junes.dto.LoginResponse;
+import com.gamersblended.junes.dto.LogoutResponse;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
@@ -163,5 +164,30 @@ public class AuthService {
         log.info("User successfully logged in, userID: {}", user.getUserID());
         return loginResponse;
 
+    }
+
+    @Transactional
+    public LogoutResponse logout(String authHeader) {
+        String token = null;
+        if (null != authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+
+        if (null == token || token.isEmpty()) {
+            log.error("No token provided for logout");
+            throw new MissingTokenException("No token provided for logout");
+        }
+
+        if (accessTokenService.validateAccessToken(token)) {
+            accessTokenService.blacklistToken(token);
+            log.info("Token is blacklisted from logout");
+
+            LogoutResponse logoutResponse = new LogoutResponse();
+            logoutResponse.setMessage("Logout successful");
+            return logoutResponse;
+        } else {
+            log.error("Token used for logout is invalid");
+            throw new InvalidTokenException("Invalid access token used for logout");
+        }
     }
 }
