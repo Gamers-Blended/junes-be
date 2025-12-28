@@ -1,7 +1,7 @@
 package com.gamersblended.junes.config;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.CreateUserRequest;
+import com.gamersblended.junes.dto.request.CreateUserRequest;
 import com.gamersblended.junes.service.RateLimiterService;
 import com.gamersblended.junes.util.JwtUtils;
 import io.jsonwebtoken.Jwts;

@@ -1,4 +1,4 @@
-package com.gamersblended.junes.dto;
+package com.gamersblended.junes.dto.request;
 
 import com.gamersblended.junes.constant.ValidationConstants;
 import jakarta.validation.constraints.NotBlank;
