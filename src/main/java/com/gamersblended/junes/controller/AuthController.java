@@ -152,6 +152,18 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(loginRequest));
     }
 
+    @Operation(summary = "Logout user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User successfully logged out",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "401", description = "Token from request header not given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = MissingTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))})
+    })
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(@RequestHeader("Authorization") String authHeader) {
         log.info("Triggering logout...");
