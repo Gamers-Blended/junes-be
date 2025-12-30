@@ -1,8 +1,10 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.exception.InvalidTokenException;
 import com.gamersblended.junes.model.TokenBlacklist;
 import com.gamersblended.junes.repository.jpa.TokenBlacklistRepository;
 import com.gamersblended.junes.util.JwtUtils;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.IAT_TIMESTAMP;
 
@@ -33,11 +36,12 @@ public class AccessTokenService {
         this.tokenBlacklistRepository = tokenBlacklistRepository;
     }
 
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(UUID userID, String email) {
         long issuedAtTime = System.currentTimeMillis();
 
         return Jwts.builder()
-                .subject(email)
+                .subject(String.valueOf(userID))
+                .claim("email", email)
                 .issuedAt(new Date(issuedAtTime))
                 .expiration(new Date(issuedAtTime + expirationTime))
                 .claim(IAT_TIMESTAMP, issuedAtTime)
@@ -52,6 +56,26 @@ public class AccessTokenService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getExpiration();
+    }
+
+    public UUID extractUserIDFromToken(String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+
+            Claims claims = Jwts.parser()
+                    .verifyWith(jwtUtils.getSigningKey(accessSecretKey))
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            return UUID.fromString(claims.getSubject());
+        } catch (JwtException ex) {
+            log.error("Invalid, expired or malformed access token: ", ex);
+            throw new InvalidTokenException("Invalid or expired token");
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid UUID format: ", ex);
+            throw new IllegalArgumentException("Invalid user ID format in token");
+        }
     }
 
     public boolean validateAccessToken(String token) {

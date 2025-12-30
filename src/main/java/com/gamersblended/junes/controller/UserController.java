@@ -3,19 +3,22 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.reponse.ResponseMessage;
 import com.gamersblended.junes.dto.reponse.UserDetailsResponse;
+import com.gamersblended.junes.dto.request.UpdateEmailRequest;
+import com.gamersblended.junes.exception.InputValidationException;
+import com.gamersblended.junes.exception.InvalidTokenException;
+import com.gamersblended.junes.exception.QueueEmailException;
 import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -27,9 +30,11 @@ import java.util.concurrent.TimeUnit;
 public class UserController {
 
     private final UserService userService;
+    private final AccessTokenService accessTokenService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AccessTokenService accessTokenService) {
         this.userService = userService;
+        this.accessTokenService = accessTokenService;
     }
 
     @Operation(summary = "Get user's details from userID")
@@ -46,5 +51,35 @@ public class UserController {
         log.info("Retrieving user details for userID: {}...", userID);
         UserDetailsResponse userDetails = userService.getUserDetails(userID);
         return ResponseEntity.ok(userDetails);
+    }
+
+    @Operation(summary = "Update user's email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Verification email to update email successfully sent",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "500", description = "Invalid user ID format in token",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = IllegalArgumentException.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid email(s) and/or userID given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "User with given current email not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserNotFoundException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in queuing email",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = QueueEmailException.class))})
+    })
+    @PatchMapping("/email")
+    public ResponseEntity<ResponseMessage> updateEmail(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdateEmailRequest updateEmailRequest) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Triggering update email for userID {} from {} to {}", userID, updateEmailRequest.getCurrentEmail(), updateEmailRequest.getNewEmail());
+        userService.updateEmail(userID, updateEmailRequest);
+        return ResponseEntity.ok(new ResponseMessage("Verification email sent. Please check your inbox"));
     }
 }

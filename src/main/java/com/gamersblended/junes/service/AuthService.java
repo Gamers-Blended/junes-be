@@ -102,7 +102,7 @@ public class AuthService {
 
     }
 
-    private void sendVerificationEmail(String email, User user) throws NoSuchAlgorithmException {
+    public void sendVerificationEmail(String email, User user) throws NoSuchAlgorithmException {
         String token = emailTokenService.generateVerificationToken(email, user);
         userRepository.save(user);
 
@@ -154,7 +154,7 @@ public class AuthService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        String token = accessTokenService.generateAccessToken(user.getEmail());
+        String token = accessTokenService.generateAccessToken(user.getUserID(), user.getEmail());
 
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setToken(token);
