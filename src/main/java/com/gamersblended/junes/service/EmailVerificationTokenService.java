@@ -49,7 +49,6 @@ public class EmailVerificationTokenService {
                 .compact();
 
         String tokenHash = hashToken(token);
-        user.setIsEmailVerified(false);
         user.setVerificationTokenHash(tokenHash);
         user.setVerificationTokenIssuedAt(issuedAtTime);
 
