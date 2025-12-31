@@ -55,9 +55,14 @@ public class EmailConsumerService {
                 sendEmail(to, subject, content);
                 return true;
 
-            } catch (MailException | MessagingException ex) {
+            } catch (Exception ex) {
                 lastException = ex;
                 attempt++;
+
+                if (isNonRetryableError(ex)) {
+                    log.error("Non-retryable error for {}: {}. Stopping retries...", to, ex.getMessage());
+                    return false;
+                }
 
                 if (attempt < MAX_RETRY_ATTEMPTS) {
                     log.info("Email send attempt {} failed for {}: {}. Retrying...",
@@ -76,6 +81,22 @@ public class EmailConsumerService {
 
         log.error("Failed to send email to {} after {} attempts: {}",
                 to, MAX_RETRY_ATTEMPTS, lastException != null ? lastException.getMessage() : "Unknown error");
+        return false;
+    }
+
+    private boolean isNonRetryableError(Exception ex) {
+        String message = ex.getMessage();
+        if (null == message) {
+            return false;
+        }
+
+        if (message.contains("403") || message.contains("Forbidden") ||
+                message.contains("400") || message.contains("Bad Request") ||
+                message.contains("401") || message.contains("Unauthorized") ||
+                message.contains("404") || message.contains("Not Found")) {
+            return true;
+        }
+
         return false;
     }
 
