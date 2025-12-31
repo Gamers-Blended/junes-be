@@ -1,6 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.EmailRequestDTO;
+import com.gamersblended.junes.exception.EmailDeliveryException;
 import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.client.MailgunClient;
 import com.mailgun.model.message.Message;
@@ -43,6 +44,7 @@ public class EmailConsumerService {
 
         if (!isSentSuccessfully) {
             log.error("Failed to send email to: {} after all retry attempts", emailRequestDTO.getTo());
+            throw new EmailDeliveryException("Failed to send email to: " + emailRequestDTO.getTo() + " after all retry attempts");
         }
     }
 

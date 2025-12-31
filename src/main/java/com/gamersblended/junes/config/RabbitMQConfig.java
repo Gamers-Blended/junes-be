@@ -21,9 +21,18 @@ public class RabbitMQConfig {
     @Value("${email.queue.routing-key}")
     private String routingKey;
 
+    @Value("${email.dead-letter-queue.name}")
+    private String deadLetterQueueName;
+
+    @Value("${email.dead-letter-queue.exchange}")
+    private String deadLetterQueueExchange;
+
     @Bean
     public Queue emailQueue() {
-        return new Queue(queueName, true);
+        return QueueBuilder.durable(queueName)
+                .withArgument("x-dead-letter-exchange", deadLetterQueueExchange)
+                .withArgument("x-dead-letter-routing-key", deadLetterQueueName)
+                .build();
     }
 
     @Bean
@@ -37,6 +46,23 @@ public class RabbitMQConfig {
                 .bind(emailQueue)
                 .to(emailExchange)
                 .with(routingKey);
+    }
+
+    @Bean
+    public Queue emailDLQ() {
+        return new Queue(deadLetterQueueName, true);
+    }
+
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        return new DirectExchange(deadLetterQueueExchange);
+    }
+
+    @Bean
+    public Binding dlqBinding() {
+        return BindingBuilder.bind(emailDLQ())
+                .to(deadLetterExchange())
+                .with(deadLetterQueueName);
     }
 
     @Bean

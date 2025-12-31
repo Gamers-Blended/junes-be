@@ -80,6 +80,6 @@ public class UserController {
 
         log.info("Triggering update email for userID {} from {} to {}", userID, updateEmailRequest.getCurrentEmail(), updateEmailRequest.getNewEmail());
         userService.updateEmail(userID, updateEmailRequest);
-        return ResponseEntity.ok(new ResponseMessage("Verification email sent. Please check your inbox"));
+        return ResponseEntity.ok(new ResponseMessage("Updating of email triggered. Please check your inbox for verification email"));
     }
 }
