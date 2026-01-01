@@ -48,8 +48,10 @@ public class UserController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserNotFoundException.class))})
     })
-    @GetMapping("/{userID}/details")
-    public ResponseEntity<UserDetailsResponse> getUserDetails(@PathVariable UUID userID) {
+    @GetMapping("/details")
+    public ResponseEntity<UserDetailsResponse> getUserDetails(@RequestHeader("Authorization") String authHeader) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
         log.info("Retrieving user details for userID: {}...", userID);
         UserDetailsResponse userDetails = userService.getUserDetails(userID);
         return ResponseEntity.ok(userDetails);
