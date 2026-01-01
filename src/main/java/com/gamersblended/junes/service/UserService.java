@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.reponse.UserDetailsResponse;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
+import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
 import com.gamersblended.junes.exception.EmailDeliveryException;
 import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.UserNotFoundException;
@@ -9,21 +10,27 @@ import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
 import com.gamersblended.junes.util.ValidationResult;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+
+import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
 
 @Slf4j
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final EmailValidatorService emailValidator;
     private final AuthService authService;
 
-    public UserService(UserRepository userRepository, EmailValidatorService emailValidator, AuthService authService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailValidatorService emailValidator, AuthService authService) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
         this.emailValidator = emailValidator;
         this.authService = authService;
     }
@@ -53,7 +60,7 @@ public class UserService {
 
         if (!emailValidation.isValid()) {
             log.error("Validation error(s) for email: {}", emailValidation.getErrorMessage());
-            throw new InputValidationException("New email inputs are not valid: (" + emailValidation.getErrorMessage() + ")");
+            throw new InputValidationException("New email input is not valid: (" + emailValidation.getErrorMessage() + ")");
         }
 
         User user = userRepository.getUserByEmail(currentEmail)
@@ -83,5 +90,38 @@ public class UserService {
             log.error("Exception in updating email: {} for userID: {}: ", newEmail, userID, ex);
             throw new EmailDeliveryException("Unable to send verification email for update email");
         }
+    }
+
+    @Transactional
+    public void updatePassword(UUID userID, UpdatePasswordRequest updatePasswordRequest) {
+
+        String currentPassword = updatePasswordRequest.getCurrentPassword();
+        String newPassword = updatePasswordRequest.getNewPassword();
+
+        if (currentPassword.equals(newPassword)) {
+            log.info("New password is the same as current one");
+            throw new InputValidationException("New password is the same as current one");
+        }
+
+        ValidationResult passwordValidation = validatePassword(newPassword);
+        boolean isValidPassword = passwordValidation.isValid();
+
+        if (!isValidPassword) {
+            log.error("Validation error(s) for password: {}", passwordValidation.getErrorMessage());
+            throw new InputValidationException("New password is not valid: (" + passwordValidation.getErrorMessage() + ")");
+        }
+
+        User user = userRepository.getUserByID(userID)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", userID);
+                    return new UserNotFoundException("User not found");
+                });
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            log.error("Current password does not match user's in database, userID: {}", userID);
+            throw new InputValidationException("Current password does not match user's in database, userID: " + userID);
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

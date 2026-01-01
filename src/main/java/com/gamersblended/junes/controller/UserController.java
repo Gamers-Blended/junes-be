@@ -4,6 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.reponse.ResponseMessage;
 import com.gamersblended.junes.dto.reponse.UserDetailsResponse;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
+import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
 import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.InvalidTokenException;
 import com.gamersblended.junes.exception.QueueEmailException;
@@ -78,8 +79,35 @@ public class UserController {
     public ResponseEntity<ResponseMessage> updateEmail(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdateEmailRequest updateEmailRequest) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
-        log.info("Triggering update email for userID {} from {} to {}", userID, updateEmailRequest.getCurrentEmail(), updateEmailRequest.getNewEmail());
+        log.info("Triggering update email for userID: {} from {} to {}", userID, updateEmailRequest.getCurrentEmail(), updateEmailRequest.getNewEmail());
         userService.updateEmail(userID, updateEmailRequest);
         return ResponseEntity.ok(new ResponseMessage("Updating of email triggered. Please check your inbox for verification email"));
+    }
+
+    @Operation(summary = "Update user's password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password successfully updated",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "500", description = "Invalid user ID format in token",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = IllegalArgumentException.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid new password and/or current password given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "Current password does not match user's in database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = UserNotFoundException.class))})
+    })
+    @PatchMapping("/password")
+    public ResponseEntity<ResponseMessage> updatePassword(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdatePasswordRequest updatePasswordRequest) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Triggering update password for userID: {}", userID);
+        userService.updatePassword(userID, updatePasswordRequest);
+        return ResponseEntity.ok(new ResponseMessage("Password successfully updated"));
     }
 }

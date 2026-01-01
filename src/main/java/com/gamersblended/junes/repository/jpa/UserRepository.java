@@ -24,6 +24,9 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query(value = "DELETE FROM junes_rel.users WHERE email = :email AND is_email_verified = false", nativeQuery = true)
     int deleteAllUnverifiedRecordsForEmail(@Param("email") String email);
 
+    @Query(value = "SELECT * FROM junes_rel.users WHERE user_id = :userID", nativeQuery = true)
+    Optional<User> getUserByID(@Param("userID") UUID userID);
+
     @Query(value = "SELECT * FROM junes_rel.users WHERE LOWER(email) = LOWER(:email)", nativeQuery = true)
     Optional<User> getUserByEmail(@Param("email") String email);
 
