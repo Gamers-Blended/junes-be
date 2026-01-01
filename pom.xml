@@ -34,6 +34,8 @@
         <checkstyle.version>3.6.0</checkstyle.version>
         <javadoc.version>3.6.2</javadoc.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <bitwalker.version>1.21</bitwalker.version>
+        <maxmind.version>5.0.2</maxmind.version>
     </properties>
     <dependencies>
         <dependency>
@@ -180,6 +182,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>eu.bitwalker</groupId>
+            <artifactId>UserAgentUtils</artifactId>
+            <version>${bitwalker.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.maxmind.geoip2</groupId>
+            <artifactId>geoip2</artifactId>
+            <version>${maxmind.version}</version>
         </dependency>
 
     </dependencies>

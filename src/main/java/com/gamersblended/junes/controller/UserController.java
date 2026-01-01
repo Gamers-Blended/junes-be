@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -100,14 +101,18 @@ public class UserController {
                             schema = @Schema(implementation = InputValidationException.class))}),
             @ApiResponse(responseCode = "404", description = "Current password does not match user's in database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))})
+                            schema = @Schema(implementation = UserNotFoundException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in queuing email",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = QueueEmailException.class))})
     })
     @PatchMapping("/password")
-    public ResponseEntity<ResponseMessage> updatePassword(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdatePasswordRequest updatePasswordRequest) {
+    public ResponseEntity<ResponseMessage> updatePassword(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdatePasswordRequest updatePasswordRequest,
+                                                          HttpServletRequest request) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Triggering update password for userID: {}", userID);
-        userService.updatePassword(userID, updatePasswordRequest);
+        userService.updatePassword(userID, updatePasswordRequest, request);
         return ResponseEntity.ok(new ResponseMessage("Password successfully updated"));
     }
 }

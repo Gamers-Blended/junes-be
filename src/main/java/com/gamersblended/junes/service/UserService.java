@@ -10,6 +10,7 @@ import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
 import com.gamersblended.junes.util.ValidationResult;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,12 +27,15 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailValidatorService emailValidator;
+    private final EmailProducerService emailProducerService;
     private final AuthService authService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailValidatorService emailValidator, AuthService authService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       EmailValidatorService emailValidator, EmailProducerService emailProducerService, AuthService authService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailValidator = emailValidator;
+        this.emailProducerService = emailProducerService;
         this.authService = authService;
     }
 
@@ -93,7 +97,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updatePassword(UUID userID, UpdatePasswordRequest updatePasswordRequest) {
+    public void updatePassword(UUID userID, UpdatePasswordRequest updatePasswordRequest, HttpServletRequest request) {
 
         String currentPassword = updatePasswordRequest.getCurrentPassword();
         String newPassword = updatePasswordRequest.getNewPassword();
@@ -123,5 +127,7 @@ public class UserService {
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+
+        emailProducerService.sendPasswordChangedEmail(user.getEmail(), request);
     }
 }

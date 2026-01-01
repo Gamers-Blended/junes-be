@@ -3,6 +3,8 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.dto.EmailRequestDTO;
 import com.gamersblended.junes.exception.InvalidTemplateException;
 import com.gamersblended.junes.exception.QueueEmailException;
+import eu.bitwalker.useragentutils.UserAgent;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,10 +41,12 @@ public class EmailProducerService {
 
     private final RabbitTemplate rabbitTemplate;
     private final TemplateEngine templateEngine;
+    private final GeoLocationService geoLocationService;
 
-    public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine) {
+    public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine, GeoLocationService geoLocationService) {
         this.rabbitTemplate = rabbitTemplate;
         this.templateEngine = templateEngine;
+        this.geoLocationService = geoLocationService;
     }
 
     public void sendEmailRequest(EmailRequestDTO emailRequestDTO) {
@@ -108,11 +114,44 @@ public class EmailProducerService {
         }
     }
 
+    public void sendPasswordChangedEmail(String toEmail, HttpServletRequest request) {
+        log.info("Queuing for password changed email for: {}", toEmail);
+
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E, MMM dd yyyy, h:mma");
+        String when = now.format(formatter);
+
+        String ip = geoLocationService.getClientIp(request);
+        String location = geoLocationService.getLocation(ip);
+
+        String userAgentString = request.getHeader("User-Agent");
+        UserAgent userAgent = UserAgent.parseUserAgentString(userAgentString);
+        String deviceType = userAgent.getBrowser().getName() + " using " +
+                userAgent.getOperatingSystem().getName();
+
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("when", when);
+            variables.put("where", location);
+            variables.put("deviceType", deviceType);
+
+            String htmlContent = processTemplate(PASSWORD_CHANGED, variables);
+
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Password Changed - " + appName);
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
+            log.info("Password changed email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing password changed email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue password changed email");
+        }
+    }
+
     private Map<String, Object> getCommonVariableMap() {
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("appName", appName);
-        variables.put("supportEmail", appName);
+        variables.put("supportEmail", supportEmail);
 
         return variables;
     }
@@ -125,6 +164,7 @@ public class EmailProducerService {
         return switch (type) {
             case VERIFICATION -> templateEngine.process("email/verification", context);
             case PASSWORD_RESET -> templateEngine.process("email/password-reset", context);
+            case PASSWORD_CHANGED -> templateEngine.process("email/password-changed", context);
             case WELCOME -> templateEngine.process("email/welcome", context);
             default -> {
                 log.error("Invalid email template: {}", type);
