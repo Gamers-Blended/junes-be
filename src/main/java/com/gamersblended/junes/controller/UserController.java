@@ -68,7 +68,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid email(s) and/or userID given",
+            @ApiResponse(responseCode = "400", description = "Invalid email(s) given",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InputValidationException.class))}),
             @ApiResponse(responseCode = "404", description = "User with given current email not found",

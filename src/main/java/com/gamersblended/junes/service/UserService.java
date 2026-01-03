@@ -67,16 +67,11 @@ public class UserService {
             throw new InputValidationException("New email input is not valid: (" + emailValidation.getErrorMessage() + ")");
         }
 
-        User user = userRepository.getUserByEmail(currentEmail)
+        User user = userRepository.getUserByUserIDAndEmail(userID, currentEmail)
                 .orElseThrow(() -> {
                     log.error("User not found with current email: {}", currentEmail);
                     return new UserNotFoundException("User not found with current email: " + currentEmail);
                 });
-
-        if (!user.getUserID().equals(userID)) {
-            log.error("Mismatched userID {} for email: {}", userID, currentEmail);
-            throw new InputValidationException("Mismatched userID " + userID + " for email: " + currentEmail);
-        }
 
         if (Boolean.FALSE.equals(user.getIsEmailVerified())) {
             log.error("Current email {} is not verified", currentEmail);
