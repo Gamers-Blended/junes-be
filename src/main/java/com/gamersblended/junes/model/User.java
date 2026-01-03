@@ -1,7 +1,7 @@
 package com.gamersblended.junes.model;
 
 import com.gamersblended.junes.dto.AddressDTO;
-import com.gamersblended.junes.dto.PaymentInfoDTO;
+import com.gamersblended.junes.dto.PaymentMethodDTO;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -58,7 +58,7 @@ public class User {
 
     @Column(name = "payment_info_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
-    private List<PaymentInfoDTO> paymentInfoList = new ArrayList<>();
+    private List<PaymentMethodDTO> paymentInfoList = new ArrayList<>();
 
     @Column(name = "created_on", nullable = false)
     @CreationTimestamp // Hibernate will automatically set this on insert
@@ -76,7 +76,7 @@ public class User {
         return Collections.unmodifiableList(addressList);
     }
 
-    public List<PaymentInfoDTO> getPaymentInfoList() {
+    public List<PaymentMethodDTO> getPaymentInfoList() {
         return Collections.unmodifiableList(paymentInfoList);
     }
 
@@ -88,7 +88,7 @@ public class User {
         this.addressList = addressList != null ? new ArrayList<>(addressList) : new ArrayList<>();
     }
 
-    public void setPaymentInfoList(List<PaymentInfoDTO> paymentInfoList) {
+    public void setPaymentInfoList(List<PaymentMethodDTO> paymentInfoList) {
         this.paymentInfoList = paymentInfoList != null ? new ArrayList<>(paymentInfoList) : new ArrayList<>();
     }
 }

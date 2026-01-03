@@ -2,9 +2,8 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.AddressDTO;
-import com.gamersblended.junes.dto.reponse.ResponseMessage;
+import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.exception.InvalidTokenException;
-import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.SavedItemsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,5 +53,23 @@ public class SavedItemsController {
         log.info("Retrieving all saved addresses for userID: {}...", userID);
         List<AddressDTO> allSavedAddresses = savedItemsService.getAllSavedAddressesForUser(userID);
         return ResponseEntity.ok(allSavedAddresses);
+    }
+
+    @Operation(summary = "Get user's saved payment method(s)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User's saved payment method(s) successfully retrieved",
+                    content = {@Content(mediaType = "application/json",
+                            array = @ArraySchema(schema = @Schema(implementation = PaymentMethodDTO.class)))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))})
+    })
+    @GetMapping("/payment-methods/user")
+    public ResponseEntity<List<PaymentMethodDTO>> getAllSavedPaymentMethods(@RequestHeader("Authorization") String authHeader) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Retrieving all saved payment methods for userID: {}...", userID);
+        List<PaymentMethodDTO> allSavedPaymentMethods = savedItemsService.getAllPaymentMethodsForUser(userID);
+        return ResponseEntity.ok(allSavedPaymentMethods);
     }
 }

@@ -16,6 +16,4 @@ public class AddressDTO {
     private String zipCode;
     private String phoneNumber;
     private Boolean isDefault;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
