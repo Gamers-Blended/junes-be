@@ -49,7 +49,7 @@ public class SavedItemsService {
     public AddressDTO getSavedAddressForUser(UUID addressID, UUID userID) {
         Address address = addressRepository.getAddressByUserIDAndID(userID, addressID)
                 .orElseThrow(() -> {
-                    log.error("Address not found with ID: {}", addressID);
+                    log.error("Address not found with ID: {} for user {}", addressID, userID);
                     return new SavedItemNotFoundException("Address not found with ID: " + addressID);
                 });
 
@@ -66,5 +66,15 @@ public class SavedItemsService {
         }
 
         return paymentMethodMapper.toDTOList(paymentMethodFromUserList);
+    }
+
+    public PaymentMethodDTO getSavedPaymentMethodForUser(UUID paymentMethodID, UUID userID) {
+        PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, paymentMethodID)
+                .orElseThrow(() -> {
+                    log.error("Payment method not found with ID: {} for user {}", paymentMethodID, userID);
+                    return new SavedItemNotFoundException("Payment method not found with ID: " + paymentMethodID);
+                });
+
+        return paymentMethodMapper.toDTO(paymentMethod);
     }
 }

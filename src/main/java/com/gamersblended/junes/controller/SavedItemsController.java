@@ -88,4 +88,22 @@ public class SavedItemsController {
         List<PaymentMethodDTO> allSavedPaymentMethods = savedItemsService.getAllPaymentMethodsForUser(userID);
         return ResponseEntity.ok(allSavedPaymentMethods);
     }
+
+    @Operation(summary = "Get a user's saved payment method")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User's saved payment method successfully retrieved",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PaymentMethodDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))})
+    })
+    @GetMapping("/payment-method/{savedItemID}")
+    public ResponseEntity<PaymentMethodDTO> getSavedPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID savedItemID) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Retrieving details for saved payment method {} for userID: {}...", savedItemID, userID);
+        PaymentMethodDTO address = savedItemsService.getSavedPaymentMethodForUser(savedItemID, userID);
+        return ResponseEntity.ok(address);
+    }
 }
