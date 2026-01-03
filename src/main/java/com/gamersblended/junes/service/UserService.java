@@ -69,7 +69,7 @@ public class UserService {
 
         User user = userRepository.getUserByUserIDAndEmail(userID, currentEmail)
                 .orElseThrow(() -> {
-                    log.error("User not found with current email: {}", currentEmail);
+                    log.error("User {} not found with current email: {}", userID, currentEmail);
                     return new UserNotFoundException("User not found with current email: " + currentEmail);
                 });
 
