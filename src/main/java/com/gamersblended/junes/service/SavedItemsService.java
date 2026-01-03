@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.mapper.AddressMapper;
 import com.gamersblended.junes.mapper.PaymentMethodMapper;
 import com.gamersblended.junes.model.Address;
@@ -43,6 +44,16 @@ public class SavedItemsService {
         }
 
         return addressMapper.toDTOList(addressesFromUserList);
+    }
+
+    public AddressDTO getSavedAddressForUser(UUID addressID, UUID userID) {
+        Address address = addressRepository.getAddressByUserIDAndID(userID, addressID)
+                .orElseThrow(() -> {
+                    log.error("Address not found with ID: {}", addressID);
+                    return new SavedItemNotFoundException("Address not found with ID: " + addressID);
+                });
+
+        return addressMapper.toDTO(address);
     }
 
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {
