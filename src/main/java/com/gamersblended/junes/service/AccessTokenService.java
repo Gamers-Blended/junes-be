@@ -69,12 +69,9 @@ public class AccessTokenService {
                     .getPayload();
 
             return UUID.fromString(claims.getSubject());
-        } catch (JwtException ex) {
-            log.error("Invalid, expired or malformed access token: ", ex);
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.error("Token validation failed: {}", ex);
             throw new InvalidTokenException("Invalid or expired token");
-        } catch (IllegalArgumentException ex) {
-            log.error("Invalid UUID format: ", ex);
-            throw new IllegalArgumentException("Invalid user ID format in token");
         }
     }
 

@@ -1,24 +1,18 @@
 package com.gamersblended.junes.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class AddressDTO {
 
-    private String country;
     private String fullName;
-    private String streetAddress1;
-    private String streetAddress2;
-    private String city;
-    private String region;
+    private String addressLine;
+    private String unitNumber;
+    private String country;
     private String zipCode;
     private String phoneNumber;
     private Boolean isDefault;
