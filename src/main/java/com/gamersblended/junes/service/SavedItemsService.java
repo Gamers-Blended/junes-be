@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
 import static com.gamersblended.junes.constant.ValidationConstants.*;
+import static com.gamersblended.junes.util.AddressValidator.validateCountry;
 import static com.gamersblended.junes.util.InputValidatorUtils.sanitizeString;
 
 @Slf4j
@@ -128,15 +129,7 @@ public class SavedItemsService {
         }
 
         // Country
-        if (null == addressDTO.getCountry() || addressDTO.getCountry().isBlank()) {
-            log.error("Error adding new address for user {}: country is not given", userID);
-            throw new InputValidationException("Country is not given");
-        }
-
-        if (addressDTO.getCountry().length() > COUNTRY_MAX_LENGTH) {
-            log.error("Error adding new address for user {}: country exceeds maximum length of {} characters", userID, COUNTRY_MAX_LENGTH);
-            throw new InputValidationException("Country exceeds maximum length of " + COUNTRY_MAX_LENGTH + " characters");
-        }
+        validateCountry(addressDTO.getCountry(), userID);
 
         // Zip code
         if (null == addressDTO.getZipCode() || addressDTO.getZipCode().isBlank()) {
