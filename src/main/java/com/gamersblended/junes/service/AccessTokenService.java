@@ -70,7 +70,7 @@ public class AccessTokenService {
 
             return UUID.fromString(claims.getSubject());
         } catch (JwtException | IllegalArgumentException ex) {
-            log.error("Token validation failed: {}", ex);
+            log.error("Token validation failed: ", ex);
             throw new InvalidTokenException("Invalid or expired token");
         }
     }

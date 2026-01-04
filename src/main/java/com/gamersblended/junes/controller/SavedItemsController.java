@@ -3,7 +3,9 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.dto.reponse.ResponseMessage;
 import com.gamersblended.junes.exception.InvalidTokenException;
+import com.gamersblended.junes.exception.SavedItemLimitExceededException;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.SavedItemsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,6 +72,26 @@ public class SavedItemsController {
         return ResponseEntity.ok(address);
     }
 
+    @Operation(summary = "Add a new Address to user's saved address list")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Address successfully added",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AddressDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "422", description = "Number of saved Addresses exceeded",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemLimitExceededException.class))})
+    })
+    @PostMapping("/address")
+    public ResponseEntity<ResponseMessage> addAddress(@RequestHeader("Authorization") String authHeader, @RequestBody AddressDTO addressDTO) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Adding a new address for userID: {}...", userID);
+        savedItemsService.addAddress(userID, addressDTO);
+        return ResponseEntity.ok(new ResponseMessage("Address successfully added"));
+    }
 
     @Operation(summary = "Get user's saved payment method(s)")
     @ApiResponses(value = {

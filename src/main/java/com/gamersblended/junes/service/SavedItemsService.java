@@ -2,6 +2,8 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.exception.InputValidationException;
+import com.gamersblended.junes.exception.SavedItemLimitExceededException;
 import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.mapper.AddressMapper;
 import com.gamersblended.junes.mapper.PaymentMethodMapper;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
+import static com.gamersblended.junes.constant.ValidationConstants.*;
+import static com.gamersblended.junes.util.InputValidatorUtils.sanitizeString;
 
 @Slf4j
 @Service
@@ -54,6 +58,107 @@ public class SavedItemsService {
                 });
 
         return addressMapper.toDTO(address);
+    }
+
+    public String addAddress(UUID userID, AddressDTO addressDTO) {
+        validateAndSanitizeAddress(userID, addressDTO);
+
+        List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
+
+        // Cannot exceed limit
+        if (addressesFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
+            log.info("User {} has reached the maximum of {} saved addresses", userID, MAX_NUMBER_OF_SAVED_ITEMS);
+            throw new SavedItemLimitExceededException("User " + userID + " has reached the maximum of " + MAX_NUMBER_OF_SAVED_ITEMS + " saved addresses");
+        }
+
+        // TODO Check for no duplicate Addresses
+        return "";
+    }
+
+    private void validateAndSanitizeAddress(UUID userID, AddressDTO addressDTO) {
+        addressDTO.setFullName(sanitizeString(addressDTO.getFullName()));
+        addressDTO.setAddressLine(sanitizeString(addressDTO.getAddressLine()));
+        addressDTO.setUnitNumber(sanitizeString(addressDTO.getUnitNumber()));
+        addressDTO.setCountry(sanitizeString(addressDTO.getFullName()));
+        addressDTO.setZipCode(sanitizeString(addressDTO.getZipCode()));
+        addressDTO.setPhoneNumber(sanitizeString(addressDTO.getPhoneNumber()));
+
+        validateAddress(userID, addressDTO);
+    }
+
+    private void validateAddress(UUID userID, AddressDTO addressDTO) {
+        // Full name
+        if (null == addressDTO.getFullName() || addressDTO.getFullName().isBlank()) {
+            log.error("Error adding new address for user {}: full name is not given", userID);
+            throw new InputValidationException("Full name is not given");
+        }
+
+        if (addressDTO.getFullName().length() > FULL_NAME_MAX_LENGTH) {
+            log.error("Error adding new address for user {}: full name exceeds maximum length of {} characters", userID, FULL_NAME_MAX_LENGTH);
+            throw new InputValidationException("Full name exceeds maximum length of " + FULL_NAME_MAX_LENGTH + " characters");
+        }
+
+        if (!addressDTO.getFullName().matches("^[a-zA-Z\\s'-]+$")) {
+            log.error("Error adding new address for user {}: full name should contain only letters, spaces, hyphens and apostrophes", userID);
+            throw new InputValidationException("Full name should contain only letters, spaces, hyphens and apostrophes");
+        }
+
+        // Address line
+        if (null == addressDTO.getAddressLine() || addressDTO.getAddressLine().isBlank()) {
+            log.error("Error adding new address for user {}: address line is not given", userID);
+            throw new InputValidationException("Address line is not given");
+        }
+
+        if (addressDTO.getAddressLine().length() > ADDRESS_LINE_MAX_LENGTH) {
+            log.error("Error adding new address for user {}: address line exceeds maximum length of {} characters", userID, ADDRESS_LINE_MAX_LENGTH);
+            throw new InputValidationException("Address line exceeds maximum length of " + ADDRESS_LINE_MAX_LENGTH + " characters");
+        }
+
+        // Unit number
+        if (null != addressDTO.getUnitNumber()) {
+            if (addressDTO.getUnitNumber().length() > UNIT_NUMBER_MAX_LENGTH) {
+                log.error("Error adding new address for user {}: unit number exceeds maximum length of {} characters", userID, UNIT_NUMBER_MAX_LENGTH);
+                throw new InputValidationException("Unit number exceeds maximum length of " + UNIT_NUMBER_MAX_LENGTH + " characters");
+            }
+
+            if (!addressDTO.getUnitNumber().matches("^[a-zA-Z0-9\\s\\/-]+$")) {
+                log.error("Error adding new address for user {}: unit number should contain only letters, number, spaces, hyphens and forward slashes", userID);
+                throw new InputValidationException("Unit number should contain only letters, number, spaces, hyphens and forward slashes");
+            }
+        }
+
+        // Country
+        if (null == addressDTO.getCountry() || addressDTO.getCountry().isBlank()) {
+            log.error("Error adding new address for user {}: country is not given", userID);
+            throw new InputValidationException("Country is not given");
+        }
+
+        if (addressDTO.getCountry().length() > COUNTRY_MAX_LENGTH) {
+            log.error("Error adding new address for user {}: country exceeds maximum length of {} characters", userID, COUNTRY_MAX_LENGTH);
+            throw new InputValidationException("Country exceeds maximum length of " + COUNTRY_MAX_LENGTH + " characters");
+        }
+
+        // Zip code
+        if (null == addressDTO.getZipCode() || addressDTO.getZipCode().isBlank()) {
+            log.error("Error adding new address for user {}: zip code is not given", userID);
+            throw new InputValidationException("Zip code is not given");
+        }
+
+        if (addressDTO.getZipCode().length() > ZIP_CODE_MAX_LENGTH) {
+            log.error("Error adding new address for user {}: zip code exceeds maximum length of {} characters", userID, ZIP_CODE_MAX_LENGTH);
+            throw new InputValidationException("Zip code exceeds maximum length of " + ZIP_CODE_MAX_LENGTH + " characters");
+        }
+
+        if (!addressDTO.getZipCode().matches("^[a-zA-Z0-9\\s\\/-]+$")) {
+            log.error("Error adding new address for user {}: zip code should contain only letters, number, spaces, hyphens and forward slashes", userID);
+            throw new InputValidationException("Zip code should contain only letters, number, spaces, hyphens and forward slashes");
+        }
+
+        // Phone number
+        if (null == addressDTO.getPhoneNumber() || addressDTO.getPhoneNumber().isBlank()) {
+            log.error("Error adding new address for user {}: phone number is not given", userID);
+            throw new InputValidationException("Phone number is not given");
+        }
     }
 
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {

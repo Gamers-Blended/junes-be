@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS junes_rel.addresses
 (
     address_id   UUID PRIMARY KEY,
-    full_name    VARCHAR(100) NOT NULL UNIQUE,
+    full_name    VARCHAR(100) NOT NULL,
     address_line VARCHAR(255) NOT NULL,
     unit_number  VARCHAR(50),
     country      VARCHAR(50)  NOT NULL,
