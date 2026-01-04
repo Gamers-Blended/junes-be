@@ -36,6 +36,7 @@
         <springdoc.version>2.6.0</springdoc.version>
         <bitwalker.version>1.21</bitwalker.version>
         <maxmind.version>5.0.2</maxmind.version>
+        <libphonenumber.version>9.0.21</libphonenumber.version>
     </properties>
     <dependencies>
         <dependency>
@@ -194,6 +195,12 @@
             <groupId>com.maxmind.geoip2</groupId>
             <artifactId>geoip2</artifactId>
             <version>${maxmind.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>${libphonenumber.version}</version>
         </dependency>
 
     </dependencies>

@@ -20,6 +20,7 @@ import java.util.UUID;
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
 import static com.gamersblended.junes.constant.ValidationConstants.*;
 import static com.gamersblended.junes.util.AddressValidator.validateCountry;
+import static com.gamersblended.junes.util.AddressValidator.validatePhoneNumber;
 import static com.gamersblended.junes.util.InputValidatorUtils.sanitizeString;
 
 @Slf4j
@@ -148,10 +149,7 @@ public class SavedItemsService {
         }
 
         // Phone number
-        if (null == addressDTO.getPhoneNumber() || addressDTO.getPhoneNumber().isBlank()) {
-            log.error("Error adding new address for user {}: phone number is not given", userID);
-            throw new InputValidationException("Phone number is not given");
-        }
+        validatePhoneNumber(addressDTO.getPhoneNumber(), addressDTO.getCountry(), userID);
     }
 
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {
