@@ -2,7 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
-import com.gamersblended.junes.exception.InputValidationException;
+import com.gamersblended.junes.exception.DuplicateAddressException;
 import com.gamersblended.junes.exception.SavedItemLimitExceededException;
 import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.mapper.AddressMapper;
@@ -11,6 +11,7 @@ import com.gamersblended.junes.model.Address;
 import com.gamersblended.junes.model.PaymentMethod;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
+import com.gamersblended.junes.util.AddressValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +19,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
-import static com.gamersblended.junes.constant.ValidationConstants.*;
-import static com.gamersblended.junes.util.AddressValidator.validateCountry;
-import static com.gamersblended.junes.util.AddressValidator.validatePhoneNumber;
-import static com.gamersblended.junes.util.InputValidatorUtils.sanitizeString;
 
 @Slf4j
 @Service
@@ -31,13 +28,16 @@ public class SavedItemsService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final AddressMapper addressMapper;
     private final PaymentMethodMapper paymentMethodMapper;
+    private final AddressValidator addressValidator;
 
     public SavedItemsService(AddressRepository addressRepository, AddressMapper addressMapper,
-                             PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper) {
+                             PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper,
+                             AddressValidator addressValidator) {
         this.addressRepository = addressRepository;
         this.addressMapper = addressMapper;
         this.paymentMethodRepository = paymentMethodRepository;
         this.paymentMethodMapper = paymentMethodMapper;
+        this.addressValidator = addressValidator;
     }
 
     public List<AddressDTO> getAllSavedAddressesForUser(UUID userID) {
@@ -62,8 +62,8 @@ public class SavedItemsService {
         return addressMapper.toDTO(address);
     }
 
-    public String addAddress(UUID userID, AddressDTO addressDTO) {
-        validateAndSanitizeAddress(userID, addressDTO);
+    public void addAddress(UUID userID, AddressDTO addressDTO) {
+        addressValidator.validateAndSanitizeAddress(userID, addressDTO);
 
         List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
 
@@ -73,83 +73,31 @@ public class SavedItemsService {
             throw new SavedItemLimitExceededException("User " + userID + " has reached the maximum of " + MAX_NUMBER_OF_SAVED_ITEMS + " saved addresses");
         }
 
-        // TODO Check for no duplicate Addresses
-        return "";
-    }
+        Address currentDefault = null;
 
-    private void validateAndSanitizeAddress(UUID userID, AddressDTO addressDTO) {
-        addressDTO.setFullName(sanitizeString(addressDTO.getFullName()));
-        addressDTO.setAddressLine(sanitizeString(addressDTO.getAddressLine()));
-        addressDTO.setUnitNumber(sanitizeString(addressDTO.getUnitNumber()));
-        addressDTO.setCountry(sanitizeString(addressDTO.getFullName()));
-        addressDTO.setZipCode(sanitizeString(addressDTO.getZipCode()));
-        addressDTO.setPhoneNumber(sanitizeString(addressDTO.getPhoneNumber()));
 
-        validateAddress(userID, addressDTO);
-    }
-
-    private void validateAddress(UUID userID, AddressDTO addressDTO) {
-        // Full name
-        if (null == addressDTO.getFullName() || addressDTO.getFullName().isBlank()) {
-            log.error("Error adding new address for user {}: full name is not given", userID);
-            throw new InputValidationException("Full name is not given");
-        }
-
-        if (addressDTO.getFullName().length() > FULL_NAME_MAX_LENGTH) {
-            log.error("Error adding new address for user {}: full name exceeds maximum length of {} characters", userID, FULL_NAME_MAX_LENGTH);
-            throw new InputValidationException("Full name exceeds maximum length of " + FULL_NAME_MAX_LENGTH + " characters");
-        }
-
-        if (!addressDTO.getFullName().matches("^[a-zA-Z\\s'-]+$")) {
-            log.error("Error adding new address for user {}: full name should contain only letters, spaces, hyphens and apostrophes", userID);
-            throw new InputValidationException("Full name should contain only letters, spaces, hyphens and apostrophes");
-        }
-
-        // Address line
-        if (null == addressDTO.getAddressLine() || addressDTO.getAddressLine().isBlank()) {
-            log.error("Error adding new address for user {}: address line is not given", userID);
-            throw new InputValidationException("Address line is not given");
-        }
-
-        if (addressDTO.getAddressLine().length() > ADDRESS_LINE_MAX_LENGTH) {
-            log.error("Error adding new address for user {}: address line exceeds maximum length of {} characters", userID, ADDRESS_LINE_MAX_LENGTH);
-            throw new InputValidationException("Address line exceeds maximum length of " + ADDRESS_LINE_MAX_LENGTH + " characters");
-        }
-
-        // Unit number
-        if (null != addressDTO.getUnitNumber()) {
-            if (addressDTO.getUnitNumber().length() > UNIT_NUMBER_MAX_LENGTH) {
-                log.error("Error adding new address for user {}: unit number exceeds maximum length of {} characters", userID, UNIT_NUMBER_MAX_LENGTH);
-                throw new InputValidationException("Unit number exceeds maximum length of " + UNIT_NUMBER_MAX_LENGTH + " characters");
+        for (Address existing : addressesFromUserList) {
+            // Check for duplicates
+            if (addressValidator.isDuplicate(addressDTO, existing)) {
+                log.error("Address already exists for user: {}", userID);
+                throw new DuplicateAddressException("Address already exists");
             }
 
-            if (!addressDTO.getUnitNumber().matches("^[a-zA-Z0-9\\s\\/-]+$")) {
-                log.error("Error adding new address for user {}: unit number should contain only letters, number, spaces, hyphens and forward slashes", userID);
-                throw new InputValidationException("Unit number should contain only letters, number, spaces, hyphens and forward slashes");
+            // Track current default Address
+            if (addressDTO.getIsDefault() && existing.getIsDefault()) {
+                currentDefault = existing;
             }
         }
 
-        // Country
-        validateCountry(addressDTO.getCountry(), userID);
-
-        // Zip code
-        if (null == addressDTO.getZipCode() || addressDTO.getZipCode().isBlank()) {
-            log.error("Error adding new address for user {}: zip code is not given", userID);
-            throw new InputValidationException("Zip code is not given");
+        // Set current default to false if needed
+        if (null != currentDefault) {
+            currentDefault.setIsDefault(false);
+            addressRepository.save(currentDefault);
         }
 
-        if (addressDTO.getZipCode().length() > ZIP_CODE_MAX_LENGTH) {
-            log.error("Error adding new address for user {}: zip code exceeds maximum length of {} characters", userID, ZIP_CODE_MAX_LENGTH);
-            throw new InputValidationException("Zip code exceeds maximum length of " + ZIP_CODE_MAX_LENGTH + " characters");
-        }
-
-        if (!addressDTO.getZipCode().matches("^[a-zA-Z0-9\\s\\/-]+$")) {
-            log.error("Error adding new address for user {}: zip code should contain only letters, number, spaces, hyphens and forward slashes", userID);
-            throw new InputValidationException("Zip code should contain only letters, number, spaces, hyphens and forward slashes");
-        }
-
-        // Phone number
-        validatePhoneNumber(addressDTO.getPhoneNumber(), addressDTO.getCountry(), userID);
+        Address newAddress = addressMapper.toEntity(addressDTO);
+        newAddress.setUserID(userID);
+        addressRepository.save(newAddress);
     }
 
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {

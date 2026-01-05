@@ -41,9 +41,8 @@ public class Address {
     @Column(name = "is_default")
     private Boolean isDefault;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private UUID userID;
 
     @Column(name = "created_on", nullable = false)
     @CreationTimestamp
