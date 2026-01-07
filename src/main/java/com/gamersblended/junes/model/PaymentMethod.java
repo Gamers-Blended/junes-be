@@ -35,22 +35,17 @@ public class PaymentMethod {
     @Column(name = "expiration_year", nullable = false)
     private String expirationYear;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "address_id", nullable = false)
-    private Address billingAddressID;
+    @Column(name = "billing_address_id", nullable = false)
+    private UUID billingAddressID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private UUID userID;
 
-    @Column(name = "is_default")
+    @Column(name = "is_default", nullable = false)
     private Boolean isDefault;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive;
-
-    @Column(name = "status", nullable = false)
-    private String status;
 
     @Column(name = "created_on", nullable = false)
     @CreationTimestamp

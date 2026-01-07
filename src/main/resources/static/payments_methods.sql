@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS junes_rel.payment_methods
     -- Status and metadata
     is_default         BOOLEAN      NOT NULL DEFAULT FALSE,
     is_active          BOOLEAN      NOT NULL DEFAULT TRUE,
-    status             VARCHAR(20)  NOT NULL DEFAULT 'active',
 
     -- Audit
     created_on         TIMESTAMP    NOT NULL DEFAULT NOW(),

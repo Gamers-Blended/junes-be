@@ -128,4 +128,25 @@ public class SavedItemsController {
         PaymentMethodDTO address = savedItemsService.getSavedPaymentMethodForUser(savedItemID, userID);
         return ResponseEntity.ok(address);
     }
+
+    @Operation(summary = "Add a new Payment method to user's saved payment method list")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment method successfully added",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PaymentMethodDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "422", description = "Number of saved Payment methods exceeded",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemLimitExceededException.class))})
+    })
+    @PostMapping("/payment-method")
+    public ResponseEntity<ResponseMessage> addPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody PaymentMethodDTO paymentMethodDTO) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Adding a new payment method for userID: {}...", userID);
+        savedItemsService.addPaymentMethod(userID, paymentMethodDTO);
+        return ResponseEntity.ok(new ResponseMessage("Payment method successfully added"));
+    }
 }

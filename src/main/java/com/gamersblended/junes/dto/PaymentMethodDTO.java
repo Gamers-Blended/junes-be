@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,7 +16,6 @@ public class PaymentMethodDTO {
     private String cardHolderName;
     private String expirationMonth; // MM
     private String expirationYear; // YYYY
-    private String nameOnCard;
+    private UUID billingAddressID;
     private Boolean isDefault;
-    private String status = "active";
 }

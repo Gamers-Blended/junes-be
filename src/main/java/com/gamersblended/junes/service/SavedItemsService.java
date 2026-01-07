@@ -12,6 +12,7 @@ import com.gamersblended.junes.model.PaymentMethod;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.util.AddressValidator;
+import com.gamersblended.junes.util.PaymentMethodValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -29,15 +30,17 @@ public class SavedItemsService {
     private final AddressMapper addressMapper;
     private final PaymentMethodMapper paymentMethodMapper;
     private final AddressValidator addressValidator;
+    private final PaymentMethodValidator paymentMethodValidator;
 
     public SavedItemsService(AddressRepository addressRepository, AddressMapper addressMapper,
                              PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper,
-                             AddressValidator addressValidator) {
+                             AddressValidator addressValidator, PaymentMethodValidator paymentMethodValidator) {
         this.addressRepository = addressRepository;
         this.addressMapper = addressMapper;
         this.paymentMethodRepository = paymentMethodRepository;
         this.paymentMethodMapper = paymentMethodMapper;
         this.addressValidator = addressValidator;
+        this.paymentMethodValidator = paymentMethodValidator;
     }
 
     public List<AddressDTO> getAllSavedAddressesForUser(UUID userID) {
@@ -120,5 +123,45 @@ public class SavedItemsService {
                 });
 
         return paymentMethodMapper.toDTO(paymentMethod);
+    }
+
+    public void addPaymentMethod(UUID userID, PaymentMethodDTO paymentMethodDTO) {
+
+        paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
+
+        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
+
+        // Cannot exceed limit
+        if (paymentMethodsFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
+            log.info("User {} has reached the maximum of {} saved payment methods", userID, MAX_NUMBER_OF_SAVED_ITEMS);
+            throw new SavedItemLimitExceededException("User " + userID + " has reached the maximum of " + MAX_NUMBER_OF_SAVED_ITEMS + " saved payment methods");
+        }
+
+        PaymentMethod currentDefault = null;
+
+
+        for (PaymentMethod existing : paymentMethodsFromUserList) {
+            // Check for duplicates
+            if (paymentMethodValidator.isDuplicate(paymentMethodDTO, existing)) {
+                log.error("Payment method already exists for user: {}", userID);
+                throw new DuplicateAddressException("Payment method already exists");
+            }
+
+            // Track current default Payment method
+            if (paymentMethodDTO.getIsDefault() && existing.getIsDefault()) {
+                currentDefault = existing;
+            }
+        }
+
+        // Set current default to false if needed
+        if (null != currentDefault) {
+            currentDefault.setIsDefault(false);
+            paymentMethodRepository.save(currentDefault);
+        }
+
+        PaymentMethod newPaymentMethod = paymentMethodMapper.toEntity(paymentMethodDTO);
+        newPaymentMethod.setUserID(userID);
+        newPaymentMethod.setIsActive(true);
+        paymentMethodRepository.save(newPaymentMethod);
     }
 }

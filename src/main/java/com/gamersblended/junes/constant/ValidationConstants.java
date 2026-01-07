@@ -13,5 +13,6 @@ public class ValidationConstants {
     public static final int COUNTRY_MAX_LENGTH = 50;
     public static final int ZIP_CODE_MAX_LENGTH = 20;
     public static final int PHONE_NUMBER_MAX_LENGTH = 20;
+    public static final int CARD_HOLDER_NAME_MAX_LENGTH = 100;
 
 }
