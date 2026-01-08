@@ -66,9 +66,9 @@ public class PaymentMethodValidator {
             throw new InputValidationException("Card holder name exceeds maximum length of " + CARD_HOLDER_NAME_MAX_LENGTH + " characters");
         }
 
-        if (!paymentMethodDTO.getCardHolderName().matches("^(?!.* {3})[a-zA-Z\\s'-]+$")) {
-            log.error("Error adding new payment method for user {}: card holder name should contain only letters, spaces, hyphens and apostrophes and up to 2 consecutive spaces", userID);
-            throw new InputValidationException("Card holder name should contain only letters, spaces, hyphens and apostrophes and up to 2 consecutive spaces");
+        if (!paymentMethodDTO.getCardHolderName().matches("^[a-zA-Z\\s'-]+$")) {
+            log.error("Error adding new payment method for user {}: card holder name should contain only letters, spaces, hyphens and apostrophes", userID);
+            throw new InputValidationException("Card holder name should contain only letters, spaces, hyphens and apostrophes");
         }
 
         // Expiration Month & Year
