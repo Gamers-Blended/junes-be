@@ -78,7 +78,7 @@ public class SavedItemsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Address successfully added",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AddressDTO.class))}),
+                            schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
@@ -102,7 +102,7 @@ public class SavedItemsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Address successfully edited",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AddressDTO.class))}),
+                            schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
@@ -129,7 +129,7 @@ public class SavedItemsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Address successfully deleted",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AddressDTO.class))}),
+                            schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
@@ -192,7 +192,7 @@ public class SavedItemsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Payment method successfully added",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = PaymentMethodDTO.class))}),
+                            schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
@@ -222,7 +222,7 @@ public class SavedItemsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Payment method successfully edited",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AddressDTO.class))}),
+                            schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
@@ -243,5 +243,29 @@ public class SavedItemsController {
         log.info("Editing payment method {} for userID: {}...", paymentMethodID, userID);
         savedItemsService.editPaymentMethod(userID, paymentMethodID, paymentMethodDTO);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully edited"));
+    }
+
+    @Operation(summary = "Hard delete an existing Payment method from user's saved payment method list")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment method successfully deleted",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Payment method ID not given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "Payment method not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))})
+    })
+    @DeleteMapping("payment-method/{paymentMethodID}")
+    public ResponseEntity<ResponseMessage> deletePaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Deleting payment method {} for userID: {}...", paymentMethodID, userID);
+        savedItemsService.deletePaymentMethod(userID, paymentMethodID);
+        return ResponseEntity.ok(new ResponseMessage("Payment method successfully deleted"));
     }
 }

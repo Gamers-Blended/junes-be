@@ -141,8 +141,8 @@ public class SavedItemsService {
     public PaymentMethodDTO getSavedPaymentMethodForUser(UUID paymentMethodID, UUID userID) {
         PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, paymentMethodID)
                 .orElseThrow(() -> {
-                    log.error("Payment method not found with ID: {} for user {}", paymentMethodID, userID);
-                    return new SavedItemNotFoundException("Payment method not found with ID: " + paymentMethodID);
+                    log.error("Payment method with ID: {} not found for user: {}", paymentMethodID, userID);
+                    return new SavedItemNotFoundException("Payment method not found");
                 });
 
         return paymentMethodMapper.toDTO(paymentMethod);
@@ -193,6 +193,22 @@ public class SavedItemsService {
         paymentMethodMapper.updateEntityFromDTO(paymentMethodDTO, paymentMethodToUpdate);
 
         paymentMethodRepository.save(paymentMethodToUpdate);
+    }
+
+    @Transactional
+    public void deletePaymentMethod(UUID userID, UUID targetPaymentMethodID) {
+        if (null == targetPaymentMethodID) {
+            log.error("Error deleting payment method for user {}: payment method ID is not given", userID);
+            throw new InputValidationException("Payment method ID is not given");
+        }
+
+        PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, targetPaymentMethodID)
+                .orElseThrow(() -> {
+                    log.error("Payment method with ID: {} not found for user: {}", targetPaymentMethodID, userID);
+                    return new SavedItemNotFoundException("Payment method not found");
+                });
+
+        paymentMethodRepository.delete(paymentMethod);
     }
 
     private void checkAndUpdateDefaultAddress(UUID userID, List<Address> addressList, AddressDTO addressDTO) {
