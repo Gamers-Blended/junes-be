@@ -159,7 +159,7 @@ public class SavedItemsService {
             throw new InputValidationException("Payment method ID is not given");
         }
 
-        paymentMethodValidator.validatePaymentMethod(userID, paymentMethodDTO);
+        paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
 
         List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
 

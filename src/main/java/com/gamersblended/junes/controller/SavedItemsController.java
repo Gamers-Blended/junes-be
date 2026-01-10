@@ -202,7 +202,7 @@ public class SavedItemsController {
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
-            @ApiResponse(responseCode = "400", description = "Payment method ID not given",
+            @ApiResponse(responseCode = "400", description = "Invalid payment method input value(s)",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InputValidationException.class))}),
             @ApiResponse(responseCode = "404", description = "Billing address and/or payment method not found",
