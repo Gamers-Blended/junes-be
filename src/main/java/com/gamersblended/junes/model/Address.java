@@ -51,4 +51,7 @@ public class Address {
     @Column(name = "updated_on")
     @UpdateTimestamp
     private LocalDateTime updatedOn;
+
+    @Column(name = "deleted_on")
+    private LocalDateTime deletedOn;
 }

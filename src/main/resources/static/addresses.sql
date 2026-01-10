@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS junes_rel.addresses
     is_default   BOOLEAN      NOT NULL DEFAULT FALSE,
     user_id      UUID         NOT NULL REFERENCES junes_rel.users (user_id) ON DELETE CASCADE,
     created_on   TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_on   TIMESTAMP
+    updated_on   TIMESTAMP,
+    deleted_on   TIMESTAMP    NULL
 
 );
 

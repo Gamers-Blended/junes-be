@@ -4,8 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.reponse.ResponseMessage;
-import com.gamersblended.junes.exception.InvalidTokenException;
-import com.gamersblended.junes.exception.SavedItemLimitExceededException;
+import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.SavedItemsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,7 +60,10 @@ public class SavedItemsController {
                             schema = @Schema(implementation = AddressDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))})
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Address not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))})
     })
     @GetMapping("/address/{savedItemID}")
     public ResponseEntity<AddressDTO> getSavedAddress(@RequestHeader("Authorization") String authHeader, @PathVariable UUID savedItemID) {
@@ -82,7 +84,10 @@ public class SavedItemsController {
                             schema = @Schema(implementation = InvalidTokenException.class))}),
             @ApiResponse(responseCode = "422", description = "Number of saved Addresses exceeded",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SavedItemLimitExceededException.class))})
+                            schema = @Schema(implementation = SavedItemLimitExceededException.class))}),
+            @ApiResponse(responseCode = "400", description = "Address already exists",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DuplicateAddressException.class))})
     })
     @PostMapping("/address")
     public ResponseEntity<ResponseMessage> addAddress(@RequestHeader("Authorization") String authHeader, @RequestBody AddressDTO addressDTO) {
@@ -90,6 +95,33 @@ public class SavedItemsController {
 
         log.info("Adding a new address for userID: {}...", userID);
         savedItemsService.addAddress(userID, addressDTO);
+        return ResponseEntity.ok(new ResponseMessage("Address successfully added"));
+    }
+
+    @Operation(summary = "Edit an existing Address from user's saved address list")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Address successfully edited",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AddressDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Address ID not given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "400", description = "Address not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))}),
+            @ApiResponse(responseCode = "400", description = "Address already exists",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DuplicateAddressException.class))})
+    })
+    @PutMapping("address/{addressID}")
+    public ResponseEntity<ResponseMessage> editAddress(@RequestHeader("Authorization") String authHeader, @PathVariable UUID addressID, @RequestBody AddressDTO addressDTO) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Editing address {} for userID: {}...", addressID, userID);
+        savedItemsService.editAddress(userID, addressID, addressDTO);
         return ResponseEntity.ok(new ResponseMessage("Address successfully added"));
     }
 
@@ -118,7 +150,10 @@ public class SavedItemsController {
                             schema = @Schema(implementation = PaymentMethodDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))})
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Payment method not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))})
     })
     @GetMapping("/payment-method/{savedItemID}")
     public ResponseEntity<PaymentMethodDTO> getSavedPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID savedItemID) {

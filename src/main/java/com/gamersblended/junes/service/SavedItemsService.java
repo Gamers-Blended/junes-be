@@ -2,9 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
-import com.gamersblended.junes.exception.DuplicateAddressException;
-import com.gamersblended.junes.exception.SavedItemLimitExceededException;
-import com.gamersblended.junes.exception.SavedItemNotFoundException;
+import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.mapper.AddressMapper;
 import com.gamersblended.junes.mapper.PaymentMethodMapper;
 import com.gamersblended.junes.model.Address;
@@ -13,6 +11,7 @@ import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.util.AddressValidator;
 import com.gamersblended.junes.util.PaymentMethodValidator;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -103,6 +102,53 @@ public class SavedItemsService {
         addressRepository.save(newAddress);
     }
 
+    @Transactional
+    public void editAddress(UUID userID, UUID targetAddressID, AddressDTO addressDTO) {
+
+        if (null == targetAddressID) {
+            log.error("Error editing address for user {}: address ID is not given", userID);
+            throw new InputValidationException("Address ID is not given");
+        }
+
+        addressValidator.validateAndSanitizeAddress(userID, addressDTO);
+
+        List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
+
+        // Check if target Address exist
+        Address addressToUpdate = addressesFromUserList.stream()
+                .filter(address -> address.getAddressID().equals(targetAddressID))
+                .findFirst()
+                .orElseThrow(() -> {
+                    log.error("Address not found with ID: {} for user {}", targetAddressID, userID);
+                    return new SavedItemNotFoundException("Address not found with ID: " + targetAddressID);
+                });
+
+        Address currentDefault = null;
+
+        for (Address existing : addressesFromUserList) {
+            // Check for duplicates
+            if (addressValidator.isDuplicate(addressDTO, existing)) {
+                log.error("Address already exists for user: {}", userID);
+                throw new DuplicateAddressException("Address already exists");
+            }
+
+            // Track current default Address
+            if (addressDTO.getIsDefault() && existing.getIsDefault()) {
+                currentDefault = existing;
+            }
+        }
+
+        // Set current default to false if needed
+        if (null != currentDefault) {
+            currentDefault.setIsDefault(false);
+            addressRepository.save(currentDefault);
+        }
+
+        addressMapper.updateEntityFromDTO(addressDTO, addressToUpdate);
+
+        addressRepository.save(addressToUpdate);
+    }
+
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {
         List<PaymentMethod> paymentMethodFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
 
@@ -144,7 +190,7 @@ public class SavedItemsService {
             // Check for duplicates
             if (paymentMethodValidator.isDuplicate(paymentMethodDTO, existing)) {
                 log.error("Payment method already exists for user: {}", userID);
-                throw new DuplicateAddressException("Payment method already exists");
+                throw new DuplicatePaymentMethodException("Payment method already exists");
             }
 
             // Track current default Payment method
