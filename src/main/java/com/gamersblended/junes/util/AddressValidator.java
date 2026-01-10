@@ -173,7 +173,8 @@ public class AddressValidator {
     }
 
     public boolean isDuplicate(AddressDTO addressDTO, Address address) {
-        return Objects.equals(addressDTO.getAddressLine(), address.getAddressLine()) &&
+        return Objects.equals(addressDTO.getFullName(), address.getFullName()) &&
+                Objects.equals(addressDTO.getAddressLine(), address.getAddressLine()) &&
                 Objects.equals(addressDTO.getUnitNumber(), address.getUnitNumber()) &&
                 Objects.equals(addressDTO.getCountry(), address.getCountry()) &&
                 Objects.equals(addressDTO.getZipCode(), address.getZipCode()) &&
