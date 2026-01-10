@@ -125,6 +125,30 @@ public class SavedItemsController {
         return ResponseEntity.ok(new ResponseMessage("Address successfully edited"));
     }
 
+    @Operation(summary = "Soft delete an existing Address from user's saved address list")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Address successfully deleted",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AddressDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Address ID not given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "Address not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))})
+    })
+    @DeleteMapping("address/{addressID}")
+    public ResponseEntity<ResponseMessage> deleteAddress(@RequestHeader("Authorization") String authHeader, @PathVariable UUID addressID) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Deleting address {} for userID: {}...", addressID, userID);
+        savedItemsService.deleteAddress(userID, addressID);
+        return ResponseEntity.ok(new ResponseMessage("Address successfully deleted"));
+    }
+
     @Operation(summary = "Get user's saved payment method(s)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User's saved payment method(s) successfully retrieved",

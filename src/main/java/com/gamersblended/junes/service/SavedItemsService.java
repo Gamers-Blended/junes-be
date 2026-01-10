@@ -15,6 +15,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,8 +58,8 @@ public class SavedItemsService {
     public AddressDTO getSavedAddressForUser(UUID addressID, UUID userID) {
         Address address = addressRepository.getAddressByUserIDAndID(userID, addressID)
                 .orElseThrow(() -> {
-                    log.error("Address not found with ID: {} for user {}", addressID, userID);
-                    return new SavedItemNotFoundException("Address not found with ID: " + addressID);
+                    log.error("Address with ID: {} not found for user: {}", addressID, userID);
+                    return new SavedItemNotFoundException("Address not found");
                 });
 
         return addressMapper.toDTO(address);
@@ -84,7 +85,6 @@ public class SavedItemsService {
 
     @Transactional
     public void editAddress(UUID userID, UUID targetAddressID, AddressDTO addressDTO) {
-
         if (null == targetAddressID) {
             log.error("Error editing address for user {}: address ID is not given", userID);
             throw new InputValidationException("Address ID is not given");
@@ -98,8 +98,8 @@ public class SavedItemsService {
                 .filter(address -> address.getAddressID().equals(targetAddressID))
                 .findFirst()
                 .orElseThrow(() -> {
-                    log.error("Address not found with ID: {} for user {}", targetAddressID, userID);
-                    return new SavedItemNotFoundException("Address not found with ID: " + targetAddressID);
+                    log.error("Address with ID: {} not found for user: {}", targetAddressID, userID);
+                    return new SavedItemNotFoundException("Address not found");
                 });
 
         checkAndUpdateDefaultAddress(userID, addressesFromUserList, addressDTO);
@@ -107,6 +107,23 @@ public class SavedItemsService {
         addressMapper.updateEntityFromDTO(addressDTO, addressToUpdate);
 
         addressRepository.save(addressToUpdate);
+    }
+
+    @Transactional
+    public void deleteAddress(UUID userID, UUID targetAddressID) {
+        if (null == targetAddressID) {
+            log.error("Error deleting address for user {}: address ID is not given", userID);
+            throw new InputValidationException("Address ID is not given");
+        }
+
+        Address address = addressRepository.getAddressByUserIDAndID(userID, targetAddressID)
+                .orElseThrow(() -> {
+                    log.error("Address with ID: {} not found for user: {}", targetAddressID, userID);
+                    return new SavedItemNotFoundException("Address not found");
+                });
+
+        address.setDeletedOn(LocalDateTime.now());
+        addressRepository.save(address);
     }
 
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {
