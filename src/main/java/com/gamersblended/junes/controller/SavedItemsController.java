@@ -174,7 +174,10 @@ public class SavedItemsController {
                             schema = @Schema(implementation = InvalidTokenException.class))}),
             @ApiResponse(responseCode = "422", description = "Number of saved Payment methods exceeded",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SavedItemLimitExceededException.class))})
+                            schema = @Schema(implementation = SavedItemLimitExceededException.class))}),
+            @ApiResponse(responseCode = "400", description = "Payment method already exists",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DuplicatePaymentMethodException.class))})
     })
     @PostMapping("/payment-method")
     public ResponseEntity<ResponseMessage> addPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody PaymentMethodDTO paymentMethodDTO) {
@@ -183,5 +186,32 @@ public class SavedItemsController {
         log.info("Adding a new payment method for userID: {}...", userID);
         savedItemsService.addPaymentMethod(userID, paymentMethodDTO);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully added"));
+    }
+
+    @Operation(summary = "Edit an existing Payment method from user's saved payment method list")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment method successfully edited",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AddressDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Payment method ID not given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "400", description = "Payment method not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))}),
+            @ApiResponse(responseCode = "400", description = "Payment method already exists",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DuplicatePaymentMethodException.class))})
+    })
+    @PutMapping("payment-method/{paymentMethodID}")
+    public ResponseEntity<ResponseMessage> editPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID, @RequestBody PaymentMethodDTO paymentMethodDTO) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Editing payment method {} for userID: {}...", paymentMethodID, userID);
+        savedItemsService.editPaymentMethod(userID, paymentMethodID, paymentMethodDTO);
+        return ResponseEntity.ok(new ResponseMessage("Payment method successfully edited"));
     }
 }

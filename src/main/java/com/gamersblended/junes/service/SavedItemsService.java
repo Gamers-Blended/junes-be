@@ -94,7 +94,6 @@ public class SavedItemsService {
 
         List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
 
-        // Check if target Address exist
         Address addressToUpdate = addressesFromUserList.stream()
                 .filter(address -> address.getAddressID().equals(targetAddressID))
                 .findFirst()
@@ -144,32 +143,39 @@ public class SavedItemsService {
             throw new SavedItemLimitExceededException("User " + userID + " has reached the maximum of " + MAX_NUMBER_OF_SAVED_ITEMS + " saved payment methods");
         }
 
-        PaymentMethod currentDefault = null;
-
-
-        for (PaymentMethod existing : paymentMethodsFromUserList) {
-            // Check for duplicates
-            if (paymentMethodValidator.isDuplicate(paymentMethodDTO, existing)) {
-                log.error("Payment method already exists for user: {}", userID);
-                throw new DuplicatePaymentMethodException("Payment method already exists");
-            }
-
-            // Track current default Payment method
-            if (paymentMethodDTO.getIsDefault() && existing.getIsDefault()) {
-                currentDefault = existing;
-            }
-        }
-
-        // Set current default to false if needed
-        if (null != currentDefault) {
-            currentDefault.setIsDefault(false);
-            paymentMethodRepository.save(currentDefault);
-        }
+        checkAndUpdateDefaultPaymentMethod(userID, paymentMethodsFromUserList, paymentMethodDTO);
 
         PaymentMethod newPaymentMethod = paymentMethodMapper.toEntity(paymentMethodDTO);
         newPaymentMethod.setUserID(userID);
         newPaymentMethod.setIsActive(true);
         paymentMethodRepository.save(newPaymentMethod);
+    }
+
+    @Transactional
+    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, PaymentMethodDTO paymentMethodDTO) {
+
+        if (null == targetPaymentMethodID) {
+            log.error("Error editing payment method for user {}: payment method ID is not given", userID);
+            throw new InputValidationException("Payment method ID is not given");
+        }
+
+        paymentMethodValidator.validatePaymentMethod(userID, paymentMethodDTO);
+
+        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
+
+        PaymentMethod paymentMethodToUpdate = paymentMethodsFromUserList.stream()
+                .filter(paymentMethod -> paymentMethod.getPaymentMethodID().equals(targetPaymentMethodID))
+                .findFirst()
+                .orElseThrow(() -> {
+                    log.error("Payment method not found with ID: {} for user {}", targetPaymentMethodID, userID);
+                    return new SavedItemNotFoundException("Payment method not found with ID: " + targetPaymentMethodID);
+                });
+
+        checkAndUpdateDefaultPaymentMethod(userID, paymentMethodsFromUserList, paymentMethodDTO);
+
+        paymentMethodMapper.updateEntityFromDTO(paymentMethodDTO, paymentMethodToUpdate);
+
+        paymentMethodRepository.save(paymentMethodToUpdate);
     }
 
     private void checkAndUpdateDefaultAddress(UUID userID, List<Address> addressList, AddressDTO addressDTO) {
@@ -192,6 +198,29 @@ public class SavedItemsService {
         if (null != currentDefault) {
             currentDefault.setIsDefault(false);
             addressRepository.save(currentDefault);
+        }
+    }
+
+    private void checkAndUpdateDefaultPaymentMethod(UUID userID, List<PaymentMethod> paymentMethodList, PaymentMethodDTO paymentMethodDTO) {
+        PaymentMethod currentDefault = null;
+
+        for (PaymentMethod existing : paymentMethodList) {
+            // Check for duplicates
+            if (paymentMethodValidator.isDuplicate(paymentMethodDTO, existing)) {
+                log.error("Payment method already exists for user: {}", userID);
+                throw new DuplicatePaymentMethodException("Payment method already exists");
+            }
+
+            // Track current default Payment method
+            if (paymentMethodDTO.getIsDefault() && existing.getIsDefault()) {
+                currentDefault = existing;
+            }
+        }
+
+        // Set current default to false if needed
+        if (null != currentDefault) {
+            currentDefault.setIsDefault(false);
+            paymentMethodRepository.save(currentDefault);
         }
     }
 }
