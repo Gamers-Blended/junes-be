@@ -61,7 +61,7 @@ public class SavedItemsController {
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
-            @ApiResponse(responseCode = "400", description = "Address not found",
+            @ApiResponse(responseCode = "404", description = "Address not found",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = SavedItemNotFoundException.class))})
     })
@@ -109,7 +109,7 @@ public class SavedItemsController {
             @ApiResponse(responseCode = "400", description = "Address ID not given",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InputValidationException.class))}),
-            @ApiResponse(responseCode = "400", description = "Address not found",
+            @ApiResponse(responseCode = "404", description = "Address not found",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = SavedItemNotFoundException.class))}),
             @ApiResponse(responseCode = "400", description = "Address already exists",
@@ -151,7 +151,7 @@ public class SavedItemsController {
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
-            @ApiResponse(responseCode = "400", description = "Payment method not found",
+            @ApiResponse(responseCode = "404", description = "Payment method not found",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = SavedItemNotFoundException.class))})
     })
@@ -172,6 +172,12 @@ public class SavedItemsController {
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid payment method input value(s)",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "Billing address not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))}),
             @ApiResponse(responseCode = "422", description = "Number of saved Payment methods exceeded",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = SavedItemLimitExceededException.class))}),
@@ -199,7 +205,7 @@ public class SavedItemsController {
             @ApiResponse(responseCode = "400", description = "Payment method ID not given",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InputValidationException.class))}),
-            @ApiResponse(responseCode = "400", description = "Payment method not found",
+            @ApiResponse(responseCode = "404", description = "Billing address and/or payment method not found",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = SavedItemNotFoundException.class))}),
             @ApiResponse(responseCode = "400", description = "Payment method already exists",

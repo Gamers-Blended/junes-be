@@ -2,7 +2,9 @@ package com.gamersblended.junes.util;
 
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.exception.InputValidationException;
+import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.model.PaymentMethod;
+import com.gamersblended.junes.repository.jpa.AddressRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,12 @@ public class PaymentMethodValidator {
 
     private static final Set<String> VALID_CARD_TYPES = Set.of("VISA", "MASTERCARD", "AMEX", "JCB", "UNIONPAY");
     private static final int EXPIRATION_YEAR_UPPER_BOUND = 20;
+
+    private final AddressRepository addressRepository;
+
+    public PaymentMethodValidator(AddressRepository addressRepository) {
+        this.addressRepository = addressRepository;
+    }
 
     public void validateAndSanitizePaymentMethod(UUID userID, PaymentMethodDTO paymentMethodDTO) {
         paymentMethodDTO.setCardType(sanitizeString(paymentMethodDTO.getCardType()));
@@ -79,6 +87,13 @@ public class PaymentMethodValidator {
             log.error("Error adding new payment method for user {}: card has expired, {}", userID, expiration);
             throw new InputValidationException("Card has expired");
         }
+
+        // Billing address ID
+        addressRepository.getAddressByUserIDAndID(userID, paymentMethodDTO.getBillingAddressID())
+                .orElseThrow(() -> {
+                    log.error("Billing address not found with ID: {} for user {}", paymentMethodDTO.getBillingAddressID(), userID);
+                    return new SavedItemNotFoundException("Billing address not found with ID: " + paymentMethodDTO.getBillingAddressID());
+                });
 
     }
 
