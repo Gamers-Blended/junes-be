@@ -122,7 +122,7 @@ public class SavedItemsController {
 
         log.info("Editing address {} for userID: {}...", addressID, userID);
         savedItemsService.editAddress(userID, addressID, addressDTO);
-        return ResponseEntity.ok(new ResponseMessage("Address successfully added"));
+        return ResponseEntity.ok(new ResponseMessage("Address successfully edited"));
     }
 
     @Operation(summary = "Get user's saved payment method(s)")

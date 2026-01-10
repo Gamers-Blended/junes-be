@@ -75,27 +75,7 @@ public class SavedItemsService {
             throw new SavedItemLimitExceededException("User " + userID + " has reached the maximum of " + MAX_NUMBER_OF_SAVED_ITEMS + " saved addresses");
         }
 
-        Address currentDefault = null;
-
-
-        for (Address existing : addressesFromUserList) {
-            // Check for duplicates
-            if (addressValidator.isDuplicate(addressDTO, existing)) {
-                log.error("Address already exists for user: {}", userID);
-                throw new DuplicateAddressException("Address already exists");
-            }
-
-            // Track current default Address
-            if (addressDTO.getIsDefault() && existing.getIsDefault()) {
-                currentDefault = existing;
-            }
-        }
-
-        // Set current default to false if needed
-        if (null != currentDefault) {
-            currentDefault.setIsDefault(false);
-            addressRepository.save(currentDefault);
-        }
+        checkAndUpdateDefaultAddress(userID, addressesFromUserList, addressDTO);
 
         Address newAddress = addressMapper.toEntity(addressDTO);
         newAddress.setUserID(userID);
@@ -123,26 +103,7 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Address not found with ID: " + targetAddressID);
                 });
 
-        Address currentDefault = null;
-
-        for (Address existing : addressesFromUserList) {
-            // Check for duplicates
-            if (addressValidator.isDuplicate(addressDTO, existing)) {
-                log.error("Address already exists for user: {}", userID);
-                throw new DuplicateAddressException("Address already exists");
-            }
-
-            // Track current default Address
-            if (addressDTO.getIsDefault() && existing.getIsDefault()) {
-                currentDefault = existing;
-            }
-        }
-
-        // Set current default to false if needed
-        if (null != currentDefault) {
-            currentDefault.setIsDefault(false);
-            addressRepository.save(currentDefault);
-        }
+        checkAndUpdateDefaultAddress(userID, addressesFromUserList, addressDTO);
 
         addressMapper.updateEntityFromDTO(addressDTO, addressToUpdate);
 
@@ -209,5 +170,28 @@ public class SavedItemsService {
         newPaymentMethod.setUserID(userID);
         newPaymentMethod.setIsActive(true);
         paymentMethodRepository.save(newPaymentMethod);
+    }
+
+    private void checkAndUpdateDefaultAddress(UUID userID, List<Address> addressList, AddressDTO addressDTO) {
+        Address currentDefault = null;
+
+        for (Address existing : addressList) {
+            // Check for duplicates
+            if (addressValidator.isDuplicate(addressDTO, existing)) {
+                log.error("Address already exists for user: {}", userID);
+                throw new DuplicateAddressException("Address already exists");
+            }
+
+            // Track current default Address
+            if (addressDTO.getIsDefault() && existing.getIsDefault()) {
+                currentDefault = existing;
+            }
+        }
+
+        // Set current default to false if needed
+        if (null != currentDefault) {
+            currentDefault.setIsDefault(false);
+            addressRepository.save(currentDefault);
+        }
     }
 }
