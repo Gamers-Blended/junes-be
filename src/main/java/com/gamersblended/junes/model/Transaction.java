@@ -9,6 +9,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "transactions", schema = "junes_rel")
@@ -17,29 +19,51 @@ import java.time.LocalDateTime;
 public class Transaction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "transaction_id")
-    private Long transactionID;
+    private UUID transactionID;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userID;
+    @OneToMany(mappedBy = "transaction", fetch = FetchType.LAZY)
+    private List<TransactionItem> items;
+
+    @Column(name = "order_number", nullable = false)
+    private String orderNumber;
+
+    @Column(name = "order_date", nullable = false)
+    private LocalDateTime orderDate;
+
+    @Column(nullable = false)
+    private String status;
 
     @Min(0)
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(nullable = false)
-    private String status;
+    @Min(0)
+    @Column(name = "shipping_cost", nullable = false)
+    private BigDecimal shippingCost;
+
+    @Column(name = "shipped_date")
+    private LocalDateTime shippedDate;
+
+    @Min(0)
+    @Column(name = "shipping_weight", nullable = false)
+    private BigDecimal shippingWeight;
+
+    @Column(name = "tracking_number")
+    private String trackingNumber;
+
+    @Column(name = "shipping_address_id", nullable = false)
+    private UUID shippingAddressID;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userID;
 
     @Column(name = "created_on", nullable = false)
-    @CreationTimestamp // Hibernate will automatically set this on insert
+    @CreationTimestamp
     private LocalDateTime createdOn;
 
     @Column(name = "updated_on")
-    @UpdateTimestamp // Hibernate will automatically update this on modify
+    @UpdateTimestamp
     private LocalDateTime updatedOn;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
 }

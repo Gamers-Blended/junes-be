@@ -7,8 +7,8 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "transaction_items", schema = "junes_rel")
@@ -17,12 +17,13 @@ import java.time.LocalDateTime;
 public class TransactionItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "transaction_item_id")
-    private Long transactionItemID;
+    private UUID transactionItemID;
 
-    @Column(name = "transaction_id", nullable = false)
-    private Long transactionID;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transaction_id")
+    private Transaction transaction;
 
     @Column(name = "product_id", nullable = false)
     private String productID;
@@ -31,18 +32,11 @@ public class TransactionItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "price_at_time_of_sale", nullable = false)
-    private BigDecimal priceAtTimeOfSale;
-
     @Column(name = "created_on", nullable = false)
-    @CreationTimestamp // Hibernate will automatically set this on insert
+    @CreationTimestamp
     private LocalDateTime createdOn;
 
     @Column(name = "updated_on")
-    @UpdateTimestamp // Hibernate will automatically update this on modify
+    @UpdateTimestamp
     private LocalDateTime updatedOn;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transaction_id", insertable = false, updatable = false)
-    private Transaction transaction;
 }

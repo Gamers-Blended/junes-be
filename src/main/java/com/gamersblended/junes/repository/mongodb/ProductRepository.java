@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository("mongoProductsRepository") //  MongoDB repository bean
 public interface ProductRepository extends MongoRepository<Product, String>, CustomProductRepository {
@@ -34,6 +35,8 @@ public interface ProductRepository extends MongoRepository<Product, String>, Cus
     Optional<Product> findById(String id);
 
     List<Product> findByIdIn(List<String> idList);
+
+    List<Product> findByIdIn(Set<String> isSet);
 
     List<Product> findBySlug(String slug);
 
