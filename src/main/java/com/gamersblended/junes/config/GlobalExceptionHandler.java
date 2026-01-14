@@ -94,7 +94,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SavedItemLimitExceededException.class)
-    public ResponseEntity<Object> handleSavedItemNotFoundException(SavedItemLimitExceededException ex, WebRequest request) {
+    public ResponseEntity<Object> handleSavedItemLimitExceededException(SavedItemLimitExceededException ex, WebRequest request) {
         return buildErrorResponse(ex.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY, request);
     }
 
@@ -106,6 +106,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicatePaymentMethodException.class)
     public ResponseEntity<Object> handleDuplicatePaymentMethodException(DuplicatePaymentMethodException ex, WebRequest request) {
         return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
+    }
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    public ResponseEntity<Object> handleTransactionNotFoundException(TransactionNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
     // Generic exception handler for unhandled exceptions
