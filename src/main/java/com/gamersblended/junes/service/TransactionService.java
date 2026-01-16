@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -64,7 +65,7 @@ public class TransactionService {
 
         Map<UUID, List<TransactionItem>> itemsByTransaction = getItemsByTransactionIDMap(items);
 
-        Map<String, Product> productMap = getProductsByIDMap(items);
+        Map<String, Product> productMap = getProductsByIDMap(items, TransactionItem::getProductID);
 
         List<TransactionHistoryDTO> transactionHistoryDTOList = userTransactionHistory.getContent().stream()
                 .map(t -> buildTransactionHistoryDTO(t, itemsByTransaction.get(t.getTransactionID()), productMap))
@@ -98,10 +99,9 @@ public class TransactionService {
 
         Map<UUID, List<TransactionItem>> itemsByTransaction = getItemsByTransactionIDMap(items);
 
-        Map<String, Product> productMap = getProductsByIDMap(items);
+        Map<String, Product> productMap = getProductsByIDMap(items, TransactionItem::getProductID);
 
         return buildTransactionDetailsDTO(userID, transaction, itemsByTransaction.get(transactionID), productMap);
-
     }
 
     private TransactionDetailsDTO buildTransactionDetailsDTO(UUID userID, Transaction transaction, List<TransactionItem> transactionItemList, Map<String, Product> productMap) {
@@ -164,10 +164,12 @@ public class TransactionService {
     }
 
     // Map: ProductID - Product
-    private Map<String, Product> getProductsByIDMap(List<TransactionItem> transactionItemList) {
-        // Get all product IDs from transaction items
-        Set<String> productIDList = transactionItemList.stream()
-                .map(TransactionItem::getProductID)
+    // Functional interface - takes in both Entity and DTO
+    public <T> Map<String, Product> getProductsByIDMap(List<T> itemList, Function<T, String> productIDExtractor) {
+        // Get all product IDs from transaction item DTOs
+        Set<String> productIDList = itemList.stream()
+                .map(productIDExtractor)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
         List<Product> productList = productRepository.findByIdIn(productIDList);

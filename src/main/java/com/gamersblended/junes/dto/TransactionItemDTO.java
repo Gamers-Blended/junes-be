@@ -19,4 +19,5 @@ public class TransactionItemDTO {
     private String edition;
     private String productImageUrl;
     private Integer quantity;
+    private String productID;
 }

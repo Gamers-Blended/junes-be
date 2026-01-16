@@ -62,6 +62,9 @@ public class Product {
     private Set<String> numberOfPlayers;
 
     @NonNull
+    private Double weight;
+
+    @NonNull
     @Field("units_sold")
     private Integer unitsSold;
 
