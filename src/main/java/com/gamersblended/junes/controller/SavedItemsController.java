@@ -4,6 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.reponse.ResponseMessage;
+import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.SavedItemsService;
@@ -267,5 +268,29 @@ public class SavedItemsController {
         log.info("Deleting payment method {} for userID: {}...", paymentMethodID, userID);
         savedItemsService.deletePaymentMethod(userID, paymentMethodID);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully deleted"));
+    }
+
+    @Operation(summary = "Change a Payment method's billing address")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Address successfully attached to Payment method",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Missing address and/or payment method ID",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "Billing address and/or payment method not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))})
+    })
+    @PostMapping("attach")
+    public ResponseEntity<ResponseMessage> attachAddressToPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Attaching address: {} to payment method: {} for userID: {}...", addressToPaymentMethodRequest.getAddressID(), addressToPaymentMethodRequest.getPaymentMethodID(), userID);
+        savedItemsService.attachAddressToPaymentMethod(userID, addressToPaymentMethodRequest);
+        return ResponseEntity.ok(new ResponseMessage("Address successfully attached to Payment method"));
     }
 }

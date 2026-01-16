@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.mapper.AddressMapper;
 import com.gamersblended.junes.mapper.PaymentMethodMapper;
@@ -255,5 +256,41 @@ public class SavedItemsService {
             currentDefault.setIsDefault(false);
             paymentMethodRepository.save(currentDefault);
         }
+    }
+
+    @Transactional
+    public void attachAddressToPaymentMethod(UUID userID, AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest) {
+        UUID addressID = addressToPaymentMethodRequest.getAddressID();
+        UUID paymentMethodID = addressToPaymentMethodRequest.getPaymentMethodID();
+
+        if (null == addressID) {
+            log.error("Error attaching address to payment method for user {}: address ID is not given", userID);
+            throw new InputValidationException("Address ID is not given");
+        }
+
+        addressRepository.getAddressByUserIDAndID(userID, addressID)
+                .orElseThrow(() -> {
+                    log.error("Address with ID: {} not found for user: {}", addressID, userID);
+                    return new SavedItemNotFoundException("Address not found");
+                });
+
+        if (null == paymentMethodID) {
+            log.error("Error attaching address to payment method for user {}: payment method ID is not given", userID);
+            throw new InputValidationException("Payment method ID is not given");
+        }
+
+        PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, paymentMethodID)
+                .orElseThrow(() -> {
+                    log.error("Payment method with ID: {} not found for user: {}", paymentMethodID, userID);
+                    return new SavedItemNotFoundException("Payment method not found");
+                });
+
+        if (paymentMethod.getBillingAddressID().equals(addressID)) {
+            log.info("Address: {} is already set for Payment method: {}", addressID, paymentMethod.getPaymentMethodID());
+            return;
+        }
+
+        paymentMethod.setBillingAddressID(addressID);
+        paymentMethodRepository.save(paymentMethod);
     }
 }
