@@ -33,6 +33,9 @@ public class SavedItemsService {
     private final AddressValidator addressValidator;
     private final PaymentMethodValidator paymentMethodValidator;
 
+    private static final String ADDRESS = "address";
+    private static final String PAYMENT_METHOD = "payment_method";
+
     public SavedItemsService(AddressRepository addressRepository, AddressMapper addressMapper,
                              PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper,
                              AddressValidator addressValidator, PaymentMethodValidator paymentMethodValidator) {
@@ -45,7 +48,7 @@ public class SavedItemsService {
     }
 
     public List<AddressDTO> getAllSavedAddressesForUser(UUID userID) {
-        List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
+        List<Address> addressesFromUserList = addressRepository.getAddressesByUserID(userID);
 
         if (addressesFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
             log.info("User {} has reached the maximum of {} saved addresses", userID, MAX_NUMBER_OF_SAVED_ITEMS);
@@ -69,7 +72,7 @@ public class SavedItemsService {
     public void addAddress(UUID userID, AddressDTO addressDTO) {
         addressValidator.validateAndSanitizeAddress(userID, addressDTO);
 
-        List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
+        List<Address> addressesFromUserList = addressRepository.getAddressesByUserID(userID);
 
         // Cannot exceed limit
         if (addressesFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
@@ -93,7 +96,7 @@ public class SavedItemsService {
 
         addressValidator.validateAndSanitizeAddress(userID, addressDTO);
 
-        List<Address> addressesFromUserList = addressRepository.getTop5AddressesByUserID(userID);
+        List<Address> addressesFromUserList = addressRepository.getAddressesByUserID(userID);
 
         Address addressToUpdate = addressesFromUserList.stream()
                 .filter(address -> address.getAddressID().equals(targetAddressID))
@@ -128,7 +131,7 @@ public class SavedItemsService {
     }
 
     public List<PaymentMethodDTO> getAllPaymentMethodsForUser(UUID userID) {
-        List<PaymentMethod> paymentMethodFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
+        List<PaymentMethod> paymentMethodFromUserList = paymentMethodRepository.getPaymentMethodsByUserID(userID);
 
         if (paymentMethodFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
             log.info("User {} has reached the maximum of {} saved payment methods", userID, MAX_NUMBER_OF_SAVED_ITEMS);
@@ -153,7 +156,7 @@ public class SavedItemsService {
 
         paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
 
-        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
+        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getPaymentMethodsByUserID(userID);
 
         // Cannot exceed limit
         if (paymentMethodsFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
@@ -179,7 +182,7 @@ public class SavedItemsService {
 
         paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
 
-        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getTop5PaymentMethodsByUserID(userID);
+        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getPaymentMethodsByUserID(userID);
 
         PaymentMethod paymentMethodToUpdate = paymentMethodsFromUserList.stream()
                 .filter(paymentMethod -> paymentMethod.getPaymentMethodID().equals(targetPaymentMethodID))
@@ -235,6 +238,13 @@ public class SavedItemsService {
         }
     }
 
+    private void updateDefaultAddress(UUID userID, Address newDefaultAddress) {
+        addressRepository.unsetDefaultForUser(userID);
+
+        newDefaultAddress.setIsDefault(true);
+        addressRepository.save(newDefaultAddress);
+    }
+
     private void checkAndUpdateDefaultPaymentMethod(UUID userID, List<PaymentMethod> paymentMethodList, PaymentMethodDTO paymentMethodDTO) {
         PaymentMethod currentDefault = null;
 
@@ -256,6 +266,13 @@ public class SavedItemsService {
             currentDefault.setIsDefault(false);
             paymentMethodRepository.save(currentDefault);
         }
+    }
+
+    private void updateCurrentDefaultPaymentMethod(UUID userID, PaymentMethod newDefaultPaymentMethod) {
+        paymentMethodRepository.unsetDefaultForUser(userID);
+
+        newDefaultPaymentMethod.setIsDefault(true);
+        paymentMethodRepository.save(newDefaultPaymentMethod);
     }
 
     @Transactional
@@ -293,4 +310,43 @@ public class SavedItemsService {
         paymentMethod.setBillingAddressID(addressID);
         paymentMethodRepository.save(paymentMethod);
     }
+
+    @Transactional
+    public void setAsDefault(UUID userID, String mode, UUID savedItemID) {
+        if (null == savedItemID) {
+            log.error("Error setting default saved item for user {}: saved item ID is not given", userID);
+            throw new InputValidationException("Saved item ID is not given");
+        }
+
+        if (ADDRESS.equals(mode)) {
+            Address addressToSetAsDefault = addressRepository.getAddressByUserIDAndID(userID, savedItemID)
+                    .orElseThrow(() -> {
+                        log.error("Address with ID: {} not found for user: {}", savedItemID, userID);
+                        return new SavedItemNotFoundException("Address not found");
+                    });
+
+            if (Boolean.TRUE.equals(addressToSetAsDefault.getIsDefault())) {
+                log.info("Address with ID: {} already default for user: {}", savedItemID, userID);
+                return;
+            }
+
+            updateDefaultAddress(userID, addressToSetAsDefault);
+        }
+
+        if (PAYMENT_METHOD.equals(mode)) {
+            PaymentMethod paymentMethodToSetAsDefault = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, savedItemID)
+                    .orElseThrow(() -> {
+                        log.error("Payment method not found with ID: {} for user {}", savedItemID, userID);
+                        return new SavedItemNotFoundException("Payment method not found with ID: " + savedItemID);
+                    });
+
+            if (Boolean.TRUE.equals(paymentMethodToSetAsDefault.getIsDefault())) {
+                log.info("Payment method with ID: {} already default for user: {}", savedItemID, userID);
+                return;
+            }
+
+            updateCurrentDefaultPaymentMethod(userID, paymentMethodToSetAsDefault);
+        }
+    }
+
 }

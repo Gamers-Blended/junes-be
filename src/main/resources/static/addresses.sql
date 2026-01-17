@@ -19,4 +19,4 @@ CREATE TABLE IF NOT EXISTS junes_rel.addresses
 );
 
 CREATE INDEX idx_addresses_user_id ON junes_rel.addresses (user_id);
-CREATE UNIQUE INDEX idx_one_default_per_user ON junes_rel.addresses (user_id) WHERE is_default = TRUE;
+CREATE UNIQUE INDEX idx_one_default_per_user ON junes_rel.addresses (user_id) WHERE is_default = TRUE AND deleted_on IS NULL;

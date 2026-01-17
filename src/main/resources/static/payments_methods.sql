@@ -36,4 +36,4 @@ CREATE TABLE IF NOT EXISTS junes_rel.payment_methods
 );
 
 CREATE INDEX idx_payment_method_user_id ON junes_rel.payment_methods (user_id);
-CREATE UNIQUE INDEX idx_one_default_payment_per_user ON junes_rel.payment_methods (user_id) WHERE is_default = TRUE;
+CREATE UNIQUE INDEX idx_one_default_payment_per_user ON junes_rel.payment_methods (user_id) WHERE is_default = TRUE AND is_active = true;

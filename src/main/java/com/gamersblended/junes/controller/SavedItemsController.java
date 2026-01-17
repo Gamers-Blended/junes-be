@@ -5,6 +5,7 @@ import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.reponse.ResponseMessage;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
+import com.gamersblended.junes.dto.request.SetAsDefaultRequest;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.SavedItemsService;
@@ -292,5 +293,29 @@ public class SavedItemsController {
         log.info("Attaching address: {} to payment method: {} for userID: {}...", addressToPaymentMethodRequest.getAddressID(), addressToPaymentMethodRequest.getPaymentMethodID(), userID);
         savedItemsService.attachAddressToPaymentMethod(userID, addressToPaymentMethodRequest);
         return ResponseEntity.ok(new ResponseMessage("Address successfully attached to Payment method"));
+    }
+
+    @Operation(summary = "Set an Address/Payment method as default")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Saved item successfully set as default",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
+            @ApiResponse(responseCode = "400", description = "Missing address or payment method ID",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InputValidationException.class))}),
+            @ApiResponse(responseCode = "404", description = "Billing address or payment method not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SavedItemNotFoundException.class))})
+    })
+    @PostMapping("set-default")
+    public ResponseEntity<ResponseMessage> setAsDefault(@RequestHeader("Authorization") String authHeader, @RequestBody SetAsDefaultRequest setAsDefaultRequest) {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Setting {} with ID: {} as default for userID: {}...", setAsDefaultRequest.getMode(), setAsDefaultRequest.getSavedItemID(), userID);
+        savedItemsService.setAsDefault(userID, setAsDefaultRequest.getMode(), setAsDefaultRequest.getSavedItemID());
+        return ResponseEntity.ok(new ResponseMessage("Saved item successfully set as default"));
     }
 }
