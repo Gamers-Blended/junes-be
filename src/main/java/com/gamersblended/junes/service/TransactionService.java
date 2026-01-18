@@ -111,7 +111,7 @@ public class TransactionService {
         transactionDetailsDTO.setShippedDate(transaction.getShippedDate());
         transactionDetailsDTO.setTotalAmount(transaction.getTotalAmount());
         transactionDetailsDTO.setShippingCost(transaction.getShippingCost());
-        transactionDetailsDTO.setShippingWeight(transaction.getShippingCost());
+        transactionDetailsDTO.setShippingWeight(transaction.getShippingWeight());
         transactionDetailsDTO.setTrackingNumber(transaction.getTrackingNumber());
 
         Address address = addressRepository.getAddressByUserIDAndID(userID, transaction.getShippingAddressID())
