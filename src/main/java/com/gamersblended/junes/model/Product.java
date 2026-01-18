@@ -62,7 +62,7 @@ public class Product {
     private Set<String> numberOfPlayers;
 
     @NonNull
-    private Double weight;
+    private BigDecimal weight;
 
     @NonNull
     @Field("units_sold")
@@ -105,6 +105,7 @@ public class Product {
         this.genres = new HashSet<>();
         this.languages = new HashSet<>();
         this.numberOfPlayers = new HashSet<>();
+        this.weight = new BigDecimal("0.00");
         this.unitsSold = 0;
         this.stock = 0;
         this.productImageUrl = "";
@@ -129,6 +130,7 @@ public class Product {
                    @NonNull Set<String> genres,
                    @NonNull Set<String> languages,
                    @NonNull Set<String> numberOfPlayers,
+                   @NonNull BigDecimal weight,
                    @NonNull Integer unitsSold,
                    @NonNull Integer stock,
                    @NonNull String productImageUrl,
@@ -147,6 +149,7 @@ public class Product {
         Objects.requireNonNull(genres, "Genres cannot be null");
         Objects.requireNonNull(languages, "Languages cannot be null");
         Objects.requireNonNull(numberOfPlayers, "Number of players cannot be null");
+        Objects.requireNonNull(weight, "Weight cannot be null");
         Objects.requireNonNull(unitsSold, "Units sold cannot be null");
         Objects.requireNonNull(stock, "Stock cannot be null");
         Objects.requireNonNull(productImageUrl, "Source URL cannot be null");
@@ -166,6 +169,7 @@ public class Product {
         this.genres = Set.copyOf(genres);
         this.languages = Set.copyOf(languages);
         this.numberOfPlayers = Set.copyOf(numberOfPlayers);
+        this.weight = weight;
         this.unitsSold = unitsSold;
         this.stock = stock;
         this.productImageUrl = productImageUrl;

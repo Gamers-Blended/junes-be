@@ -7,6 +7,7 @@ import com.gamersblended.junes.model.Product;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
@@ -31,9 +32,10 @@ public class ShippingService {
             return df.format(0.00);
         }
 
-        Double totalShippingWeight = getTotalShippingWeight(transactionItemDTOList);
+        BigDecimal totalShippingWeight = getTotalShippingWeight(transactionItemDTOList);
+        log.info("Total shipping weight is {}", totalShippingWeight);
 
-        if (totalShippingWeight < 0) {
+        if (totalShippingWeight.compareTo(BigDecimal.ZERO) < 0) {
             List<String> productIDList = transactionItemDTOList.stream()
                     .map(TransactionItemDTO::getProductID)
                     .toList();
@@ -42,20 +44,20 @@ public class ShippingService {
         }
 
 
-        if (totalShippingWeight <= 0) {
+        if (totalShippingWeight.compareTo(BigDecimal.ZERO) <= 0) {
             return df.format(0.00);
-        } else if (totalShippingWeight <= 1) {
+        } else if (totalShippingWeight.compareTo(BigDecimal.ONE) <= 0) {
             return df.format(5.00);
-        } else if (totalShippingWeight <= 5) {
+        } else if (totalShippingWeight.compareTo(BigDecimal.valueOf(5)) <= 0) {
             return df.format(7.00);
-        } else if (totalShippingWeight <= 10) {
+        } else if (totalShippingWeight.compareTo(BigDecimal.valueOf(10)) <= 0) {
             return df.format(10.00);
         } else {
             return df.format(15.00);
         }
     }
 
-    public Double getTotalShippingWeight(List<TransactionItemDTO> transactionItemDTOList) {
+    public BigDecimal getTotalShippingWeight(List<TransactionItemDTO> transactionItemDTOList) {
         Set<String> expectedProductIDSet = transactionItemDTOList.stream()
                 .map(TransactionItemDTO::getProductID)
                 .filter(Objects::nonNull)
@@ -67,7 +69,7 @@ public class ShippingService {
         List<String> missingProductIDList = expectedProductIDSet.stream()
                 .filter(id -> {
                     Product p = productMap.get(id);
-                    return null == p || null == p.getWeight() || p.getWeight() < 0;
+                    return null == p || null == p.getWeight() || p.getWeight().compareTo(BigDecimal.ZERO) <= 0;
                 })
                 .toList();
 
@@ -77,7 +79,7 @@ public class ShippingService {
         }
 
         return productMap.values().stream()
-                .mapToDouble(Product::getWeight)
-                .sum();
+                .map(Product::getWeight)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
