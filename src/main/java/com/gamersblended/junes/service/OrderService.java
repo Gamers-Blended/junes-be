@@ -1,19 +1,25 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.constant.TransactionStatus;
 import com.gamersblended.junes.dto.TransactionItemDTO;
 import com.gamersblended.junes.dto.event.OrderPlacedEvent;
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
+import com.gamersblended.junes.exception.CreateOrderException;
 import com.gamersblended.junes.exception.InsufficientStockException;
 import com.gamersblended.junes.exception.SavedItemNotFoundException;
+import com.gamersblended.junes.mapper.TransactionItemMapper;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
+import com.gamersblended.junes.repository.jpa.TransactionRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
@@ -23,20 +29,28 @@ public class OrderService {
 
     private KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
     private EventPublisher eventPublisher;
+    private TransactionItemMapper itemMapper;
     private final AddressRepository addressRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final ProductRepository productRepository;
+    private final TransactionRepository transactionRepository;
     private final InventoryService inventoryService;
+    private final ShippingService shippingService;
 
 
     public OrderService(KafkaTemplate kafkaTemplate,
+                        TransactionItemMapper itemMapper,
                         AddressRepository addressRepository, PaymentMethodRepository paymentMethodRepository,
-                        ProductRepository productRepository, InventoryService inventoryService) {
+                        ProductRepository productRepository, TransactionRepository transactionRepository,
+                        InventoryService inventoryService, ShippingService shippingService) {
         this.kafkaTemplate = kafkaTemplate;
+        this.itemMapper = itemMapper;
         this.addressRepository = addressRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.productRepository = productRepository;
+        this.transactionRepository = transactionRepository;
         this.inventoryService = inventoryService;
+        this.shippingService = shippingService;
     }
 
     public String placeOrder(UUID userID, PlaceOrderRequest placeOrderRequest) {
@@ -64,13 +78,19 @@ public class OrderService {
 
                 reservedProductList.add(entry.getKey());
             }
+
+            // All inventory reserved successfully, create order
+            Transaction transaction = createTransaction(userID, placeOrderRequest, consolidatedItemMap);
+            eventPublisher.publishOrderPlaced(transaction, consolidatedItemMap);
+
+            return transaction.getTransactionID().toString();
+
+        } catch (Exception ex) {
+            log.error("Exception in creating order for userID: {}", userID, ex);
+            rollbackInventory(reservedProductList, consolidatedItemMap);
+            throw new CreateOrderException("Exception in creating order: " + ex);
         }
 
-        Transaction transaction = processOrder(placeOrderRequest, consolidatedItemMap);
-
-        eventPublisher.publishOrderPlaced(transaction, consolidatedItemMap);
-
-        return transaction.getTransactionID().toString();
     }
 
     private void validateUserData(UUID userID, UUID addressID, UUID paymentMethodID) {
@@ -110,4 +130,29 @@ public class OrderService {
             }
         }
     }
+
+    private Transaction createTransaction(UUID userID, PlaceOrderRequest placeOrderRequest, Map<String, Integer> consolidatedItemMap) {
+        // Calculate total amount
+        BigDecimal itemsTotal = calculateItemsTotal(consolidatedItemMap);
+        BigDecimal totalAmount = itemsTotal.add(placeOrderRequest.getShippingCost());
+
+        BigDecimal shippingWeight = shippingService.getTotalShippingWeight(placeOrderRequest.getTransactionItemDTOList());
+
+        Transaction transaction = new Transaction();
+        transaction.setItems(itemMapper.toEntityList(placeOrderRequest.getTransactionItemDTOList()));
+        transaction.setOrderNumber("test");
+        transaction.setOrderDate(LocalDateTime.now());
+        transaction.setStatus(TransactionStatus.PAYMENT_PENDING.getTransactionStatusValue());
+        transaction.setTotalAmount(totalAmount);
+        transaction.setShippingCost(placeOrderRequest.getShippingCost());
+        transaction.setShippingWeight(shippingWeight);
+        transaction.setTrackingNumber("123");
+        transaction.setShippingAddressID(placeOrderRequest.getAddressID());
+        transaction.setUserID(userID);
+
+        transaction = transactionRepository.save(transaction);
+
+        return transaction;
+    }
+
 }

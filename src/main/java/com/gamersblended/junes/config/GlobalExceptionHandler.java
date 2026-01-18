@@ -123,6 +123,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
     }
 
+    @ExceptionHandler(CreateOrderException.class)
+    public ResponseEntity<Object> handleCreateOrderException(CreateOrderException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
     // Generic exception handler for unhandled exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
