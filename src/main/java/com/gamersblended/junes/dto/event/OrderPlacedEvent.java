@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import static com.gamersblended.junes.constant.KafkaConstants.ORDER_PLACED;
+
 @Data
 public class OrderPlacedEvent extends BaseEvent {
 
@@ -16,6 +18,6 @@ public class OrderPlacedEvent extends BaseEvent {
     private List<TransactionItemDTO> itemList;
 
     public OrderPlacedEvent() {
-        this.setEventType("ORDER_PLACED");
+        this.setEventType(ORDER_PLACED);
     }
 }
