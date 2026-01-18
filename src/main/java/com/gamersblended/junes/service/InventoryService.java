@@ -53,4 +53,10 @@ public class InventoryService {
         // Insufficient stock
         return false;
     }
+
+    public void restoreStock(String productID, int quantity) {
+        Query query = new Query(Criteria.where("_id").is(productID));
+        Update update = new Update().inc("stock", quantity);
+        mongoTemplate.updateFirst(query, update, Product.class);
+    }
 }
