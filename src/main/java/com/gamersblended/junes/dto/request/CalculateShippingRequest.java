@@ -1,6 +1,6 @@
 package com.gamersblended.junes.dto.request;
 
-import com.gamersblended.junes.dto.TransactionItemDTO;
+import com.gamersblended.junes.dto.OrderItemDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,5 +12,5 @@ import java.util.List;
 @NoArgsConstructor
 public class CalculateShippingRequest {
 
-    private List<TransactionItemDTO> transactionItemDTOList;
+    private List<OrderItemDTO> orderItemDTOList;
 }

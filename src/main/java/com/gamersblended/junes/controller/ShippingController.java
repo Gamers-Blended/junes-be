@@ -48,7 +48,7 @@ public class ShippingController {
     public ResponseEntity<ResponseMessage> getShippingFee(@RequestBody CalculateShippingRequest calculateShippingRequest) {
 
         log.info("Calculating shipping fees...");
-        String shippingFees = shippingService.getShippingFee(calculateShippingRequest.getTransactionItemDTOList());
+        String shippingFees = shippingService.getShippingFee(calculateShippingRequest.getOrderItemDTOList());
         return ResponseEntity.ok(new ResponseMessage(shippingFees));
     }
 }
