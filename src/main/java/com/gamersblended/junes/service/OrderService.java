@@ -1,16 +1,20 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.constant.TransactionStatus;
-import com.gamersblended.junes.dto.TransactionItemDTO;
+import com.gamersblended.junes.dto.OrderItemDTO;
 import com.gamersblended.junes.dto.event.OrderPlacedEvent;
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
 import com.gamersblended.junes.exception.CreateOrderException;
 import com.gamersblended.junes.exception.InsufficientStockException;
+import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.mapper.TransactionItemMapper;
+import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.model.Transaction;
+import com.gamersblended.junes.model.TransactionItem;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
+import com.gamersblended.junes.repository.jpa.TransactionItemRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
@@ -34,23 +38,29 @@ public class OrderService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final ProductRepository productRepository;
     private final TransactionRepository transactionRepository;
+    private final TransactionItemRepository transactionItemRepository;
     private final InventoryService inventoryService;
     private final ShippingService shippingService;
+    private final TransactionService transactionService;
 
 
     public OrderService(KafkaTemplate kafkaTemplate,
                         TransactionItemMapper itemMapper,
                         AddressRepository addressRepository, PaymentMethodRepository paymentMethodRepository,
                         ProductRepository productRepository, TransactionRepository transactionRepository,
-                        InventoryService inventoryService, ShippingService shippingService) {
+                        TransactionItemRepository transactionItemRepository,
+                        InventoryService inventoryService, ShippingService shippingService,
+                        TransactionService transactionService) {
         this.kafkaTemplate = kafkaTemplate;
         this.itemMapper = itemMapper;
         this.addressRepository = addressRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.productRepository = productRepository;
         this.transactionRepository = transactionRepository;
+        this.transactionItemRepository = transactionItemRepository;
         this.inventoryService = inventoryService;
         this.shippingService = shippingService;
+        this.transactionService = transactionService;
     }
 
     public String placeOrder(UUID userID, PlaceOrderRequest placeOrderRequest) {
@@ -59,7 +69,7 @@ public class OrderService {
 
         // Deduplicate cart items
         // Product ID -> quantity
-        Map<String, Integer> consolidatedItemMap = consolidateCartItems(placeOrderRequest.getTransactionItemDTOList());
+        Map<String, Integer> consolidatedItemMap = consolidateCartItems(placeOrderRequest.getOrderItemDTOList());
 
         // Reserve all inventory atomically
         List<String> reservedProductList = new ArrayList<>();
@@ -79,8 +89,11 @@ public class OrderService {
                 reservedProductList.add(entry.getKey());
             }
 
+            // Get product metadata
+            Map<String, Product> productMap = transactionService.getProductsByIDMap(placeOrderRequest.getOrderItemDTOList(), OrderItemDTO::getProductID);
+
             // All inventory reserved successfully, create order
-            Transaction transaction = createTransaction(userID, placeOrderRequest, consolidatedItemMap);
+            Transaction transaction = createTransaction(userID, placeOrderRequest, consolidatedItemMap, productMap);
             eventPublisher.publishOrderPlaced(transaction, consolidatedItemMap);
 
             return transaction.getTransactionID().toString();
@@ -108,10 +121,10 @@ public class OrderService {
 
     }
 
-    private Map<String, Integer> consolidateCartItems(List<TransactionItemDTO> transactionItemDTOList) {
+    private Map<String, Integer> consolidateCartItems(List<OrderItemDTO> orderItemDTOList) {
         Map<String, Integer> consolidated = new HashMap<>();
 
-        for (TransactionItemDTO item : transactionItemDTOList) {
+        for (OrderItemDTO item : orderItemDTOList) {
             consolidated.merge(item.getProductID(), item.getQuantity(), Integer::sum);
         }
 
@@ -131,15 +144,13 @@ public class OrderService {
         }
     }
 
-    private Transaction createTransaction(UUID userID, PlaceOrderRequest placeOrderRequest, Map<String, Integer> consolidatedItemMap) {
-        // Calculate total amount
-        BigDecimal itemsTotal = calculateItemsTotal(consolidatedItemMap);
+    private Transaction createTransaction(UUID userID, PlaceOrderRequest placeOrderRequest, Map<String, Integer> consolidatedItemMap, Map<String, Product> productMap) {
+        BigDecimal itemsTotal = calculateItemsTotal(consolidatedItemMap, productMap);
         BigDecimal totalAmount = itemsTotal.add(placeOrderRequest.getShippingCost());
 
-        BigDecimal shippingWeight = shippingService.getTotalShippingWeight(placeOrderRequest.getTransactionItemDTOList());
+        BigDecimal shippingWeight = shippingService.getTotalShippingWeight(placeOrderRequest.getOrderItemDTOList(), productMap);
 
         Transaction transaction = new Transaction();
-        transaction.setItems(itemMapper.toEntityList(placeOrderRequest.getTransactionItemDTOList()));
         transaction.setOrderNumber("test");
         transaction.setOrderDate(LocalDateTime.now());
         transaction.setStatus(TransactionStatus.PAYMENT_PENDING.getTransactionStatusValue());
@@ -152,7 +163,47 @@ public class OrderService {
 
         transaction = transactionRepository.save(transaction);
 
+        createTransactionItems(transaction.getTransactionID(), consolidatedItemMap);
+
         return transaction;
+    }
+
+    private void createTransactionItems(UUID transactionID, Map<String, Integer> consolidatedItemMap) {
+        for (Map.Entry<String, Integer> entry : consolidatedItemMap.entrySet()) {
+            String productID = entry.getKey();
+            Integer quantity = entry.getValue();
+
+            TransactionItem item = new TransactionItem();
+            item.setTransactionItemID(transactionID);
+            item.setProductID(productID);
+            item.setQuantity(quantity);
+            item.setCreatedOn(LocalDateTime.now());
+
+            transactionItemRepository.save(item);
+        }
+    }
+
+    private BigDecimal calculateItemsTotal(Map<String, Integer> consolidatedItemMap, Map<String, Product> productMap) {
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (Map.Entry<String, Integer> entry : consolidatedItemMap.entrySet()) {
+            String productID = entry.getKey();
+            Integer quantity = entry.getValue();
+
+            Product product = productMap.get(productID);
+
+            if (null == product) {
+                log.error("Unable to get product data for product: {}", productID);
+                throw new ProductNotFoundException("Unable to get product data for product: productID");
+            }
+
+            BigDecimal itemTotal = product.getPrice()
+                    .multiply(BigDecimal.valueOf(quantity));
+
+            total = total.add(itemTotal);
+        }
+
+        return total;
     }
 
 }

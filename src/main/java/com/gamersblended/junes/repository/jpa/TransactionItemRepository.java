@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface TransactionItemRepository extends JpaRepository<Transaction, UUID> {
+public interface TransactionItemRepository extends JpaRepository<TransactionItem, UUID> {
 
     @Query("SELECT ti FROM TransactionItem ti WHERE ti.transaction.transactionID = :transactionID")
     List<TransactionItem> findByTransactionID(@Param("transactionID") UUID transactionID);

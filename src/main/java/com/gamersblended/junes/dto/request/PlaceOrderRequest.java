@@ -1,6 +1,6 @@
 package com.gamersblended.junes.dto.request;
 
-import com.gamersblended.junes.dto.TransactionItemDTO;
+import com.gamersblended.junes.dto.OrderItemDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +16,6 @@ public class PlaceOrderRequest {
 
     private UUID addressID;
     private UUID paymentMethodID;
-    private List<TransactionItemDTO> transactionItemDTOList;
+    private List<OrderItemDTO> orderItemDTOList;
     private BigDecimal shippingCost;
 }
