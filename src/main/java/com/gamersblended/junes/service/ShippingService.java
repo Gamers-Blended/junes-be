@@ -78,8 +78,14 @@ public class ShippingService {
             throw new InvalidProductIdException("Missing or invalid product data for ID(s): " + missingProductIDList);
         }
 
-        return productMap.values().stream()
-                .map(Product::getWeight)
+        return transactionItemDTOList.stream()
+                .filter(item -> null != item.getProductID())
+                .map(item -> {
+                    Product product = productMap.get(item.getProductID());
+                    BigDecimal weight = product.getWeight();
+                    BigDecimal quantity = BigDecimal.valueOf(item.getQuantity());
+                    return weight.multiply(quantity);
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
