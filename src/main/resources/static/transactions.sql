@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS junes_rel.transactions
     shipping_weight     NUMERIC(10, 2)      NULL,
     tracking_number     VARCHAR(255),
     shipping_address_id UUID                NOT NULL REFERENCES junes_rel.addresses (address_id),
-    user_id             UUID              NOT NULL REFERENCES junes_rel.users (user_id),
+    user_id             UUID                NOT NULL REFERENCES junes_rel.users (user_id),
     created_on          TIMESTAMP           NOT NULL DEFAULT NOW(),
     updated_on          TIMESTAMP
 );
