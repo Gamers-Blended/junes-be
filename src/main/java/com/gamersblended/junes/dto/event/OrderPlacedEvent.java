@@ -1,6 +1,6 @@
 package com.gamersblended.junes.dto.event;
 
-import com.gamersblended.junes.dto.TransactionItemDTO;
+import com.gamersblended.junes.dto.OrderItemDTO;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,7 +15,7 @@ public class OrderPlacedEvent extends BaseEvent {
     private UUID transactionID;
     private UUID userID;
     private BigDecimal totalAmount;
-    private List<TransactionItemDTO> itemList;
+    private List<OrderItemDTO> itemList;
 
     public OrderPlacedEvent() {
         this.setEventType(ORDER_PLACED);

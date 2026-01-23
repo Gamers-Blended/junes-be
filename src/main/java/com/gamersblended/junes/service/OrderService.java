@@ -2,13 +2,11 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.constant.TransactionStatus;
 import com.gamersblended.junes.dto.OrderItemDTO;
-import com.gamersblended.junes.dto.event.OrderPlacedEvent;
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
 import com.gamersblended.junes.exception.CreateOrderException;
 import com.gamersblended.junes.exception.InsufficientStockException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.exception.SavedItemNotFoundException;
-import com.gamersblended.junes.mapper.TransactionItemMapper;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
@@ -16,10 +14,8 @@ import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.repository.jpa.TransactionItemRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
-import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,12 +27,9 @@ import java.util.*;
 @Transactional
 public class OrderService {
 
-    private KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
-    private EventPublisher eventPublisher;
-    private TransactionItemMapper itemMapper;
+    private final EventPublisher eventPublisher;
     private final AddressRepository addressRepository;
     private final PaymentMethodRepository paymentMethodRepository;
-    private final ProductRepository productRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionItemRepository transactionItemRepository;
     private final InventoryService inventoryService;
@@ -44,18 +37,18 @@ public class OrderService {
     private final TransactionService transactionService;
 
 
-    public OrderService(KafkaTemplate kafkaTemplate,
-                        TransactionItemMapper itemMapper,
-                        AddressRepository addressRepository, PaymentMethodRepository paymentMethodRepository,
-                        ProductRepository productRepository, TransactionRepository transactionRepository,
-                        TransactionItemRepository transactionItemRepository,
-                        InventoryService inventoryService, ShippingService shippingService,
-                        TransactionService transactionService) {
-        this.kafkaTemplate = kafkaTemplate;
-        this.itemMapper = itemMapper;
+    public OrderService(
+            EventPublisher eventPublisher,
+            AddressRepository addressRepository,
+            PaymentMethodRepository paymentMethodRepository,
+            TransactionRepository transactionRepository,
+            TransactionItemRepository transactionItemRepository,
+            InventoryService inventoryService,
+            ShippingService shippingService,
+            TransactionService transactionService) {
+        this.eventPublisher = eventPublisher;
         this.addressRepository = addressRepository;
         this.paymentMethodRepository = paymentMethodRepository;
-        this.productRepository = productRepository;
         this.transactionRepository = transactionRepository;
         this.transactionItemRepository = transactionItemRepository;
         this.inventoryService = inventoryService;
@@ -116,7 +109,7 @@ public class OrderService {
         paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, paymentMethodID)
                 .orElseThrow(() -> {
                     log.error("Payment method not found with ID: {} for user {}", paymentMethodID, userID);
-                    return new SavedItemNotFoundException("Payment method not found with ID: " + paymentMethodID);
+                    return new SavedItemNotFoundException("Payment method not found");
                 });
 
     }
@@ -163,18 +156,18 @@ public class OrderService {
 
         transaction = transactionRepository.save(transaction);
 
-        createTransactionItems(transaction.getTransactionID(), consolidatedItemMap);
+        createTransactionItems(transaction, consolidatedItemMap);
 
         return transaction;
     }
 
-    private void createTransactionItems(UUID transactionID, Map<String, Integer> consolidatedItemMap) {
+    private void createTransactionItems(Transaction transaction, Map<String, Integer> consolidatedItemMap) {
         for (Map.Entry<String, Integer> entry : consolidatedItemMap.entrySet()) {
             String productID = entry.getKey();
             Integer quantity = entry.getValue();
 
             TransactionItem item = new TransactionItem();
-            item.setTransactionItemID(transactionID);
+            item.setTransaction(transaction);
             item.setProductID(productID);
             item.setQuantity(quantity);
             item.setCreatedOn(LocalDateTime.now());
