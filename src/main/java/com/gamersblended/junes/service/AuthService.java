@@ -33,7 +33,7 @@ public class AuthService {
     private final EmailValidatorService emailValidator;
     private final EmailVerificationTokenService emailTokenService;
     private final AccessTokenService accessTokenService;
-    public static final String VERIFY_EMAIL_ENDPOINT = "junes/api/v1/auth/verify?token=";
+    public static final String VERIFY_EMAIL_ENDPOINT = "/junes/api/v1/auth/verify?token=";
 
     public AuthService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
