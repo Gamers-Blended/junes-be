@@ -1,31 +1,27 @@
 package com.gamersblended.junes.util;
 
+import com.gamersblended.junes.exception.ClockSkewException;
+
 public class SnowflakeIDGenerator {
 
     // Epoch start time (1st January 2024 00:00:00 UTC)
     private static final long EPOCH = 1704067200000L; // 2024-01-01 in milliseconds
 
-    // Bit allocation
-    private static final long MACHINE_ID_BITS = 10L;
-    private static final long SEQUENCE_BITS = 12L;
-
     // Max values
-    private static final long MAX_MACHINE_ID = ~(-1L << MACHINE_ID_BITS); // 1023
-    private static final long MAX_SEQUENCE = ~(-1L << SEQUENCE_BITS); // 4095
+    private static final int MAX_MACHINE_ID = 15;
+    private static final int MAX_SEQUENCE = 1 << 10; // 1 * 2^10 = 1024
+    private static final int MAX_REDUCED_TIME = 1 << 25; // 2^25
 
-    // Bit shifts
-    private static final long MACHINE_ID_SHIFT = SEQUENCE_BITS;
-    private static final long TIMESTAMP_SHIFT = SEQUENCE_BITS + MACHINE_ID_BITS;
-
-    private final long machineID;
+    private final int machineID;
     private long lastTimestamp = -1L;
-    private long sequence = 0L;
+    private int sequence = 0;
 
     /**
      * Constructor
+     *
      * @param machineID Unique ID for this machine/instance (0 - 1023)
      */
-    public SnowflakeIDGenerator(long machineID) {
+    public SnowflakeIDGenerator(int machineID) {
         if (machineID < 0 || machineID > MAX_MACHINE_ID) {
             throw new IllegalArgumentException("Machine ID must be between 0 and " + MAX_MACHINE_ID);
         }
@@ -33,20 +29,20 @@ public class SnowflakeIDGenerator {
     }
 
     /**
-     * Generates a unique 64-bit numeric ID
-     * Format: [timestamp: 41 bits][machine ID: 10 bits][sequence: 12 bits]
+     * Generates 9 decimal digits
+     * Format: 25 bits timestamp + 4 bits machine + 10 bits sequence
      */
-    public synchronized long generateID() {
-        long timestamp = getCurrentTimestamp();
+    public synchronized String generateOrderID() {
+        long timestamp = System.currentTimeMillis();
 
         // Clock moved backwards - wait until it catches up
         if (timestamp < lastTimestamp) {
-            throw new RuntimeException("Clock moved backwards. Refusing to generate ID for " + (lastTimestamp - timestamp) + " milliseconds");
+            throw new ClockSkewException(lastTimestamp - timestamp);
         }
 
         // Same millisecond - increment sequence
         if (timestamp == lastTimestamp) {
-            sequence = (sequence + 1) & MAX_SEQUENCE;
+            sequence = (sequence + 1) % MAX_SEQUENCE; // 10 bits = 1024 max
 
             // Sequence overflow - wait for next millisecond
             if (sequence == 0) {
@@ -55,47 +51,26 @@ public class SnowflakeIDGenerator {
 
         } else {
             // New millisecond - reset sequence
-            sequence = 0L;
+            sequence = 0;
         }
 
         lastTimestamp = timestamp;
 
-        // Combine all parts into 64-bit ID
-        return ((timestamp - EPOCH) << TIMESTAMP_SHIFT)
-                | (machineID << MACHINE_ID_SHIFT)
-                | sequence;
-    }
+        // Reduce timestamp to fit in smaller space
+        long reducedTime = (timestamp - EPOCH) / 1000; // seconds since epoch
+        reducedTime = reducedTime % MAX_REDUCED_TIME; // 25 bits max
 
-    /**
-     * Generates ID as string
-     * @return String representation of ID
-     */
-    public String generateOrderID() {
-        return String.valueOf(generateID());
-    }
+        // Combine: timestamp(25) + machine(4) + sequence(10) = 39 bits
+        long id = (reducedTime << 14) | ((long) machineID << 10) | sequence;
 
-    private long getCurrentTimestamp() {
-        return System.currentTimeMillis();
+        return String.format("%09d", (int) (id % 1000000000));
     }
 
     private long waitForNextMillis(long lastTimestamp) {
-        long timestamp = getCurrentTimestamp();
+        long timestamp = System.currentTimeMillis();
         while (timestamp <= lastTimestamp) {
-            timestamp = getCurrentTimestamp();
+            timestamp = System.currentTimeMillis();
         }
         return timestamp;
-    }
-
-    // Utility methods to extract information from a Snowflake ID
-    public static long extractTimestamp(long snowflakeID) {
-        return (snowflakeID >> TIMESTAMP_SHIFT) + EPOCH;
-    }
-
-    public static long extractMachineID(long snowflakeID) {
-        return (snowflakeID >> MACHINE_ID_SHIFT) & MAX_MACHINE_ID;
-    }
-
-    public static long extractSequence(long snowflakeID) {
-        return snowflakeID & MAX_SEQUENCE;
     }
 }

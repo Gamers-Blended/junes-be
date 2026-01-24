@@ -91,7 +91,7 @@ public class OrderService {
             Transaction transaction = createTransaction(userID, placeOrderRequest, consolidatedItemMap, productMap);
             eventPublisher.publishOrderPlaced(transaction, consolidatedItemMap);
 
-            return transaction.getTransactionID().toString();
+            return transaction.getOrderNumber();
 
         } catch (Exception ex) {
             log.error("Exception in creating order for userID: {}", userID, ex);
