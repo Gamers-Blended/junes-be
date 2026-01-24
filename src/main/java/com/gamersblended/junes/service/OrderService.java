@@ -14,6 +14,7 @@ import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.repository.jpa.TransactionItemRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
+import com.gamersblended.junes.util.SnowflakeIDGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,8 @@ public class OrderService {
     private final InventoryService inventoryService;
     private final ShippingService shippingService;
     private final TransactionService transactionService;
-
+    private static final SnowflakeIDGenerator idGenerator = new SnowflakeIDGenerator(1);
+    private static final String ORDER_ID_PREFIX = "J";
 
     public OrderService(
             EventPublisher eventPublisher,
@@ -142,9 +144,9 @@ public class OrderService {
         BigDecimal totalAmount = itemsTotal.add(placeOrderRequest.getShippingCost());
 
         BigDecimal shippingWeight = shippingService.getTotalShippingWeight(placeOrderRequest.getOrderItemDTOList(), productMap);
-
+        String orderID = idGenerator.generateOrderID();
         Transaction transaction = new Transaction();
-        transaction.setOrderNumber("test");
+        transaction.setOrderNumber(ORDER_ID_PREFIX + orderID);
         transaction.setOrderDate(LocalDateTime.now());
         transaction.setStatus(TransactionStatus.PAYMENT_PENDING.getTransactionStatusValue());
         transaction.setTotalAmount(totalAmount);
