@@ -8,6 +8,7 @@ import com.gamersblended.junes.exception.QueueEmailException;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
+import com.gamersblended.junes.util.EmailValueFormatter;
 import eu.bitwalker.useragentutils.UserAgent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -52,12 +53,15 @@ public class EmailProducerService {
     private final RabbitTemplate rabbitTemplate;
     private final TemplateEngine templateEngine;
     private final GeoLocationService geoLocationService;
+    private final EmailValueFormatter emailValueFormatter;
     public static final String ORDER_DETAILS_ENDPOINT = "/junes/api/v1/transaction/";
 
-    public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine, GeoLocationService geoLocationService) {
+    public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine,
+                                GeoLocationService geoLocationService, EmailValueFormatter emailValueFormatter) {
         this.rabbitTemplate = rabbitTemplate;
         this.templateEngine = templateEngine;
         this.geoLocationService = geoLocationService;
+        this.emailValueFormatter = emailValueFormatter;
     }
 
     public void sendEmailRequest(EmailRequestDTO emailRequestDTO) {
@@ -168,8 +172,11 @@ public class EmailProducerService {
             Product productMetadata = productMap.get(currentItem.getProductID());
             if (null != productMetadata) {
                 emailItem.setName(productMetadata.getName());
+                emailItem.setPlatform(emailValueFormatter.formatPlatformName(productMetadata.getPlatform()));
+                emailItem.setRegion(emailValueFormatter.formatRegionName(productMetadata.getRegion()));
+                emailItem.setEdition(emailValueFormatter.formatEditionName(productMetadata.getEdition()));
                 emailItem.setPrice(productMetadata.getPrice());
-                emailItem.setProductImageUrl(productMetadata.getProductImageUrl());
+                emailItem.setProductImageUrl(emailValueFormatter.appendUrlPrefix(productMetadata.getProductImageUrl()));
             }
             emailItem.setQuantity(currentItem.getQuantity());
 

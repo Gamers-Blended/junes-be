@@ -12,6 +12,9 @@ import java.math.BigDecimal;
 public class TransactionItemEmailDTO {
 
     private String name;
+    private String platform;
+    private String region;
+    private String edition;
     private BigDecimal price;
     private Integer quantity;
     private String productImageUrl;
