@@ -1,19 +1,14 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.constant.TransactionStatus;
+import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.OrderItemDTO;
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
-import com.gamersblended.junes.exception.CreateOrderException;
-import com.gamersblended.junes.exception.InsufficientStockException;
-import com.gamersblended.junes.exception.ProductNotFoundException;
-import com.gamersblended.junes.exception.SavedItemNotFoundException;
+import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
-import com.gamersblended.junes.repository.jpa.AddressRepository;
-import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
-import com.gamersblended.junes.repository.jpa.TransactionItemRepository;
-import com.gamersblended.junes.repository.jpa.TransactionRepository;
+import com.gamersblended.junes.repository.jpa.*;
 import com.gamersblended.junes.util.SnowflakeIDGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -33,9 +28,11 @@ public class OrderService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionItemRepository transactionItemRepository;
+    private final UserRepository userRepository;
     private final InventoryService inventoryService;
     private final ShippingService shippingService;
     private final TransactionService transactionService;
+    private final EmailProducerService emailProducerService;
     private static final SnowflakeIDGenerator idGenerator = new SnowflakeIDGenerator(1);
     private static final String ORDER_ID_PREFIX = "J";
 
@@ -45,19 +42,24 @@ public class OrderService {
             PaymentMethodRepository paymentMethodRepository,
             TransactionRepository transactionRepository,
             TransactionItemRepository transactionItemRepository,
+            UserRepository userRepository,
             InventoryService inventoryService,
             ShippingService shippingService,
-            TransactionService transactionService) {
+            TransactionService transactionService,
+            EmailProducerService emailProducerService) {
         this.eventPublisher = eventPublisher;
         this.addressRepository = addressRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.transactionRepository = transactionRepository;
         this.transactionItemRepository = transactionItemRepository;
+        this.userRepository = userRepository;
         this.inventoryService = inventoryService;
         this.shippingService = shippingService;
         this.transactionService = transactionService;
+        this.emailProducerService = emailProducerService;
     }
 
+    @Transactional
     public String placeOrder(UUID userID, PlaceOrderRequest placeOrderRequest) {
         // Validate shipping address and payment method
         validateUserData(userID, placeOrderRequest.getAddressID(), placeOrderRequest.getPaymentMethodID());
@@ -91,6 +93,14 @@ public class OrderService {
             Transaction transaction = createTransaction(userID, placeOrderRequest, consolidatedItemMap, productMap);
             eventPublisher.publishOrderPlaced(transaction, consolidatedItemMap);
 
+            // Send email
+            AddressDTO shippingAddress = placeOrderRequest.getAddressDTO();
+            String email = userRepository.getUserEmail(userID)
+                    .orElseThrow(() -> {
+                        log.error("User's email not found for ID: {}", userID);
+                        return new EmailNotFoundException("User's email not found");
+                    });
+            emailProducerService.sendOrderConfirmedEmail(email, transaction, productMap, shippingAddress);
             return transaction.getOrderNumber();
 
         } catch (Exception ex) {
@@ -142,11 +152,10 @@ public class OrderService {
     private Transaction createTransaction(UUID userID, PlaceOrderRequest placeOrderRequest, Map<String, Integer> consolidatedItemMap, Map<String, Product> productMap) {
         BigDecimal itemsTotal = calculateItemsTotal(consolidatedItemMap, productMap);
         BigDecimal totalAmount = itemsTotal.add(placeOrderRequest.getShippingCost());
-
         BigDecimal shippingWeight = shippingService.getTotalShippingWeight(placeOrderRequest.getOrderItemDTOList(), productMap);
-        String orderID = idGenerator.generateOrderID();
+
         Transaction transaction = new Transaction();
-        transaction.setOrderNumber(ORDER_ID_PREFIX + orderID);
+        transaction.setOrderNumber(ORDER_ID_PREFIX + idGenerator.generateOrderID());
         transaction.setOrderDate(LocalDateTime.now());
         transaction.setStatus(TransactionStatus.PAYMENT_PENDING.getTransactionStatusValue());
         transaction.setTotalAmount(totalAmount);
@@ -156,14 +165,17 @@ public class OrderService {
         transaction.setShippingAddressID(placeOrderRequest.getAddressID());
         transaction.setUserID(userID);
 
+        List<TransactionItem> itemList = createTransactionItems(transaction, consolidatedItemMap);
+        transaction.setItems(itemList);
+
         transaction = transactionRepository.save(transaction);
 
-        createTransactionItems(transaction, consolidatedItemMap);
 
         return transaction;
     }
 
-    private void createTransactionItems(Transaction transaction, Map<String, Integer> consolidatedItemMap) {
+    private List<TransactionItem> createTransactionItems(Transaction transaction, Map<String, Integer> consolidatedItemMap) {
+        List<TransactionItem> itemList = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : consolidatedItemMap.entrySet()) {
             String productID = entry.getKey();
             Integer quantity = entry.getValue();
@@ -172,10 +184,11 @@ public class OrderService {
             item.setTransaction(transaction);
             item.setProductID(productID);
             item.setQuantity(quantity);
-            item.setCreatedOn(LocalDateTime.now());
 
-            transactionItemRepository.save(item);
+            itemList.add(item);
         }
+
+        return itemList;
     }
 
     private BigDecimal calculateItemsTotal(Map<String, Integer> consolidatedItemMap, Map<String, Product> productMap) {

@@ -23,7 +23,7 @@ public class Transaction {
     @Column(name = "transaction_id")
     private UUID transactionID;
 
-    @OneToMany(mappedBy = "transaction", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "transaction", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionItem> items;
 
     @Column(name = "order_number", nullable = false)

@@ -1,8 +1,13 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.EmailRequestDTO;
+import com.gamersblended.junes.dto.TransactionItemEmailDTO;
 import com.gamersblended.junes.exception.InvalidTemplateException;
 import com.gamersblended.junes.exception.QueueEmailException;
+import com.gamersblended.junes.model.Product;
+import com.gamersblended.junes.model.Transaction;
+import com.gamersblended.junes.model.TransactionItem;
 import eu.bitwalker.useragentutils.UserAgent;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +19,9 @@ import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PASSWORD_EXPIRY_HOURS;
@@ -36,12 +43,16 @@ public class EmailProducerService {
     @Value("${app.url:}")
     private String appUrl;
 
+    @Value("${baseURL:}")
+    private String baseURL;
+
     @Value("${app.support.email:support@junes.com}")
     private String supportEmail;
 
     private final RabbitTemplate rabbitTemplate;
     private final TemplateEngine templateEngine;
     private final GeoLocationService geoLocationService;
+    public static final String ORDER_DETAILS_ENDPOINT = "/junes/api/v1/transaction/";
 
     public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine, GeoLocationService geoLocationService) {
         this.rabbitTemplate = rabbitTemplate;
@@ -147,6 +158,48 @@ public class EmailProducerService {
         }
     }
 
+    public void sendOrderConfirmedEmail(String toEmail, Transaction transaction, Map<String, Product> productMap, AddressDTO addressDTO) {
+        log.info("Queuing for order confirmed email for: {}", toEmail);
+
+        List<TransactionItemEmailDTO> itemList = new ArrayList<>();
+        for (TransactionItem currentItem : transaction.getItems()) {
+            TransactionItemEmailDTO emailItem = new TransactionItemEmailDTO();
+
+            Product productMetadata = productMap.get(currentItem.getProductID());
+            if (null != productMetadata) {
+                emailItem.setName(productMetadata.getName());
+                emailItem.setPrice(productMetadata.getPrice());
+                emailItem.setProductImageUrl(productMetadata.getProductImageUrl());
+            }
+            emailItem.setQuantity(currentItem.getQuantity());
+
+            itemList.add(emailItem);
+        }
+
+        String orderDetailsUrl = baseURL + ORDER_DETAILS_ENDPOINT + transaction.getTransactionID() + "/details";
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("orderNumber", transaction.getOrderNumber());
+            variables.put("transactionID", transaction.getTransactionID());
+            variables.put("itemList", itemList);
+            variables.put("address", addressDTO);
+            variables.put("shippingCost", transaction.getShippingCost());
+            variables.put("totalAmount", transaction.getTotalAmount());
+            variables.put("appUrl", appUrl);
+            variables.put("orderDetailsUrl", orderDetailsUrl);
+
+            String htmlContent = processTemplate(ORDER_CONFIRMED, variables);
+
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Order#" + transaction.getOrderNumber() + " Confirmed!");
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
+            log.info("Order confirmed email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing order confirmed email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue order confirmed email");
+        }
+    }
+
     private Map<String, Object> getCommonVariableMap() {
 
         Map<String, Object> variables = new HashMap<>();
@@ -166,6 +219,7 @@ public class EmailProducerService {
             case PASSWORD_RESET -> templateEngine.process("email/password-reset", context);
             case PASSWORD_CHANGED -> templateEngine.process("email/password-changed", context);
             case WELCOME -> templateEngine.process("email/welcome", context);
+            case ORDER_CONFIRMED -> templateEngine.process("email/order-confirmed", context);
             default -> {
                 log.error("Invalid email template: {}", type);
                 throw new InvalidTemplateException("Invalid email template: " + type);

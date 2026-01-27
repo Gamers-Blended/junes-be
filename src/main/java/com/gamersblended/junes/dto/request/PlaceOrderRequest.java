@@ -1,5 +1,6 @@
 package com.gamersblended.junes.dto.request;
 
+import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.OrderItemDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class PlaceOrderRequest {
 
     private UUID addressID;
+    private AddressDTO addressDTO;
     private UUID paymentMethodID;
     private List<OrderItemDTO> orderItemDTOList;
     private BigDecimal shippingCost;

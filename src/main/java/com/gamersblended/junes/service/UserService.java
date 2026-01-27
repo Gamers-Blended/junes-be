@@ -4,6 +4,7 @@ import com.gamersblended.junes.dto.reponse.UserDetailsResponse;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
 import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
 import com.gamersblended.junes.exception.EmailDeliveryException;
+import com.gamersblended.junes.exception.EmailNotFoundException;
 import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.User;
@@ -43,8 +44,8 @@ public class UserService {
 
         String email = userRepository.getUserEmail(userID)
                 .orElseThrow(() -> {
-                    log.error("User not found with ID: {}", userID);
-                    return new UserNotFoundException("User not found with ID: " + userID);
+                    log.error("User's email not found for ID: {}", userID);
+                    return new EmailNotFoundException("User's email not found");
                 });
 
         return new UserDetailsResponse(email);

@@ -133,6 +133,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, request);
     }
 
+    @ExceptionHandler(EmailNotFoundException.class)
+    public ResponseEntity<Object> handleEmailNotFoundException(EmailNotFoundException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND, request);
+    }
+
     // Generic exception handler for unhandled exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {

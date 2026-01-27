@@ -145,8 +145,8 @@ public class TransactionService {
                 itemDTO.setPrice(productMetadata.getPrice());
                 itemDTO.setPlatform(productMetadata.getPlatform());
                 itemDTO.setRegion(productMetadata.getRegion());
-                itemDTO.setEdition(productMetadata.getRegion());
-                itemDTO.setProductImageUrl(productMetadata.getRegion());
+                itemDTO.setEdition(productMetadata.getEdition());
+                itemDTO.setProductImageUrl(productMetadata.getProductImageUrl());
             }
 
             itemDTO.setQuantity(currentItem.getQuantity());
