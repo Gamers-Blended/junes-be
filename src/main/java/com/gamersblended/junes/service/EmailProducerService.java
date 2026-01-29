@@ -54,7 +54,7 @@ public class EmailProducerService {
     private final TemplateEngine templateEngine;
     private final GeoLocationService geoLocationService;
     private final EmailValueFormatter emailValueFormatter;
-    public static final String ORDER_DETAILS_ENDPOINT = "/junes/api/v1/transaction/";
+    public static final String ORDER_DETAILS_STATIC_SEGMENT = "/order/";
 
     public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine,
                                 GeoLocationService geoLocationService, EmailValueFormatter emailValueFormatter) {
@@ -183,7 +183,7 @@ public class EmailProducerService {
             itemList.add(emailItem);
         }
 
-        String orderDetailsUrl = baseURL + ORDER_DETAILS_ENDPOINT + transaction.getTransactionID() + "/details";
+        String orderDetailsUrl = appUrl + ORDER_DETAILS_STATIC_SEGMENT + transaction.getTransactionID();
         try {
             Map<String, Object> variables = getCommonVariableMap();
             variables.put("orderNumber", transaction.getOrderNumber());

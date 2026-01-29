@@ -15,7 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -66,8 +68,14 @@ public class TransactionController {
                             schema = @Schema(implementation = TransactionNotFoundException.class))})
     })
     @GetMapping("/{transactionID}/details")
-    public ResponseEntity<TransactionDetailsDTO> getTransactionDetails(@RequestHeader("Authorization") String authHeader, @PathVariable UUID transactionID) {
-        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+    public ResponseEntity<TransactionDetailsDTO> getTransactionDetails(@RequestHeader(value = "Authorization", required = false) String authHeader, @PathVariable UUID transactionID, Authentication authentication) {
+        UUID userID;
+
+        if (null == authHeader || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Retrieving transaction details for transactionID: {}, userID: {}...", transactionID, userID);
         TransactionDetailsDTO transactionDetails = transactionService.getTransactionDetails(userID, transactionID);

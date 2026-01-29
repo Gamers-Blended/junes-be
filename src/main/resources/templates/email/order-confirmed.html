@@ -124,6 +124,10 @@
             font-size: 20px;
         }
 
+        .misc-amount {
+            margin-right: 15px;
+        }
+
         .address-container {
             margin-top: 20px;
             line-height: 1.2;
@@ -172,11 +176,11 @@
         <div class="order-totals">
             <div class="total-row">
                 <span>Shipping</span>
-                <span th:text="${#numbers.formatCurrency(shippingCost)}"></span>
+                <span th:text="${#numbers.formatCurrency(shippingCost)}" class="misc-amount"></span>
             </div>
             <div class="total-row grand-total">
                 <span>Grand Total</span>
-                <span class="total-value" th:text="${#numbers.formatCurrency(totalAmount)}"></span>
+                <span th:text="${#numbers.formatCurrency(totalAmount)}" class="total-value misc-amount"></span>
             </div>
         </div>
 

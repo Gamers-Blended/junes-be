@@ -8,7 +8,10 @@ import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
-import com.gamersblended.junes.repository.jpa.*;
+import com.gamersblended.junes.repository.jpa.AddressRepository;
+import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
+import com.gamersblended.junes.repository.jpa.TransactionRepository;
+import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.SnowflakeIDGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +30,6 @@ public class OrderService {
     private final AddressRepository addressRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final TransactionRepository transactionRepository;
-    private final TransactionItemRepository transactionItemRepository;
     private final UserRepository userRepository;
     private final InventoryService inventoryService;
     private final ShippingService shippingService;
@@ -41,7 +43,6 @@ public class OrderService {
             AddressRepository addressRepository,
             PaymentMethodRepository paymentMethodRepository,
             TransactionRepository transactionRepository,
-            TransactionItemRepository transactionItemRepository,
             UserRepository userRepository,
             InventoryService inventoryService,
             ShippingService shippingService,
@@ -51,7 +52,6 @@ public class OrderService {
         this.addressRepository = addressRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.transactionRepository = transactionRepository;
-        this.transactionItemRepository = transactionItemRepository;
         this.userRepository = userRepository;
         this.inventoryService = inventoryService;
         this.shippingService = shippingService;
