@@ -16,6 +16,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.IAT_TIMESTAMP;
 
@@ -39,12 +41,15 @@ public class EmailVerificationTokenService {
 
     public String generateVerificationToken(String email, User user) throws NoSuchAlgorithmException {
         long issuedAtTime = System.currentTimeMillis();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        claims.put(IAT_TIMESTAMP, issuedAtTime);
 
         String token = Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date(issuedAtTime))
                 .expiration(new Date(issuedAtTime + expirationTime))
-                .claim(IAT_TIMESTAMP, issuedAtTime)
+                .claims(claims)
                 .signWith(jwtUtils.getSigningKey(emailSecretKey))
                 .compact();
 

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
-@RequestMapping("junes/api/v1/auth")
+@RequestMapping("/junes/api/v1/auth")
 @RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
 public class AuthController {
 
@@ -165,6 +165,9 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Token from request header not given",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = MissingTokenException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error inserting token into database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DatabaseInsertionException.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidTokenException.class))})

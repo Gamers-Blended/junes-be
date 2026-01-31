@@ -138,6 +138,16 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND, request);
     }
 
+    @ExceptionHandler(DatabaseInsertionException.class)
+    public ResponseEntity<Object> handleDatabaseInsertionException(DatabaseInsertionException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
+    @ExceptionHandler(DatabaseDeletionException.class)
+    public ResponseEntity<Object> handleDatabaseDeletionException(DatabaseDeletionException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
     // Generic exception handler for unhandled exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {

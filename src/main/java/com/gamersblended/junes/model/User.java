@@ -1,5 +1,6 @@
 package com.gamersblended.junes.model;
 
+import com.gamersblended.junes.constant.Role;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import jakarta.persistence.*;
@@ -47,6 +48,10 @@ public class User {
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Column(name = "history_list", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)

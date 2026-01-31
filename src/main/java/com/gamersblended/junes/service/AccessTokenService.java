@@ -1,7 +1,9 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.exception.DatabaseInsertionException;
 import com.gamersblended.junes.exception.InvalidTokenException;
 import com.gamersblended.junes.model.TokenBlacklist;
+import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.TokenBlacklistRepository;
 import com.gamersblended.junes.util.JwtUtils;
 import io.jsonwebtoken.Claims;
@@ -13,8 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.IAT_TIMESTAMP;
 
@@ -36,15 +37,19 @@ public class AccessTokenService {
         this.tokenBlacklistRepository = tokenBlacklistRepository;
     }
 
-    public String generateAccessToken(UUID userID, String email) {
+    public String generateAccessToken(User user, String email) {
         long issuedAtTime = System.currentTimeMillis();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userID", user.getUserID().toString());
+        claims.put("roles", List.of(user.getRole().name()));
+        claims.put(IAT_TIMESTAMP, issuedAtTime);
+        claims.put("email", email);
 
         return Jwts.builder()
-                .subject(String.valueOf(userID))
-                .claim("email", email)
+                .subject(user.getUserID().toString())
+                .claims(claims)
                 .issuedAt(new Date(issuedAtTime))
                 .expiration(new Date(issuedAtTime + expirationTime))
-                .claim(IAT_TIMESTAMP, issuedAtTime)
                 .signWith(jwtUtils.getSigningKey(accessSecretKey))
                 .compact();
     }
@@ -103,7 +108,13 @@ public class AccessTokenService {
                 LocalDateTime.ofInstant(expirationDate.toInstant(), ZoneId.systemDefault())
         );
 
-        tokenBlacklistRepository.save(blacklistToken);
+        try {
+            tokenBlacklistRepository.save(blacklistToken);
+        } catch (Exception ex) {
+            log.error("Exception in blacklisting token: ", ex);
+            throw new DatabaseInsertionException("Exception in blacklisting token");
+        }
+
         log.info("Token: {} successfully blacklisted with expiry: {}", blacklistToken.getToken(), blacklistToken.getExpiryDate());
     }
 }

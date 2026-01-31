@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.constant.Role;
 import com.gamersblended.junes.dto.request.LoginRequest;
 import com.gamersblended.junes.dto.reponse.LoginResponse;
 import com.gamersblended.junes.dto.reponse.LogoutResponse;
@@ -69,6 +70,7 @@ public class AuthService {
         User user = new User();
         user.setPasswordHash(hashedPassword);
         user.setEmail(email);
+        user.setRole(Role.USER);
         user.setIsActive(true);
 
         try {
@@ -154,7 +156,7 @@ public class AuthService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        String token = accessTokenService.generateAccessToken(user.getUserID(), user.getEmail());
+        String token = accessTokenService.generateAccessToken(user, email);
 
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setToken(token);

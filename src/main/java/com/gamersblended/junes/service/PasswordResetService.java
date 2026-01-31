@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.exception.DatabaseDeletionException;
 import com.gamersblended.junes.exception.InvalidTokenException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.PasswordResetToken;
@@ -104,7 +105,7 @@ public class PasswordResetService {
             log.info("Number of expired tokens deleted: {}", deletedCount);
         } catch (Exception ex) {
             log.error("Exception in deleting expired tokens: ", ex);
-            throw ex;
+            throw new DatabaseDeletionException("Exception in deleting expired tokens");
         }
 
     }

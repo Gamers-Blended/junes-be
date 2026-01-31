@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS junes_rel.users
     verification_token_hash      TEXT,
     verification_token_issued_at BIGINT,
     last_login_at                TIMESTAMP,
+    role                         VARCHAR(255) NOT NULL,
     history_list                 JSONB        NOT NULL DEFAULT '[]',
     address_list                 JSONB        NOT NULL DEFAULT '[]',
     payment_info_list            JSONB        NOT NULL DEFAULT '[]',
