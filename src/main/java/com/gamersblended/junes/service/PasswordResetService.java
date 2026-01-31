@@ -94,4 +94,18 @@ public class PasswordResetService {
     private String generateSecureToken() {
         return UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
     }
+
+    @Transactional
+    public void cleanupExpiredTokens() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            int deletedCount = tokenRepository.deleteByExpiryDateBefore(now);
+
+            log.info("Number of expired tokens deleted: {}", deletedCount);
+        } catch (Exception ex) {
+            log.error("Exception in deleting expired tokens: ", ex);
+            throw ex;
+        }
+
+    }
 }

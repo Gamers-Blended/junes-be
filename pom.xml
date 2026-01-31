@@ -37,6 +37,8 @@
         <bitwalker.version>1.21</bitwalker.version>
         <maxmind.version>5.0.2</maxmind.version>
         <libphonenumber.version>9.0.21</libphonenumber.version>
+        <shedlock.version>7.5.0</shedlock.version>
+        <shedlock-provider.version>7.5.0</shedlock-provider.version>
     </properties>
     <dependencies>
         <dependency>
@@ -205,6 +207,19 @@
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${shedlock-provider.version}</version>
+        </dependency>
+
 
 
     </dependencies>

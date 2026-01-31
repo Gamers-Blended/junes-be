@@ -21,4 +21,7 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     @Query(value = "DELETE FROM junes_rel.password_reset_tokens WHERE user_id = :userID", nativeQuery = true)
     void deleteByUserID(@Param("userID") UUID userID);
 
+    @Modifying
+    @Query(value = "DELETE FROM junes_rel.password_reset_tokens WHERE expiry_date < :expiryDate", nativeQuery = true)
+    int deleteByExpiryDateBefore(@Param("expiryDate") LocalDateTime expiryDate);
 }
