@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.exception.DatabaseDeletionException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.exception.VerificationException;
 import com.gamersblended.junes.model.User;
@@ -10,6 +11,7 @@ import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -145,5 +147,17 @@ public class EmailVerificationTokenService {
             throw new VerificationException("Error in trying to verify : " + user.getEmail());
         }
 
+    }
+
+    @Transactional
+    public void cleanupUnverifiedEmails() {
+        try {
+            int deletedCount = userRepository.deleteAllUnverifiedRecords();
+
+            log.info("Number of unverified emails deleted: {}", deletedCount);
+        } catch (Exception ex) {
+            log.error("Exception in deleting unverified emails: ", ex);
+            throw new DatabaseDeletionException("Exception in deleting unverified emails");
+        }
     }
 }
