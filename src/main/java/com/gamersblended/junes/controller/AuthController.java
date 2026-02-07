@@ -100,9 +100,6 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Reset password successfully sent",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ResponseMessage.class))}),
-            @ApiResponse(responseCode = "404", description = "User with given email not found",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))}),
             @ApiResponse(responseCode = "500", description = "Error in queuing email",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = QueueEmailException.class))})
@@ -114,7 +111,7 @@ public class AuthController {
                                                           String email) {
         log.info("Password reset requested for: {}", email);
         passwordResetService.initiatePasswordReset(email);
-        return ResponseEntity.ok(new ResponseMessage("Reset password successfully sent"));
+        return ResponseEntity.ok(new ResponseMessage("Reset password email successfully sent"));
     }
 
     @Operation(summary = "Reset user's password")
