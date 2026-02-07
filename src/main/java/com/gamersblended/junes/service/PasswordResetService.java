@@ -2,7 +2,6 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.exception.DatabaseDeletionException;
 import com.gamersblended.junes.exception.InvalidTokenException;
-import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.PasswordResetToken;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.PasswordResetTokenRepository;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PASSWORD_EXPIRY_HOURS;
@@ -42,12 +42,14 @@ public class PasswordResetService {
     @Transactional
     public void initiatePasswordReset(String email) {
 
-        User user = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> {
-                    log.error("User not found with email: {}", email);
-                    return new UserNotFoundException("User not found");
-                });
+        Optional<User> userOptional = userRepository.getUserByEmail(email);
 
+        if (userOptional.isEmpty()) {
+            log.error("User not found with email: {}", email);
+            return;
+        }
+
+        User user = userOptional.get();
         tokenRepository.deleteByUserID(user.getUserID());
 
         String token = generateSecureToken();
