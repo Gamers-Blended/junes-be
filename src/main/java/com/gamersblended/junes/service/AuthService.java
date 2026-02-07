@@ -135,7 +135,7 @@ public class AuthService {
         User user = userRepository.getUserByEmail(email)
                 .orElseThrow(() -> {
                     log.error("User not found with email: {}", email);
-                    return new UserNotFoundException("User not found with email: " + email);
+                    return new UserNotFoundException("Invalid email or password");
                 });
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
