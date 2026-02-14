@@ -54,7 +54,7 @@ public class TransactionService {
         pageable = pageableValidator.sanitizePageable(pageable);
 
         Page<Transaction> userTransactionHistory = transactionRepository.findByUserID(userID, pageable);
-        log.info("Number of transactions retrieved for page: {}, {}", userTransactionHistory.getNumberOfElements(), pageable.getPageNumber());
+        log.info("Number of transactions retrieved for page: {}, {}", pageable.getPageNumber(), userTransactionHistory.getNumberOfElements());
 
         // Each transaction has at least 1 item
         List<UUID> transactionIDList = userTransactionHistory.getContent().stream()
