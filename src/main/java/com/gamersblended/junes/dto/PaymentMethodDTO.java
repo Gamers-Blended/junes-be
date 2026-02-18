@@ -11,6 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PaymentMethodDTO {
 
+    private UUID paymentMethodID;
     private String cardType;
     private String cardLastFour;
     private String cardHolderName;
