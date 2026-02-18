@@ -2,7 +2,6 @@ package com.gamersblended.junes.util;
 
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.exception.InputValidationException;
-import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.model.PaymentMethod;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -87,13 +86,6 @@ public class PaymentMethodValidator {
             log.error("Error adding new payment method for user {}: card has expired, {}", userID, expiration);
             throw new InputValidationException("Card has expired");
         }
-
-        // Billing address ID
-        addressRepository.getAddressByUserIDAndID(userID, paymentMethodDTO.getBillingAddressID())
-                .orElseThrow(() -> {
-                    log.error("Billing address not found with ID: {} for user {}", paymentMethodDTO.getBillingAddressID(), userID);
-                    return new SavedItemNotFoundException("Billing address not found with ID: " + paymentMethodDTO.getBillingAddressID());
-                });
 
     }
 

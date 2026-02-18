@@ -35,7 +35,7 @@ public class PaymentMethod {
     @Column(name = "expiration_year", nullable = false)
     private String expirationYear;
 
-    @Column(name = "billing_address_id", nullable = false)
+    @Column(name = "billing_address_id")
     private UUID billingAddressID;
 
     @Column(name = "user_id", nullable = false)

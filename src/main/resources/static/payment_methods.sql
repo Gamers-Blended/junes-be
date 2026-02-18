@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS junes_rel.payment_methods
     expiration_year    VARCHAR(4)   NOT NULL,
 
     -- Foreign keys
-    billing_address_id UUID         NOT NULL REFERENCES junes_rel.addresses (address_id),
+    billing_address_id UUID REFERENCES junes_rel.addresses (address_id),
     user_id            UUID         NOT NULL REFERENCES junes_rel.users (user_id) ON DELETE CASCADE,
 
     -- Status and metadata
@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS junes_rel.payment_methods
     created_on         TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_on         TIMESTAMP
 
-    -- Constraint
-    CONSTRAINT valid_expiration CHECK (
-        expiration_year::integer >= EXTRACT(YEAR FROM NOW())::integer
-            OR (expiration_year::integer = EXTRACT(YEAR FROM NOW())::integer
-            AND expiration_month::integer >= EXTRACT(MONTH FROM NOW())::integer)
-        ),
+        -- Constraint
+        CONSTRAINT valid_expiration CHECK (
+            expiration_year::integer >= EXTRACT(YEAR FROM NOW())::integer
+                OR (expiration_year::integer = EXTRACT(YEAR FROM NOW())::integer
+                AND expiration_month::integer >= EXTRACT(MONTH FROM NOW())::integer)
+            ),
     CONSTRAINT valid_month CHECK (expiration_month::integer BETWEEN 1 AND 12),
     CONSTRAINT valid_last_four CHECK (card_last_four ~ '^[0-9]{4}$')
 
