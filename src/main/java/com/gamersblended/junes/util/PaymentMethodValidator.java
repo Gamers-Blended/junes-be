@@ -20,7 +20,8 @@ import static com.gamersblended.junes.util.InputValidatorUtils.sanitizeString;
 @Component
 public class PaymentMethodValidator {
 
-    private static final Set<String> VALID_CARD_TYPES = Set.of("VISA", "MASTERCARD", "AMEX", "JCB", "UNIONPAY");
+    private static final Set<String> VALID_CARD_TYPES = Set.of("VISA", "MASTERCARD", "AMEX", "DISCOVER", "JCB", "DINERS_CLUB", "UNIONPAY");
+    private static final String INVALID_CARD_TYPE_ERROR_MESSAGE = "only these cards are accepted: VISA, MasterCard, American Express, Discover, Diner's Club, JCB and UnionPay";
     private static final int EXPIRATION_YEAR_UPPER_BOUND = 20;
 
     private final AddressRepository addressRepository;
@@ -48,7 +49,7 @@ public class PaymentMethodValidator {
 
         if (!VALID_CARD_TYPES.contains(paymentMethodDTO.getCardType())) {
             log.error("Error adding new payment method for user {}: Invalid card type: {}", userID, paymentMethodDTO.getCardType());
-            throw new InputValidationException("Invalid card type: " + paymentMethodDTO.getCardType() + ", only these cards are accepted: " + VALID_CARD_TYPES);
+            throw new InputValidationException("Invalid card type, " + INVALID_CARD_TYPE_ERROR_MESSAGE);
         }
 
         // Last 4 Digits
