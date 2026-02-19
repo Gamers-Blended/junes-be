@@ -3,6 +3,7 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
+import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.mapper.AddressMapper;
 import com.gamersblended.junes.mapper.PaymentMethodMapper;
@@ -173,14 +174,12 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, PaymentMethodDTO paymentMethodDTO) {
+    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, EditPaymentMethodRequest editPaymentMethodRequest) {
 
         if (null == targetPaymentMethodID) {
             log.error("Error editing payment method for user {}: payment method ID is not given", userID);
             throw new InputValidationException("Payment method ID is not given");
         }
-
-        paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
 
         List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getPaymentMethodsByUserID(userID);
 
@@ -192,11 +191,31 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Payment method not found with ID: " + targetPaymentMethodID);
                 });
 
+        PaymentMethodDTO paymentMethodDTO = getPaymentMethodDTO(editPaymentMethodRequest, paymentMethodToUpdate);
+
+        paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
+
         checkAndUpdateDefaultPaymentMethod(userID, paymentMethodsFromUserList, paymentMethodDTO);
 
         paymentMethodMapper.updateEntityFromDTO(paymentMethodDTO, paymentMethodToUpdate);
 
         paymentMethodRepository.save(paymentMethodToUpdate);
+    }
+
+    private static PaymentMethodDTO getPaymentMethodDTO(EditPaymentMethodRequest editPaymentMethodRequest, PaymentMethod paymentMethodToUpdate) {
+        PaymentMethodDTO paymentMethodDTO = new PaymentMethodDTO();
+        // Static
+        paymentMethodDTO.setPaymentMethodID(paymentMethodToUpdate.getPaymentMethodID());
+        paymentMethodDTO.setCardType(paymentMethodToUpdate.getCardType());
+        paymentMethodDTO.setCardLastFour(paymentMethodToUpdate.getCardLastFour());
+        paymentMethodDTO.setIsDefault(paymentMethodToUpdate.getIsDefault()); // Separate API to set as default
+        // Possible changes
+        paymentMethodDTO.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
+        paymentMethodDTO.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
+        paymentMethodDTO.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
+        paymentMethodDTO.setBillingAddressID(editPaymentMethodRequest.getBillingAddressID());
+
+        return paymentMethodDTO;
     }
 
     @Transactional

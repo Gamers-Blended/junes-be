@@ -5,6 +5,7 @@ import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.reponse.ResponseMessage;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
+import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.SetAsDefaultRequest;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.AccessTokenService;
@@ -236,11 +237,11 @@ public class SavedItemsController {
                             schema = @Schema(implementation = DuplicatePaymentMethodException.class))})
     })
     @PutMapping("payment-method/{paymentMethodID}")
-    public ResponseEntity<ResponseMessage> editPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID, @RequestBody PaymentMethodDTO paymentMethodDTO) {
+    public ResponseEntity<ResponseMessage> editPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID, @RequestBody EditPaymentMethodRequest editPaymentMethodRequest) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Editing payment method {} for userID: {}...", paymentMethodID, userID);
-        savedItemsService.editPaymentMethod(userID, paymentMethodID, paymentMethodDTO);
+        savedItemsService.editPaymentMethod(userID, paymentMethodID, editPaymentMethodRequest);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully edited"));
     }
 
