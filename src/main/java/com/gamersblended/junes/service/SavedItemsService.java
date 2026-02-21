@@ -321,7 +321,7 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Payment method not found");
                 });
 
-        if (paymentMethod.getBillingAddressID().equals(addressID)) {
+        if (null != paymentMethod.getBillingAddressID() && paymentMethod.getBillingAddressID().equals(addressID)) {
             log.info("Address: {} is already set for Payment method: {}", addressID, paymentMethod.getPaymentMethodID());
             return;
         }
