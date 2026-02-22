@@ -17,7 +17,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -67,8 +66,8 @@ public class TransactionController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = TransactionNotFoundException.class))})
     })
-    @GetMapping("/{transactionID}/details")
-    public ResponseEntity<TransactionDetailsDTO> getTransactionDetails(@RequestHeader(value = "Authorization", required = false) String authHeader, @PathVariable UUID transactionID, Authentication authentication) {
+    @GetMapping("/{orderNumber}/details")
+    public ResponseEntity<TransactionDetailsDTO> getTransactionDetails(@RequestHeader(value = "Authorization", required = false) String authHeader, @PathVariable String orderNumber) {
         UUID userID;
 
         if (null == authHeader || !authHeader.startsWith("Bearer ")) {
@@ -77,8 +76,8 @@ public class TransactionController {
 
         userID = accessTokenService.extractUserIDFromToken(authHeader);
 
-        log.info("Retrieving transaction details for transactionID: {}, userID: {}...", transactionID, userID);
-        TransactionDetailsDTO transactionDetails = transactionService.getTransactionDetails(userID, transactionID);
+        log.info("Retrieving transaction details for order number: {}, userID: {}...", orderNumber, userID);
+        TransactionDetailsDTO transactionDetails = transactionService.getTransactionDetails(userID, orderNumber);
         return ResponseEntity.ok(transactionDetails);
     }
 }

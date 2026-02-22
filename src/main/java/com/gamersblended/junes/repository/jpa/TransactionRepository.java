@@ -15,5 +15,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     // Derived query
     Page<Transaction> findByUserID(UUID userID, Pageable pageable);
 
-    Optional<Transaction> findByUserIDAndTransactionID(UUID userID, UUID transactionID);
+    Optional<Transaction> findByUserIDAndOrderNumber(UUID userID, String orderNumber);
 }

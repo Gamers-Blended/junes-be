@@ -88,12 +88,14 @@ public class TransactionService {
         return transactionHistoryDTO;
     }
 
-    public TransactionDetailsDTO getTransactionDetails(UUID userID, UUID transactionID) {
-        Transaction transaction = transactionRepository.findByUserIDAndTransactionID(userID, transactionID)
+    public TransactionDetailsDTO getTransactionDetails(UUID userID, String orderNumber) {
+        Transaction transaction = transactionRepository.findByUserIDAndOrderNumber(userID, orderNumber)
                 .orElseThrow(() -> {
-                    log.error("Transaction with ID: {} not found for user: {}", transactionID, userID);
+                    log.error("Order number: {} not found for user: {}", orderNumber, userID);
                     return new TransactionNotFoundException("Transaction not found");
                 });
+
+        UUID transactionID = transaction.getTransactionID();
 
         List<TransactionItem> items = transactionItemRepository.findByTransactionID(transactionID);
 
