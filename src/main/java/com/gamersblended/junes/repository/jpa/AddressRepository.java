@@ -20,6 +20,9 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
     @Query(value = "SELECT * FROM junes_rel.addresses WHERE user_id = :userID AND address_id = :addressID AND deleted_on IS NULL", nativeQuery = true)
     Optional<Address> getAddressByUserIDAndID(@Param("userID") UUID userID, @Param("addressID") UUID addressID);
 
+    @Query(value = "SELECT * FROM junes_rel.addresses WHERE user_id = :userID AND address_id = :addressID", nativeQuery = true)
+    Optional<Address> getAddressByUserIDAndIDWithDeleted(@Param("userID") UUID userID, @Param("addressID") UUID addressID);
+
     @Modifying
     @Query(value = "UPDATE junes_rel.addresses SET is_default = false WHERE user_id = :userID AND is_default = true", nativeQuery = true)
     void unsetDefaultForUser(@Param("userID") UUID userID);

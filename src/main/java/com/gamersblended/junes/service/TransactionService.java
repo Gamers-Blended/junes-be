@@ -114,7 +114,8 @@ public class TransactionService {
         transactionDetailsDTO.setShippingWeight(transaction.getShippingWeight());
         transactionDetailsDTO.setTrackingNumber(transaction.getTrackingNumber());
 
-        Address address = addressRepository.getAddressByUserIDAndID(userID, transaction.getShippingAddressID())
+        // Addresses submitted during order creation include deleted addresses
+        Address address = addressRepository.getAddressByUserIDAndIDWithDeleted(userID, transaction.getShippingAddressID())
                 .orElseThrow(() -> {
                     log.error("Address with ID: {} not found for user: {}", transaction.getShippingAddressID(), userID);
                     return new SavedItemNotFoundException("Address not found");
