@@ -114,6 +114,22 @@ public class AuthController {
         return ResponseEntity.ok(new ResponseMessage("Reset password email successfully sent"));
     }
 
+    @Operation(summary = "Validate user's reset token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reset token is valid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))})
+    })
+    @GetMapping("/validate-reset-token/{token}")
+    public ResponseEntity<ResponseMessage> validateResetToken(@PathVariable String token) {
+        log.info("Checking if reset token is valid");
+        passwordResetService.getValidatedResetToken(token);
+        return ResponseEntity.ok(new ResponseMessage("Reset token is valid"));
+    }
+
     @Operation(summary = "Reset user's password")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Reset password successfully sent",

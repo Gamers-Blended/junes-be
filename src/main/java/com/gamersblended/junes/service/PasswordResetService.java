@@ -69,6 +69,22 @@ public class PasswordResetService {
 
     public void resetPassword(String token, String newPassword) {
 
+        PasswordResetToken resetToken = getValidatedResetToken(token);
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        tokenRepository.save(resetToken);
+
+    }
+
+    private String generateSecureToken() {
+        return UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    public PasswordResetToken getValidatedResetToken(String token) {
         PasswordResetToken resetToken = tokenRepository.getTokenEntityByToken(token)
                 .orElseThrow(() -> {
                     log.error("Invalid or expired token");
@@ -85,17 +101,7 @@ public class PasswordResetService {
             throw new InvalidTokenException("Token has already been used");
         }
 
-        User user = resetToken.getUser();
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-
-        resetToken.setUsed(true);
-        tokenRepository.save(resetToken);
-
-    }
-
-    private String generateSecureToken() {
-        return UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
+        return resetToken;
     }
 
     @Transactional
