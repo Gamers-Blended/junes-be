@@ -25,8 +25,8 @@ import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
 @Service
 public class AuthService {
 
-    @Value("${baseURL:}")
-    private String baseURL;
+    @Value("${app.url:}")
+    private String appURL;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -34,7 +34,7 @@ public class AuthService {
     private final EmailValidatorService emailValidator;
     private final EmailVerificationTokenService emailTokenService;
     private final AccessTokenService accessTokenService;
-    public static final String VERIFY_EMAIL_ENDPOINT = "/junes/api/v1/auth/verify?token=";
+    public static final String VERIFY_EMAIL_ROUTE = "/verify?token=";
 
     public AuthService(
             @Qualifier("jpaUsersRepository") UserRepository userRepository, PasswordEncoder passwordEncoder,
@@ -108,7 +108,7 @@ public class AuthService {
         String token = emailTokenService.generateVerificationToken(email, user);
         userRepository.save(user);
 
-        String verificationLink = baseURL + VERIFY_EMAIL_ENDPOINT + token;
+        String verificationLink = appURL + VERIFY_EMAIL_ROUTE + token;
 
         emailProducerService.sendVerificationEmail(email, verificationLink);
 
