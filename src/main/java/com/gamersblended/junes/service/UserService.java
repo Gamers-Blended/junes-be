@@ -119,7 +119,7 @@ public class UserService {
 
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             log.error("Current password does not match user's in database, userID: {}", userID);
-            throw new InputValidationException("Current password does not match user's in database, userID: " + userID);
+            throw new InputValidationException("Current password is incorrect");
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
