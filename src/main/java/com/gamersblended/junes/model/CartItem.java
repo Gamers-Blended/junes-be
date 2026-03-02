@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,36 +15,46 @@ import java.time.LocalDateTime;
         name = "cart_items",
         schema = "junes_rel",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "product_id"})
+                @UniqueConstraint(columnNames = {"cart_id", "product_id"})
         })
 @Getter
 @Setter
 public class CartItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "cart_item_id")
     private Long cartItemID;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userID;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", nullable = false)
+    private Cart cart;
 
     @Column(name = "product_id", nullable = false)
     private String productID;
+
+    @Column(name = "product_name", nullable = false, length = 500)
+    private String productName;
+
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
 
     @Min(1)
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "created_on", nullable = false)
-    @CreationTimestamp // Hibernate will automatically set this on insert
+    @Column(name = "product_image_url", length = 1000)
+    private String productImageURL;
+
+    @Column(name = "created_on", nullable = false, updatable = false)
+    @CreationTimestamp
     private LocalDateTime createdOn;
 
     @Column(name = "updated_on")
-    @UpdateTimestamp // Hibernate will automatically update this on modify
+    @UpdateTimestamp
     private LocalDateTime updatedOn;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
+    public BigDecimal getSubtotal() {
+        return price.multiply(BigDecimal.valueOf(quantity));
+    }
 }

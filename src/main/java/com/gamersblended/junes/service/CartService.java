@@ -4,8 +4,11 @@ import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.exception.EmptyCartException;
 import com.gamersblended.junes.exception.InvalidQuantityException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
+import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.model.Product;
+import com.gamersblended.junes.repository.RedisCartRepository;
+import com.gamersblended.junes.repository.jpa.CartDatabaseRepository;
 import com.gamersblended.junes.repository.jpa.CartRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
@@ -13,14 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,12 +29,86 @@ import java.util.stream.Collectors;
 @Service
 public class CartService {
 
-    private CartRepository cartRepository;
-    private ProductRepository productRepository;
+    private final RedisCartRepository redisCartRepository;
+    private final CartRepository cartRepository;
+    private final CartDatabaseRepository cartDatabaseRepository; // For async persistence
+    private final ProductRepository productRepository;
 
-    public CartService(CartRepository cartRepository, ProductRepository productRepository) {
+    public CartService(RedisCartRepository redisCartRepository, CartRepository cartRepository, CartDatabaseRepository cartDatabaseRepository, ProductRepository productRepository) {
+        this.redisCartRepository = redisCartRepository;
         this.cartRepository = cartRepository;
+        this.cartDatabaseRepository = cartDatabaseRepository;
         this.productRepository = productRepository;
+    }
+
+    public Cart getOrCreateCart(UUID userID, UUID sessionID) {
+        Optional<Cart> cart = redisCartRepository.getCart(userID, sessionID);
+        return cart.orElseGet(() -> redisCartRepository.createCart(userID, sessionID));
+    }
+
+    public Optional<Cart> getCart(UUID userID, UUID sessionID) {
+        return redisCartRepository.getCart(userID, sessionID);
+    }
+
+    public boolean addItemToCart(UUID userID, UUID sessionID, CartItem cartItem) {
+        boolean success = redisCartRepository.addItem(userID, sessionID, cartItem);
+
+        if (success) {
+            asyncPersistToDatabase(userID, sessionID);
+        }
+
+        return success;
+    }
+
+    public boolean removeItemFromCart(UUID userID,  UUID sessionID, String productID) {
+        boolean success = redisCartRepository.removeItem(userID, sessionID, productID);
+
+        if (success) {
+            asyncPersistToDatabase(userID, sessionID);
+        }
+
+        return success;
+    }
+
+    public boolean updateItemQuantity(UUID userID, UUID sessionID, String productID, int quantity) {
+        boolean success = redisCartRepository.updateItemQuantity(userID, sessionID, productID, quantity);
+
+        if (success) {
+            asyncPersistToDatabase(userID, sessionID);
+        }
+
+        return success;
+    }
+
+    public boolean clearCart(UUID userID, UUID sessionID) {
+        boolean success = redisCartRepository.clearCart(userID, sessionID);
+
+        if (success) {
+            asyncPersistToDatabase(userID, sessionID);
+        }
+
+        return success;
+    }
+
+    public boolean deleteCart(UUID userID, UUID sessionID) {
+        return redisCartRepository.deleteCart(userID, sessionID);
+    }
+
+    @Async
+    public void asyncPersistToDatabase(UUID userID, UUID sessionID) {
+        // Only persist registered user carts to database
+        if (null == userID) {
+            return;
+        }
+
+        try {
+            Optional<Cart> cart = redisCartRepository.getCart(userID, sessionID);
+
+            cart.ifPresent(cartDatabaseRepository::save);
+            log.info("Async persisted cart to database for userID = {}", userID);
+        } catch (Exception ex) {
+            log.error("Error persisting cart to database for userID = {}", userID, ex);
+        }
     }
 
     /**

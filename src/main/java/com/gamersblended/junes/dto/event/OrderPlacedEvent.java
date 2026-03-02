@@ -13,7 +13,9 @@ import static com.gamersblended.junes.constant.KafkaConstants.ORDER_PLACED;
 public class OrderPlacedEvent extends BaseEvent {
 
     private UUID transactionID;
+    private String orderNumber;
     private UUID userID;
+    private UUID sessionID;
     private BigDecimal totalAmount;
     private List<OrderItemDTO> itemList;
 
