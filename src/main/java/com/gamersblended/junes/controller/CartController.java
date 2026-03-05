@@ -39,7 +39,7 @@ public class CartController {
     @GetMapping("/products")
     public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
                                                                   @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, Pageable pageable) {
-        log.info("Calling get shopping cart product(s) API, page {}!", pageable.getPageNumber());
+        log.info("Calling get shopping cart product(s) API, page {}", pageable.getPageNumber());
 
         return ResponseEntity.ok(cartService.getCartProducts(userID, sessionID, pageable));
     }
@@ -48,9 +48,7 @@ public class CartController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Product added to user's cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = String.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
-                    content = @Content)
+                            schema = @Schema(implementation = String.class))})
     })
     @PostMapping("/add")
     public ResponseEntity<String> addToCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
@@ -60,22 +58,21 @@ public class CartController {
         cartService.addItemToCart(userID, sessionID, cartItemDTO);
         return ResponseEntity.ok("Product added to cart");
     }
-//
-//    @Operation(summary = "Remove product from user's cart")
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "200", description = "Product removed from cart",
-//                    content = {@Content(mediaType = "application/json",
-//                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
-//            @ApiResponse(responseCode = "204", description = "Users cart does not exist in database",
-//                    content = @Content),
-//            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
-//                    content = @Content),
-//            @ApiResponse(responseCode = "404", description = "Product not found in cart",
-//                    content = @Content),
-//    })
-//    @PostMapping("/remove")
-//    public ResponseEntity<String> removeFromCart(@RequestParam Long userID, @RequestBody CartItemDTO cartItemDTO) {
-//        log.info("Calling remove from cart API for userID = {}, productID = {}, quantity = {}!", userID, cartItemDTO.getProductID(), cartItemDTO.getQuantity());
-//        return ResponseEntity.ok(cartService.removeFromCart(userID, cartItemDTO));
-//    }
+
+    @Operation(summary = "Remove product from user's cart")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Product removed from cart",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
+                    content = @Content),
+    })
+    @DeleteMapping("/remove/{productID}")
+    public ResponseEntity<String> removeFromCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
+                                                 @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, @PathVariable String productID) {
+        log.info("Calling remove from cart API for userID = {}, productID = {}", userID, productID);
+
+        cartService.removeItemFromCart(userID, sessionID, productID);
+        return ResponseEntity.ok("Product removed from cart");
+    }
 }
