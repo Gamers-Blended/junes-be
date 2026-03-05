@@ -1,8 +1,11 @@
 package com.gamersblended.junes.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gamersblended.junes.dto.CartItemDTO;
+import com.gamersblended.junes.mapper.CartProductMapper;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
+import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -20,10 +23,14 @@ public class RedisCartRepository {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final CartProductMapper cartProductMapper;
+    private final ProductRepository productRepository;
 
-    public RedisCartRepository(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper) {
+    public RedisCartRepository(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper, CartProductMapper cartProductMapper, ProductRepository productRepository) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
+        this.cartProductMapper = cartProductMapper;
+        this.productRepository = productRepository;
     }
 
     private static final String USER_CART_PREFIX = "user:cart:";
@@ -137,25 +144,26 @@ public class RedisCartRepository {
         }
     }
 
-    public boolean addItem(UUID userID, UUID sessionID, CartItem item) {
+    public boolean addItem(UUID userID, UUID sessionID, CartItemDTO itemDTO) {
         int maxRetries = 3;
 
         for (int i = 0; i < maxRetries; i++) {
             Optional<Cart> cartOptional = getCart(userID, sessionID);
             Cart cart = cartOptional.orElseGet(() -> createCart(userID, sessionID));
+            CartItem cartItem = cartProductMapper.toCartItemEntity(itemDTO);
 
-            // Check if item already exists
+            // If item already exists, update quantity
             boolean itemExists = false;
             for (CartItem existingItem : cart.getItemList()) {
-                if (existingItem.getProductID().equals(item.getProductID())) {
-                    existingItem.setQuantity(existingItem.getQuantity() + item.getQuantity());
+                if (existingItem.getProductID().equals(cartItem.getProductID())) {
+                    existingItem.setQuantity(existingItem.getQuantity() + cartItem.getQuantity());
                     itemExists = true;
                     break;
                 }
             }
 
             if (!itemExists) {
-                cart.getItemList().add(item);
+                cart.addItem(cartItem);
             }
 
             if (updateCartAtomic(cart)) {

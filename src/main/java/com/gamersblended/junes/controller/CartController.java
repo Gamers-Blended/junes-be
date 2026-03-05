@@ -2,7 +2,7 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CartItemDTO;
-import com.gamersblended.junes.dto.ProductSliderItemDTO;
+import com.gamersblended.junes.dto.ProductInCartDTO;
 import com.gamersblended.junes.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,7 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
 public class CartController {
 
-    private CartService cartService;
+    private final CartService cartService;
 
     public CartController(CartService cartService) {
         this.cartService = cartService;
@@ -34,47 +34,48 @@ public class CartController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Products inside user's cart shown",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartItemDTO.class))})
+                            schema = @Schema(implementation = ProductInCartDTO.class))})
     })
-    @PostMapping("/products")
-    public ResponseEntity<Page<CartItemDTO>> getCartProducts(@RequestParam(required = false) Long userID, @RequestBody(required = false) List<CartItemDTO> cartItemDTOList, Pageable pageable) {
-        if (null == cartItemDTOList) {
-            log.info("Calling get shopping cart product(s) API for logged user with userID = {}, page = {}, sort by = {}!", userID, pageable.getPageNumber(), pageable.getSort());
-        } else {
-            log.info("Calling get shopping cart product(s) API for guest user, page {}!", pageable.getPageNumber());
-        }
-        return ResponseEntity.ok(cartService.getCartProducts(userID, cartItemDTOList, pageable));
+    @GetMapping("/products")
+    public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
+                                                                  @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, Pageable pageable) {
+        log.info("Calling get shopping cart product(s) API, page {}!", pageable.getPageNumber());
+
+        return ResponseEntity.ok(cartService.getCartProducts(userID, sessionID, pageable));
     }
 
     @Operation(summary = "Add product to user's cart")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Product added to user's cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
+                            schema = @Schema(implementation = String.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid quantity given",
                     content = @Content)
     })
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestParam Long userID, @RequestBody CartItemDTO cartItemDTO) {
-        log.info("Calling add to cart API for userID = {}, product = {}!", userID, cartItemDTO);
-        return ResponseEntity.ok(cartService.addToCart(userID, cartItemDTO));
-    }
+    public ResponseEntity<String> addToCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
+                                            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, @RequestBody CartItemDTO cartItemDTO) {
+        log.info("Calling add to cart API for userID = {}", userID);
 
-    @Operation(summary = "Remove product from user's cart")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Product removed from cart",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
-            @ApiResponse(responseCode = "204", description = "Users cart does not exist in database",
-                    content = @Content),
-            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
-                    content = @Content),
-            @ApiResponse(responseCode = "404", description = "Product not found in cart",
-                    content = @Content),
-    })
-    @PostMapping("/remove")
-    public ResponseEntity<String> removeFromCart(@RequestParam Long userID, @RequestBody CartItemDTO cartItemDTO) {
-        log.info("Calling remove from cart API for userID = {}, productID = {}, quantity = {}!", userID, cartItemDTO.getProductID(), cartItemDTO.getQuantity());
-        return ResponseEntity.ok(cartService.removeFromCart(userID, cartItemDTO));
+        cartService.addItemToCart(userID, sessionID, cartItemDTO);
+        return ResponseEntity.ok("Product added to cart");
     }
+//
+//    @Operation(summary = "Remove product from user's cart")
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "200", description = "Product removed from cart",
+//                    content = {@Content(mediaType = "application/json",
+//                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
+//            @ApiResponse(responseCode = "204", description = "Users cart does not exist in database",
+//                    content = @Content),
+//            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
+//                    content = @Content),
+//            @ApiResponse(responseCode = "404", description = "Product not found in cart",
+//                    content = @Content),
+//    })
+//    @PostMapping("/remove")
+//    public ResponseEntity<String> removeFromCart(@RequestParam Long userID, @RequestBody CartItemDTO cartItemDTO) {
+//        log.info("Calling remove from cart API for userID = {}, productID = {}, quantity = {}!", userID, cartItemDTO.getProductID(), cartItemDTO.getQuantity());
+//        return ResponseEntity.ok(cartService.removeFromCart(userID, cartItemDTO));
+//    }
 }

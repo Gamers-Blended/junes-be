@@ -1,6 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CartItemDTO;
+import com.gamersblended.junes.dto.ProductInCartDTO;
 import com.gamersblended.junes.exception.EmptyCartException;
 import com.gamersblended.junes.exception.InvalidQuantityException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
@@ -21,7 +22,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -50,17 +54,20 @@ public class CartService {
         return redisCartRepository.getCart(userID, sessionID);
     }
 
-    public boolean addItemToCart(UUID userID, UUID sessionID, CartItem cartItem) {
-        boolean success = redisCartRepository.addItem(userID, sessionID, cartItem);
+    public void addItemToCart(UUID userID, UUID sessionID, CartItemDTO cartItemDTO) {
+        // Validate quantity
+        if (Boolean.FALSE.equals(validateQuantity(cartItemDTO.getQuantity()))) {
+            throw new InvalidQuantityException("Error in adding to cart due to invalid quantity value: " + cartItemDTO.getQuantity());
+        }
+
+        boolean success = redisCartRepository.addItem(userID, sessionID, cartItemDTO);
 
         if (success) {
             asyncPersistToDatabase(userID, sessionID);
         }
-
-        return success;
     }
 
-    public boolean removeItemFromCart(UUID userID,  UUID sessionID, String productID) {
+    public boolean removeItemFromCart(UUID userID, UUID sessionID, String productID) {
         boolean success = redisCartRepository.removeItem(userID, sessionID, productID);
 
         if (success) {
@@ -95,6 +102,7 @@ public class CartService {
     }
 
     @Async
+    @Transactional
     public void asyncPersistToDatabase(UUID userID, UUID sessionID) {
         // Only persist registered user carts to database
         if (null == userID) {
@@ -102,241 +110,90 @@ public class CartService {
         }
 
         try {
-            Optional<Cart> cart = redisCartRepository.getCart(userID, sessionID);
+            syncCartFromRedis(userID, sessionID);
 
-            cart.ifPresent(cartDatabaseRepository::save);
             log.info("Async persisted cart to database for userID = {}", userID);
         } catch (Exception ex) {
             log.error("Error persisting cart to database for userID = {}", userID, ex);
         }
     }
 
-    /**
-     * For get shopping cart API for both logged user and guest
-     *
-     * @param userID                  Provided if user is logged in
-     * @param guestCartItemDTOList Provided if user is not logged in
-     * @param pageable                Sets page size and sorting order
-     * @return A paginated list of products in cart for both logged user and guest cases
-     */
-    public Page<CartItemDTO> getCartProducts(Long userID, List<CartItemDTO> guestCartItemDTOList, Pageable pageable) {
-        if (null != userID) {
-            // Logged user -> get from database
-            return getLoggedUserCart(userID, pageable);
-        } else {
-            // Not logged -> data will come from frontend cache
-            return getGuestCart(guestCartItemDTOList, pageable);
-        }
+    public void syncCartFromRedis(UUID userID, UUID sessionID) {
+        Optional<Cart> redisCart = redisCartRepository.getCart(userID, sessionID);
+
+        redisCart.ifPresent(rCart -> {
+            Cart dbCart = cartDatabaseRepository.findByUserID(userID)
+                    .orElse(new Cart());
+
+            dbCart.setUserID(userID);
+            dbCart.setSessionID(sessionID);
+
+            dbCart.getItemList().clear();
+            rCart.getItemList().forEach(dbCart::addItem);
+
+            cartDatabaseRepository.save(dbCart);
+
+        });
     }
 
-    /**
-     * Get products inside cart for logged user
-     *
-     * @param userID   The logged-in user's ID
-     * @param pageable Sets page size and sorting order
-     * @return A paginated list of products in cart
-     */
-    public Page<CartItemDTO> getLoggedUserCart(Long userID, Pageable pageable) {
-        // Get cart items from database
-        Page<CartItem> userCart = cartRepository.getUserCart(userID, pageable);
-        log.info("userID {} has {} item(s) in cart.", userID, userCart.getTotalElements());
+    public Page<ProductInCartDTO> getCartProducts(UUID userID, UUID sessionID, Pageable pageable) {
+        Cart cart = getOrCreateCart(userID, sessionID);
+        log.info("userID {} has {} item(s) in cart.", userID, cart.getItemList().size());
 
-        if (userCart.isEmpty()) {
+        return generateCartPage(cart, pageable);
+    }
+
+    public Page<ProductInCartDTO> generateCartPage(Cart cart, Pageable pageable) {
+
+        if (cart.getItemList().isEmpty()) {
             return Page.empty(pageable);
         }
-        // Extract product_IDs to fetch metadata
-        List<String> productIDFromCartList = userCart.getContent().stream()
+        // Extract productIDs to fetch metadata
+        List<String> productIDFromCartList = cart.getItemList().stream()
                 .map(CartItem::getProductID)
                 .collect(Collectors.toList());
 
-        // Fetch product metadata from MongoDB
+        // Fetch product metadata from product database
         List<Product> metadataList = productRepository.findByIdIn(productIDFromCartList);
         Map<String, Product> productMap = metadataList.stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
 
         // Create DTO using cart items and metadata data
-        List<CartItemDTO> productsInCartList = userCart.getContent().stream()
+        List<ProductInCartDTO> productsInCartList = cart.getItemList().stream()
                 .map(currentProductInCartItem -> {
                     Product metadata = productMap.get(currentProductInCartItem.getProductID());
                     if (metadata != null) {
-                        return new CartItemDTO(
+                        return new ProductInCartDTO(
                                 currentProductInCartItem.getProductID(),
                                 metadata.getName(),
+                                metadata.getSlug(),
                                 metadata.getPrice(),
                                 metadata.getPlatform(),
                                 metadata.getRegion(),
                                 metadata.getEdition(),
                                 metadata.getProductImageUrl(),
                                 currentProductInCartItem.getQuantity(),
-                                currentProductInCartItem.getUserID(),
                                 currentProductInCartItem.getCreatedOn()
                         );
                     } else {
                         // Case when productID not found in MongoDB
-                        return new CartItemDTO(
+                        return new ProductInCartDTO(
                                 currentProductInCartItem.getProductID(),
                                 "Unknown Product",
+                                "",
                                 new BigDecimal("0.00"),
                                 "Unknown Product",
                                 "Unknown Product",
                                 "Unknown Product",
                                 "",
                                 currentProductInCartItem.getQuantity(),
-                                currentProductInCartItem.getUserID(),
                                 currentProductInCartItem.getCreatedOn()
                         );
                     }
                 })
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(productsInCartList, pageable, userCart.getTotalElements());
-    }
-
-    /**
-     * Get products inside cart for guest
-     *
-     * @param guestCartItemDTOList A list of products (product_id + quantity) that guest has in cart from frontend cache
-     * @param pageable                Sets page size and sorting order
-     * @return A paginated list of products in cart
-     */
-    private Page<CartItemDTO> getGuestCart(List<CartItemDTO> guestCartItemDTOList, Pageable pageable) {
-        if (null == guestCartItemDTOList || guestCartItemDTOList.isEmpty()) {
-            return Page.empty(pageable);
-        }
-
-        // Extract product_IDs from guest cart
-        List<String> productIDFromCartList = guestCartItemDTOList.stream()
-                .map(CartItemDTO::getProductID)
-                .collect(Collectors.toList());
-
-        // Fetch metadata from MongoDB
-        Map<String, Product> productMap = getProductMap(productIDFromCartList);
-
-        // Combine cart items with metadata
-        List<CartItemDTO> productsInCartList = guestCartItemDTOList.stream()
-                .map(currentProductInCart -> {
-                    Product metadata = productMap.get(currentProductInCart.getProductID());
-                    if (metadata != null) {
-                        currentProductInCart.setName(metadata.getName());
-                        currentProductInCart.setPrice(metadata.getPrice());
-                        currentProductInCart.setPlatform(metadata.getPlatform());
-                        currentProductInCart.setRegion(metadata.getRegion());
-                        currentProductInCart.setEdition(metadata.getEdition());
-                        currentProductInCart.setProductImageUrl(metadata.getProductImageUrl());
-                        return currentProductInCart;
-                    } else {
-                        // Case when productID not found in MongoDB
-                        return new CartItemDTO(
-                                currentProductInCart.getProductID(),
-                                "Unknown Product",
-                                new BigDecimal("0.00"),
-                                "Unknown Product",
-                                "Unknown Product",
-                                "Unknown Product",
-                                "",
-                                currentProductInCart.getQuantity(),
-                                currentProductInCart.getUserID(),
-                                currentProductInCart.getCreatedOn()
-                        );
-                    }
-                })
-                .collect(Collectors.toList());
-
-        // Only sort by created_on, descending
-        productsInCartList.sort(Comparator.comparing(CartItemDTO::getCreatedOn).reversed());
-
-        // Apply pagination
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), productsInCartList.size());
-
-        if (start >= productsInCartList.size()) {
-            return Page.empty(pageable);
-        }
-
-        List<CartItemDTO> pageContent = productsInCartList.subList(start, end);
-        return new PageImpl<>(pageContent, pageable, productsInCartList.size());
-    }
-
-    /**
-     * Query MongoDB on a list of product_IDs to get Product metadata
-     *
-     * @param productIDList A list of product_IDs to query MongoDB
-     * @return A map with the product_ID as key, corresponding Product as value
-     */
-    public Map<String, Product> getProductMap(List<String> productIDList) {
-        List<Product> metadataList = productRepository.findByIdIn(productIDList);
-        return metadataList.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
-    }
-
-    /**
-     * Add given product to user's cart
-     *
-     * @param userID       The ID of the user whose cart is modified
-     * @param productToAdd The Product to add to user's cart
-     * @return Output message
-     */
-    @Transactional
-    public String addToCart(Long userID, CartItemDTO productToAdd) {
-        try {
-            // Validate quantity
-            if (Boolean.FALSE.equals(validateQuantity(productToAdd.getQuantity()))) {
-                throw new InvalidQuantityException("Error in adding to userID's (" + userID + ") cart due to invalid quantity value: " + productToAdd.getQuantity());
-            }
-
-            // Get user's cart from database
-            List<CartItem> userCartItemProductList = cartRepository.getUserCart(userID);
-
-            // If user does not have cart data in database
-            // Create new record with productToAdd and save to database
-            if (userCartItemProductList.isEmpty()) {
-                log.info("UserID {} has an empty cart, creating a new record...", userID);
-                addCartItemToDatabase(userID, productToAdd);
-                return "Product added to cart";
-            }
-
-            // Check if user already has product in cart
-            Optional<CartItem> queriedCartProduct = userCartItemProductList.stream()
-                    .filter(cartItemDTO -> cartItemDTO.getProductID().equals(productToAdd.getProductID()))
-                    .findFirst();
-            if (queriedCartProduct.isPresent()) {
-                // Update quantity if record exists in database
-                CartItem existingCartItemProduct = queriedCartProduct.get();
-                Integer newQuantity = existingCartItemProduct.getQuantity() + productToAdd.getQuantity();
-                log.info("UserID {} already has productID {} in their cart, updating quantity from {} to {}...", userID, productToAdd.getProductID(),
-                        existingCartItemProduct.getQuantity(), newQuantity);
-                existingCartItemProduct.setQuantity(newQuantity);
-                existingCartItemProduct.setUpdatedOn(LocalDateTime.now());
-                cartRepository.save(existingCartItemProduct);
-            } else {
-                // Create new record inside cart database
-                log.info("UserID {} doesn't have productID {} in their cart, creating a new record...", userID, productToAdd.getProductID());
-                addCartItemToDatabase(userID, productToAdd);
-            }
-
-            return "Product added to cart";
-        } catch (Exception ex) {
-            log.error("Exception in addToCart: ", ex);
-            return "Error in adding to userID's (" + userID + ") cart.";
-        }
-    }
-
-    /**
-     * Add given product as a new record to carts database
-     *
-     * @param userID       The ID of the user whose cart is modified
-     * @param productToAdd The Product to add to user's cart
-     */
-    private void addCartItemToDatabase(Long userID, CartItemDTO productToAdd) {
-        try {
-            CartItem newCartItem = new CartItem();
-            newCartItem.setUserID(userID);
-            newCartItem.setProductID(productToAdd.getProductID());
-            newCartItem.setQuantity(productToAdd.getQuantity());
-            newCartItem.setCreatedOn(productToAdd.getCreatedOn());
-            cartRepository.save(newCartItem);
-        } catch (Exception ex) {
-            log.error("Exception in addCartItemToDatabase: ", ex);
-        }
+        return new PageImpl<>(productsInCartList, pageable, cart.getItemList().size());
     }
 
     /**
