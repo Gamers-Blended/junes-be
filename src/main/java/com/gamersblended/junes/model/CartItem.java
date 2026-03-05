@@ -1,5 +1,6 @@
 package com.gamersblended.junes.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -24,8 +26,9 @@ public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "cart_item_id")
-    private Long cartItemID;
+    private UUID cartItemID;
 
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
     private Cart cart;
@@ -33,18 +36,12 @@ public class CartItem {
     @Column(name = "product_id", nullable = false)
     private String productID;
 
-    @Column(name = "product_name", nullable = false, length = 500)
-    private String productName;
-
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
     @Min(1)
     @Column(nullable = false)
     private Integer quantity;
-
-    @Column(name = "product_image_url", length = 1000)
-    private String productImageURL;
 
     @Column(name = "created_on", nullable = false, updatable = false)
     @CreationTimestamp

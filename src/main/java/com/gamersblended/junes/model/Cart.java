@@ -1,5 +1,6 @@
 package com.gamersblended.junes.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -43,6 +44,7 @@ public class Cart {
     @Column(name = "version", nullable = false)
     private Integer version;
 
+    @JsonManagedReference
     @OneToMany(
             mappedBy = "cart",
             cascade = CascadeType.ALL,
