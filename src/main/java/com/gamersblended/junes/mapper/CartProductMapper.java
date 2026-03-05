@@ -16,4 +16,6 @@ public interface CartProductMapper {
 
     Product toEntity(CartItemDTO dto);
 
+    CartItem toCartItemEntity(CartItemDTO dto);
+
 }

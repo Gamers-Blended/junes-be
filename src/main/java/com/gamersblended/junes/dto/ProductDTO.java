@@ -27,6 +27,7 @@ public class ProductDTO {
     private Set<String> numberOfPlayers;
     private Integer unitsSold;
     private Integer stock;
+    private String productImageUrl;
     private List<String> imageUrlList;
     private String editionNotes;
     private LocalDate createdOn;
