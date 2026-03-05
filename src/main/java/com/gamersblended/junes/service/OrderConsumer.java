@@ -24,8 +24,8 @@ public class OrderConsumer {
     }
 
     @KafkaListener(
-            topics = "${kafka.topic.order-placed}",
-            groupId = "${kafka.consumer.group-id}",
+            topics = "${spring.kafka.topic.order-placed}",
+            groupId = "${spring.kafka.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void handleOrderPlacedEvent(
@@ -55,7 +55,7 @@ public class OrderConsumer {
                         event.getOrderNumber(), event.getUserID());
             }
 
-            cartService.archiveCartForOrder(event.getOrderNumber(), event.getUserID(), event.getSessionID());
+//            cartService.archiveCartForOrder(event.getOrderNumber(), event.getUserID(), event.getSessionID());
 
             acknowledgment.acknowledge();
         } catch (Exception ex) {
@@ -69,8 +69,8 @@ public class OrderConsumer {
     }
 
     @KafkaListener(
-            topics = "${kafka.topic.order-cancelled}",
-            groupId = "${kafka.consumer.group-id}",
+            topics = "${spring.kafka.topic.order-cancelled}",
+            groupId = "${spring.kafka.consumer.group-id}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void handleOrderCancelledEvent(
@@ -93,7 +93,7 @@ public class OrderConsumer {
         } catch (Exception ex) {
             log.error("EError processing order cancelled event: offset = {}, partition = {}",
                     record.offset(), record.partition(), ex);
-            throw new RuntimeException("Failed to process order cancelled event", e);
+            throw new RuntimeException("Failed to process order cancelled event", ex);
         }
     }
 }
