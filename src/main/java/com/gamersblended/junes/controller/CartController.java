@@ -33,7 +33,13 @@ public class CartController {
 
     @Operation(summary = "Get products in user's cart")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Paged list of products in cart")
+            @ApiResponse(responseCode = "200", description = "Paged list of products in cart"),
+            @ApiResponse(responseCode = "500", description = "Corrupt cart data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RedisDataException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error saving cart to database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CartPersistenceException.class))})
     })
     @GetMapping("/products")
     public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
@@ -54,6 +60,9 @@ public class CartController {
             @ApiResponse(responseCode = "404", description = "Product ID not found",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProductNotFoundException.class))}),
+            @ApiResponse(responseCode = "500", description = "Corrupt cart data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RedisDataException.class))}),
             @ApiResponse(responseCode = "500", description = "Error serialising cart",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = CartSerialisationException.class))}),

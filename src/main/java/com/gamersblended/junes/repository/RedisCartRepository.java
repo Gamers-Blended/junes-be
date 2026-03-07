@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.exception.CartPersistenceException;
 import com.gamersblended.junes.exception.CartSerialisationException;
+import com.gamersblended.junes.exception.RedisDataException;
 import com.gamersblended.junes.mapper.CartProductMapper;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
@@ -91,9 +92,9 @@ public class RedisCartRepository {
         try {
             Cart cart = objectMapper.readValue(cartJson, Cart.class);
             return Optional.of(cart);
-        } catch (Exception e) {
-            log.error("Error deserialising cart from Redis: {}", key, e);
-            return Optional.empty();
+        } catch (Exception ex) {
+            log.error("Corrupt cart data at key = {}", key, ex);
+            throw new RedisDataException("Failed to parse cart for user");
         }
     }
 
