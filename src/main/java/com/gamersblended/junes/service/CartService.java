@@ -44,11 +44,19 @@ public class CartService {
     }
 
     public Cart getOrCreateCart(UUID userID, UUID sessionID) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
         Optional<Cart> cart = redisCartRepository.getCart(userID, sessionID);
         return cart.orElseGet(() -> redisCartRepository.createCart(userID, sessionID));
     }
 
     public void addItemToCart(UUID userID, UUID sessionID, CartItemDTO cartItemDTO) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
         if (Boolean.FALSE.equals(validateQuantity(cartItemDTO.getQuantity()))) {
             throw new InvalidQuantityException("Error in adding to cart due to invalid quantity value: " + cartItemDTO.getQuantity());
         }
@@ -67,6 +75,10 @@ public class CartService {
     }
 
     public void removeItemFromCart(UUID userID, UUID sessionID, String productID) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
         boolean success = redisCartRepository.removeItem(userID, sessionID, productID);
 
         if (success) {
