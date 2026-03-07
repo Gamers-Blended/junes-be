@@ -3,14 +3,12 @@ package com.gamersblended.junes.repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.CartItemDTO;
-import com.gamersblended.junes.exception.CartPersistenceException;
 import com.gamersblended.junes.exception.CartSerialisationException;
 import com.gamersblended.junes.exception.RedisDataException;
 import com.gamersblended.junes.mapper.CartProductMapper;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
@@ -113,11 +111,8 @@ public class RedisCartRepository {
 
             redisTemplate.opsForValue().set(key, cartJson, ttl);
         } catch (JsonProcessingException ex) {
-            log.error("Failed to serialize cart for key: {}", key, ex);
-            throw new CartPersistenceException("Failed to serialise cart");
-        } catch (DataAccessException ex) {
-            log.error("Database connection error during cart save for key: {}", key, ex);
-            throw new CartPersistenceException("Database connection error during cart save");
+            log.error("Failed to serialise cart for key: {}", key, ex);
+            throw new CartSerialisationException("Failed to serialise cart");
         }
     }
 
@@ -152,8 +147,8 @@ public class RedisCartRepository {
                 return false;
             }
         } catch (JsonProcessingException ex) {
-            log.error("Failed to serialize cart, key = {}", key, ex);
-            throw new CartSerialisationException("Failed to serialize cart");
+            log.error("Failed to serialise cart, key = {}", key, ex);
+            throw new CartSerialisationException("Failed to serialise cart");
         }
         return true;
     }

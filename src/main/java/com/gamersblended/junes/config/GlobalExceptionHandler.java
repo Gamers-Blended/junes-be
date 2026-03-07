@@ -158,11 +158,6 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    @ExceptionHandler(CartPersistenceException.class)
-    public ResponseEntity<Object> handleCartPersistenceException(CartPersistenceException ex, WebRequest request) {
-        return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
-    }
-
     @ExceptionHandler(RedisDataException.class)
     public ResponseEntity<Object> handleCRedisDataException(RedisDataException ex, WebRequest request) {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);

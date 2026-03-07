@@ -37,9 +37,9 @@ public class CartController {
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = RedisDataException.class))}),
-            @ApiResponse(responseCode = "500", description = "Error saving cart to database",
+            @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartPersistenceException.class))})
+                            schema = @Schema(implementation = CartSerialisationException.class))})
     })
     @GetMapping("/products")
     public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
@@ -63,7 +63,7 @@ public class CartController {
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = RedisDataException.class))}),
-            @ApiResponse(responseCode = "500", description = "Error serialising cart",
+            @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = CartSerialisationException.class))}),
             @ApiResponse(responseCode = "500", description = "Error persisting cart to database",
@@ -84,8 +84,15 @@ public class CartController {
             @ApiResponse(responseCode = "200", description = "Product removed from cart",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = String.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
-                    content = @Content),
+            @ApiResponse(responseCode = "500", description = "Corrupt cart data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RedisDataException.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CartSerialisationException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error inserting token into database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DatabaseInsertionException.class))})
     })
     @DeleteMapping("/remove/{productID}")
     public ResponseEntity<String> removeFromCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
