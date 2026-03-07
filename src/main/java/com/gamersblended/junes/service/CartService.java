@@ -2,9 +2,8 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;
-import com.gamersblended.junes.exception.EmptyCartException;
 import com.gamersblended.junes.exception.InvalidQuantityException;
-import com.gamersblended.junes.exception.ProductNotFoundException;
+import com.gamersblended.junes.exception.MissingIdentifierException;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.model.Product;
@@ -21,7 +20,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +31,7 @@ import java.util.stream.Collectors;
 @Service
 public class CartService {
 
+    private static final String UNKNOWN_PRODUCT = "Unknown product";
     private final RedisCartRepository redisCartRepository;
     private final CartRepository cartRepository;
     private final CartDatabaseRepository cartDatabaseRepository; // For async persistence
@@ -50,10 +49,6 @@ public class CartService {
         return cart.orElseGet(() -> redisCartRepository.createCart(userID, sessionID));
     }
 
-    public Optional<Cart> getCart(UUID userID, UUID sessionID) {
-        return redisCartRepository.getCart(userID, sessionID);
-    }
-
     public void addItemToCart(UUID userID, UUID sessionID, CartItemDTO cartItemDTO) {
         // Validate quantity
         if (Boolean.FALSE.equals(validateQuantity(cartItemDTO.getQuantity()))) {
@@ -67,24 +62,28 @@ public class CartService {
         }
     }
 
-    public boolean removeItemFromCart(UUID userID, UUID sessionID, String productID) {
+    public void removeItemFromCart(UUID userID, UUID sessionID, String productID) {
         boolean success = redisCartRepository.removeItem(userID, sessionID, productID);
 
         if (success) {
             asyncPersistToDatabase(userID, sessionID);
         }
-
-        return success;
     }
 
-    public boolean updateItemQuantity(UUID userID, UUID sessionID, String productID, int quantity) {
+    public void updateItemQuantity(UUID userID, UUID sessionID, String productID, int quantity) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
+        if (Boolean.FALSE.equals(validateQuantity(quantity))) {
+            throw new InvalidQuantityException("Error in updating quantity due to invalid quantity value: " + quantity);
+        }
+
         boolean success = redisCartRepository.updateItemQuantity(userID, sessionID, productID, quantity);
 
         if (success) {
             asyncPersistToDatabase(userID, sessionID);
         }
-
-        return success;
     }
 
     public boolean clearCart(UUID userID, UUID sessionID) {
@@ -151,7 +150,7 @@ public class CartService {
         // Extract productIDs to fetch metadata
         List<String> productIDFromCartList = cart.getItemList().stream()
                 .map(CartItem::getProductID)
-                .collect(Collectors.toList());
+                .toList();
 
         // Fetch product metadata from product database
         List<Product> metadataList = productRepository.findByIdIn(productIDFromCartList);
@@ -179,79 +178,21 @@ public class CartService {
                         // Case when productID not found in MongoDB
                         return new ProductInCartDTO(
                                 currentProductInCartItem.getProductID(),
-                                "Unknown Product",
+                                UNKNOWN_PRODUCT,
                                 "",
                                 new BigDecimal("0.00"),
-                                "Unknown Product",
-                                "Unknown Product",
-                                "Unknown Product",
+                                UNKNOWN_PRODUCT,
+                                UNKNOWN_PRODUCT,
+                                UNKNOWN_PRODUCT,
                                 "",
                                 currentProductInCartItem.getQuantity(),
                                 currentProductInCartItem.getCreatedOn()
                         );
                     }
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         return new PageImpl<>(productsInCartList, pageable, cart.getItemList().size());
-    }
-
-    /**
-     * Remove given product from user's cart
-     *
-     * @param userID          The ID of the user whose cart is modified
-     * @param productToRemove The Product to remove from user's cart (must already exist in cart)
-     * @return Output message
-     */
-    @Transactional
-    public String removeFromCart(Long userID, CartItemDTO productToRemove) {
-        try {
-            // Validate quantity
-            if (Boolean.FALSE.equals(validateQuantity(productToRemove.getQuantity()))) {
-                throw new InvalidQuantityException("Error in removing productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart due to invalid quantity value: " + productToRemove.getQuantity());
-            }
-
-            // Get user's cart from database
-            List<CartItem> userCartItemProductList = cartRepository.getUserCart(userID);
-
-            // User supposed to have cart data in database, else throw error
-            if (userCartItemProductList.isEmpty()) {
-                log.error("UserID {} has an empty cart! Nothing to remove!", userID);
-                throw new EmptyCartException("UserID " + userID + " has an empty cart! Nothing to remove!");
-            }
-
-            // Check if user already has product in cart
-            Optional<CartItem> queriedCartProduct = userCartItemProductList.stream()
-                    .filter(cartItemDTO -> cartItemDTO.getProductID().equals(productToRemove.getProductID()))
-                    .findFirst();
-            if (queriedCartProduct.isPresent()) {
-                // Update quantity
-                CartItem existingCartItemProduct = queriedCartProduct.get();
-                Integer newQuantity = existingCartItemProduct.getQuantity() - productToRemove.getQuantity();
-
-                // if newQuantity is <= 0, remove record from carts database
-                if (newQuantity <= 0) {
-                    log.info("productID {} will be removed from user's ({}) cart.", existingCartItemProduct.getProductID(), userID);
-                    cartRepository.delete(existingCartItemProduct);
-                } else {
-                    log.info("Updating productID {} quantity from {} to {} for UserID's ({}) cart, ...", productToRemove.getProductID(),
-                            existingCartItemProduct.getQuantity(), newQuantity, userID);
-                    existingCartItemProduct.setQuantity(newQuantity);
-                    existingCartItemProduct.setUpdatedOn(LocalDateTime.now());
-                    cartRepository.save(existingCartItemProduct);
-                }
-            } else {
-                // User supposed to have to-be-removed product inside cart, else throw error
-                log.error("UserID {} doesn't have productID {} in their cart, nothing to remove!", userID, productToRemove.getProductID());
-                throw new ProductNotFoundException("UserID + " + userID + " doesn't have productID " + productToRemove.getProductID() + " in their cart, nothing to remove!");
-            }
-
-            return productToRemove.getQuantity() + " of ProductID " + productToRemove.getProductID() + " removed from cart.";
-
-        } catch (Exception ex) {
-            log.error("Exception in removeFromCart: ", ex);
-            return "Error in removing " + productToRemove.getQuantity() + " of productID " + productToRemove.getProductID() + " from userID's (" + userID + ") cart.";
-        }
     }
 
     /**

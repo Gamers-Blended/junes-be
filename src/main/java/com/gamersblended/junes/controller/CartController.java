@@ -3,6 +3,8 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;
+import com.gamersblended.junes.exception.InvalidQuantityException;
+import com.gamersblended.junes.exception.MissingIdentifierException;
 import com.gamersblended.junes.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -74,5 +76,30 @@ public class CartController {
 
         cartService.removeItemFromCart(userID, sessionID, productID);
         return ResponseEntity.ok("Product removed from cart");
+    }
+
+    @Operation(summary = "Remove product from user's cart")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Product removed from cart",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidQuantityException.class))}),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = MissingIdentifierException.class))})
+    })
+    @PutMapping("/{productID}/quantity")
+    public ResponseEntity<String> updateQuantity(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userID,
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID,
+            @PathVariable String productID,
+            @RequestParam int quantity
+    ) {
+        log.info("Calling update item quantity API for userID = {}, productID = {}", userID, productID);
+        cartService.updateItemQuantity(userID, sessionID, productID, quantity);
+
+        return ResponseEntity.ok("Quantity updated successfully");
     }
 }
