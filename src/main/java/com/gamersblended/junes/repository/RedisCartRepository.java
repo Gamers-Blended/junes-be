@@ -1,12 +1,15 @@
 package com.gamersblended.junes.repository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.CartItemDTO;
+import com.gamersblended.junes.exception.CartPersistenceException;
+import com.gamersblended.junes.exception.CartSerialisationException;
 import com.gamersblended.junes.mapper.CartProductMapper;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
-import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
@@ -24,13 +27,11 @@ public class RedisCartRepository {
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private final CartProductMapper cartProductMapper;
-    private final ProductRepository productRepository;
 
-    public RedisCartRepository(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper, CartProductMapper cartProductMapper, ProductRepository productRepository) {
+    public RedisCartRepository(RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper, CartProductMapper cartProductMapper) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.cartProductMapper = cartProductMapper;
-        this.productRepository = productRepository;
     }
 
     private static final String USER_CART_PREFIX = "user:cart:";
@@ -101,25 +102,31 @@ public class RedisCartRepository {
         return redisTemplate.delete(key);
     }
 
-    public boolean saveCart(Cart cart) {
+    public void saveCart(Cart cart) {
         String key = buildKey(cart.getUserID(), cart.getSessionID());
         cart.setUpdatedOn(LocalDateTime.now());
 
         try {
             String cartJson = objectMapper.writeValueAsString(cart);
             Duration ttl = cart.getUserID() != null ? USER_CART_TTL : GUEST_CART_TTL;
+
             redisTemplate.opsForValue().set(key, cartJson, ttl);
-            return true;
-        } catch (Exception e) {
-            log.error("Error deserialising cart from Redis: {}", key, e);
-            return false;
+        } catch (JsonProcessingException ex) {
+            log.error("Failed to serialize cart for key: {}", key, ex);
+            throw new CartPersistenceException("Failed to serialise cart");
+        } catch (DataAccessException ex) {
+            log.error("Database connection error during cart save for key: {}", key, ex);
+            throw new CartPersistenceException("Database connection error during cart save");
         }
     }
 
     public boolean updateCartAtomic(Cart cart) {
         String key = buildKey(cart.getUserID(), cart.getSessionID());
+        int oldVersion = cart.getVersion();
+
+        // Increment version locally for update attempt
         cart.setUpdatedOn(LocalDateTime.now());
-        cart.setVersion(cart.getVersion() + 1);
+        cart.setVersion(oldVersion + 1);
 
         try {
             String cartJson = objectMapper.writeValueAsString(cart);
@@ -133,38 +140,32 @@ public class RedisCartRepository {
                     script,
                     Collections.singletonList(key),
                     cartJson,
-                    String.valueOf(cart.getVersion() - 1),
+                    String.valueOf(oldVersion), // Check against version fetched
                     String.valueOf(ttl.getSeconds())
             );
 
-            return result != null && result == 1;
-        } catch (Exception e) {
-            log.error("Error updating cart atomically from Redis: {}", key, e);
-            return false;
+            // 1 = Success, 0 = Version Mismatch
+            if (result == 0) {
+                // Revert version if update failed
+                cart.setVersion(oldVersion);
+                return false;
+            }
+        } catch (JsonProcessingException ex) {
+            log.error("Failed to serialize cart, key = {}", key, ex);
+            throw new CartSerialisationException("Failed to serialize cart");
         }
+        return true;
     }
 
     public boolean addItem(UUID userID, UUID sessionID, CartItemDTO itemDTO) {
         int maxRetries = 3;
+        CartItem cartItem = cartProductMapper.toCartItemEntity(itemDTO);
 
         for (int i = 0; i < maxRetries; i++) {
             Optional<Cart> cartOptional = getCart(userID, sessionID);
             Cart cart = cartOptional.orElseGet(() -> createCart(userID, sessionID));
-            CartItem cartItem = cartProductMapper.toCartItemEntity(itemDTO);
 
-            // If item already exists, update quantity
-            boolean itemExists = false;
-            for (CartItem existingItem : cart.getItemList()) {
-                if (existingItem.getProductID().equals(cartItem.getProductID())) {
-                    existingItem.setQuantity(existingItem.getQuantity() + cartItem.getQuantity());
-                    itemExists = true;
-                    break;
-                }
-            }
-
-            if (!itemExists) {
-                cart.addItem(cartItem);
-            }
+            updateOrAddItem(cart, cartItem);
 
             if (updateCartAtomic(cart)) {
                 return true;
@@ -197,6 +198,16 @@ public class RedisCartRepository {
         }
 
         return false;
+    }
+
+    public void updateOrAddItem(Cart cart, CartItem newItem) {
+        cart.getItemList().stream()
+                .filter(item -> item.getProductID().equals(newItem.getProductID()))
+                .findFirst()
+                .ifPresentOrElse(
+                        existing -> existing.setQuantity(existing.getQuantity() + newItem.getQuantity()),
+                        () -> cart.addItem(newItem)
+                );
     }
 
     public boolean updateItemQuantity(UUID userID, UUID sessionID, String productID, int quantity) {

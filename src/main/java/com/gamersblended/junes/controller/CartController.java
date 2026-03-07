@@ -3,8 +3,7 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;
-import com.gamersblended.junes.exception.InvalidQuantityException;
-import com.gamersblended.junes.exception.MissingIdentifierException;
+import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -48,7 +47,19 @@ public class CartController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Product added to user's cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = String.class))})
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid quantity given",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidQuantityException.class))}),
+            @ApiResponse(responseCode = "404", description = "Product ID not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductNotFoundException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error serialising cart",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CartSerialisationException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error persisting cart to database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DatabaseInsertionException.class))})
     })
     @PostMapping("/add")
     public ResponseEntity<String> addToCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,

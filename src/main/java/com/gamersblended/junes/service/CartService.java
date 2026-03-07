@@ -2,14 +2,15 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;
+import com.gamersblended.junes.exception.DatabaseInsertionException;
 import com.gamersblended.junes.exception.InvalidQuantityException;
 import com.gamersblended.junes.exception.MissingIdentifierException;
+import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.RedisCartRepository;
 import com.gamersblended.junes.repository.jpa.CartDatabaseRepository;
-import com.gamersblended.junes.repository.jpa.CartRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -33,13 +34,11 @@ public class CartService {
 
     private static final String UNKNOWN_PRODUCT = "Unknown product";
     private final RedisCartRepository redisCartRepository;
-    private final CartRepository cartRepository;
     private final CartDatabaseRepository cartDatabaseRepository; // For async persistence
     private final ProductRepository productRepository;
 
-    public CartService(RedisCartRepository redisCartRepository, CartRepository cartRepository, CartDatabaseRepository cartDatabaseRepository, ProductRepository productRepository) {
+    public CartService(RedisCartRepository redisCartRepository, CartDatabaseRepository cartDatabaseRepository, ProductRepository productRepository) {
         this.redisCartRepository = redisCartRepository;
-        this.cartRepository = cartRepository;
         this.cartDatabaseRepository = cartDatabaseRepository;
         this.productRepository = productRepository;
     }
@@ -50,7 +49,6 @@ public class CartService {
     }
 
     public void addItemToCart(UUID userID, UUID sessionID, CartItemDTO cartItemDTO) {
-        // Validate quantity
         if (Boolean.FALSE.equals(validateQuantity(cartItemDTO.getQuantity()))) {
             throw new InvalidQuantityException("Error in adding to cart due to invalid quantity value: " + cartItemDTO.getQuantity());
         }
@@ -118,8 +116,9 @@ public class CartService {
             syncCartFromRedis(userID, sessionID);
 
             log.info("Async persisted cart to database for userID = {}", userID);
-        } catch (Exception ex) {
+        } catch (DatabaseInsertionException ex) {
             log.error("Error persisting cart to database for userID = {}", userID, ex);
+            throw ex;
         }
     }
 
@@ -153,7 +152,7 @@ public class CartService {
         if (cart.getItemList().isEmpty()) {
             return Page.empty(pageable);
         }
-        // Extract productIDs to fetch metadata
+        // Extract product IDs to fetch metadata from product database
         List<String> productIDFromCartList = cart.getItemList().stream()
                 .map(CartItem::getProductID)
                 .toList();
@@ -181,7 +180,7 @@ public class CartService {
                                 currentProductInCartItem.getCreatedOn()
                         );
                     } else {
-                        // Case when productID not found in MongoDB
+                        // Case when productID not found in product database
                         return new ProductInCartDTO(
                                 currentProductInCartItem.getProductID(),
                                 UNKNOWN_PRODUCT,
