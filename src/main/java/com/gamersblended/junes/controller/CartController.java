@@ -112,17 +112,26 @@ public class CartController {
         return ResponseEntity.ok("Product removed from cart");
     }
 
-    @Operation(summary = "Remove product from user's cart")
+    @Operation(summary = "Change the quantity of a product in user's cart")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Product removed from cart",
+            @ApiResponse(responseCode = "200", description = "Quantity updated successfully",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = MissingIdentifierException.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid quantity given",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = InvalidQuantityException.class))}),
-            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+            @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingIdentifierException.class))})
+                            schema = @Schema(implementation = RedisDataException.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CartSerialisationException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error inserting token into database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DatabaseInsertionException.class))})
     })
     @PutMapping("/{productID}/quantity")
     public ResponseEntity<String> updateQuantity(
