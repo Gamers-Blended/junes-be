@@ -55,6 +55,12 @@ public class CartService {
             throw new InvalidQuantityException("Error in adding to cart due to invalid quantity value: " + cartItemDTO.getQuantity());
         }
 
+        productRepository.findById(cartItemDTO.getProductID())
+                .orElseThrow(() -> {
+                    log.error("Product ID not found: {}", cartItemDTO.getProductID());
+                    return new ProductNotFoundException("Transaction not found");
+                });
+
         boolean success = redisCartRepository.addItem(userID, sessionID, cartItemDTO);
 
         if (success) {
