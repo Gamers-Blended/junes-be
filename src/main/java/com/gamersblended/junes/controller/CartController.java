@@ -34,9 +34,7 @@ public class CartController {
 
     @Operation(summary = "Get products in user's cart")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Products inside user's cart shown",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProductInCartDTO.class))})
+            @ApiResponse(responseCode = "200", description = "Paged list of products in cart")
     })
     @GetMapping("/products")
     public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
