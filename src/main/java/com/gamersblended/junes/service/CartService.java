@@ -21,10 +21,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,19 +50,7 @@ public class CartService {
     }
 
     public void addItemToCart(UUID userID, UUID sessionID, CartItemDTO cartItemDTO) {
-        if (userID == null && sessionID == null) {
-            throw new MissingIdentifierException("User ID or Session ID required");
-        }
-
-        if (Boolean.FALSE.equals(validateQuantity(cartItemDTO.getQuantity()))) {
-            throw new InvalidQuantityException("Error in adding to cart due to invalid quantity value: " + cartItemDTO.getQuantity());
-        }
-
-        productRepository.findById(cartItemDTO.getProductID())
-                .orElseThrow(() -> {
-                    log.error("Product ID not found: {}", cartItemDTO.getProductID());
-                    return new ProductNotFoundException("Transaction not found");
-                });
+        validateForCartItems(userID, sessionID, cartItemDTO.getQuantity(), cartItemDTO.getProductID());
 
         boolean success = redisCartRepository.addItem(userID, sessionID, cartItemDTO);
 
@@ -75,9 +60,7 @@ public class CartService {
     }
 
     public void removeItemFromCart(UUID userID, UUID sessionID, String productID) {
-        if (userID == null && sessionID == null) {
-            throw new MissingIdentifierException("User ID or Session ID required");
-        }
+        validateForCartItems(userID, sessionID, productID);
 
         boolean success = redisCartRepository.removeItem(userID, sessionID, productID);
 
@@ -87,13 +70,7 @@ public class CartService {
     }
 
     public void updateItemQuantity(UUID userID, UUID sessionID, String productID, int quantity) {
-        if (userID == null && sessionID == null) {
-            throw new MissingIdentifierException("User ID or Session ID required");
-        }
-
-        if (Boolean.FALSE.equals(validateQuantity(quantity))) {
-            throw new InvalidQuantityException("Error in updating quantity due to invalid quantity value: " + quantity);
-        }
+        validateForCartItems(userID, sessionID, quantity, productID);
 
         boolean success = redisCartRepository.updateItemQuantity(userID, sessionID, productID, quantity);
 
@@ -216,7 +193,7 @@ public class CartService {
      * Check that quantity is at least 1
      *
      * @param quantity Integer value to check
-     * @return True if value >= 0, else false
+     * @return True if value >= 1, else false
      */
     public Boolean validateQuantity(Integer quantity) {
         if (quantity <= 0) {
@@ -224,5 +201,33 @@ public class CartService {
             return false;
         }
         return true;
+    }
+
+    public void validateForCartItems(UUID userID, UUID sessionID, Integer quantity, String productID) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
+        if (Boolean.FALSE.equals(validateQuantity(quantity))) {
+            throw new InvalidQuantityException("Error in updating quantity due to invalid quantity value: " + quantity);
+        }
+
+        productRepository.findById(productID)
+                .orElseThrow(() -> {
+                    log.error("Product ID not found: {}", productID);
+                    return new ProductNotFoundException("Product not found");
+                });
+    }
+
+    public void validateForCartItems(UUID userID, UUID sessionID, String productID) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
+        productRepository.findById(productID)
+                .orElseThrow(() -> {
+                    log.error("Product ID not found: {}", productID);
+                    return new ProductNotFoundException("Product not found");
+                });
     }
 }
