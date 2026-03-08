@@ -121,8 +121,25 @@ public class CartService {
             dbCart.setUserID(userID);
             dbCart.setSessionID(sessionID);
 
-            dbCart.getItemList().clear();
-            rCart.getItemList().forEach(dbCart::addItem);
+            Map<String, CartItem> existingItems = dbCart.getItemList().stream()
+                    .collect(Collectors.toMap(CartItem::getProductID, Function.identity()));
+
+            // Remove items not in Redis cart
+            Set<String> redisProductIDSet = rCart.getItemList().stream()
+                    .map(CartItem::getProductID)
+                    .collect(Collectors.toSet());
+            dbCart.getItemList().removeIf(i -> !redisProductIDSet.contains(i.getProductID()));
+
+            // Update existing or add new
+            for (CartItem rItem : rCart.getItemList()) {
+                if (existingItems.containsKey(rItem.getProductID())) {
+                    CartItem existingItem = existingItems.get(rItem.getProductID());
+                    existingItem.setQuantity(rItem.getQuantity());
+                    existingItem.setPrice(rItem.getPrice());
+                } else {
+                    dbCart.addItem(rItem);
+                }
+            }
 
             cartDatabaseRepository.save(dbCart);
 
