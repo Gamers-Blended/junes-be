@@ -79,14 +79,16 @@ public class CartService {
         }
     }
 
-    public boolean clearCart(UUID userID, UUID sessionID) {
+    public void clearCart(UUID userID, UUID sessionID) {
+        if (userID == null && sessionID == null) {
+            throw new MissingIdentifierException("User ID or Session ID required");
+        }
+
         boolean success = redisCartRepository.clearCart(userID, sessionID);
 
         if (success) {
             asyncPersistToDatabase(userID, sessionID);
         }
-
-        return success;
     }
 
     public boolean deleteCart(UUID userID, UUID sessionID) {

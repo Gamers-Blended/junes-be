@@ -145,4 +145,33 @@ public class CartController {
 
         return ResponseEntity.ok("Quantity updated successfully");
     }
+
+    @Operation(summary = "Clear user's cart")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cart cleared successfully",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = MissingIdentifierException.class))}),
+            @ApiResponse(responseCode = "500", description = "Corrupt cart data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RedisDataException.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CartSerialisationException.class))}),
+            @ApiResponse(responseCode = "500", description = "Error inserting token into database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = DatabaseInsertionException.class))})
+    })
+    @PutMapping
+    public ResponseEntity<String> clearCart(
+            @RequestHeader(value = "X-User-Id", required = false) UUID userID,
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID
+    ) {
+        log.info("Calling clear API for userID = {}", userID);
+        cartService.clearCart(userID, sessionID);
+
+        return ResponseEntity.ok("Cart cleared successfully");
+    }
 }
