@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS junes_rel.cart_items (
     updated_on TIMESTAMP,
 
     CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id)
-        REFERENCES carts(cart_id) ON DELETE CASCADE,
+        REFERENCES junes_rel.carts(cart_id) ON DELETE CASCADE,
     CONSTRAINT uk_cart_items_cart_product_id UNIQUE (cart_id, product_id)
 );
 

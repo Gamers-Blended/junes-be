@@ -16,7 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "carts")
+@Table(name = "carts", schema = "junes_rel")
 @Getter
 @Setter
 public class Cart {
@@ -42,7 +42,7 @@ public class Cart {
 
     @Version
     @Column(name = "version", nullable = false)
-    private Integer version;
+    private Integer version = 0;
 
     @JsonManagedReference
     @OneToMany(
