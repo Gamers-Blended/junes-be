@@ -64,6 +64,10 @@ public class AccessTokenService {
     }
 
     public UUID extractUserIDFromToken(String authHeader) {
+        if (null == authHeader || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
         try {
             String token = authHeader.replace("Bearer ", "");
 

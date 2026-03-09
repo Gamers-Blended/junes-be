@@ -4,6 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;
 import com.gamersblended.junes.exception.*;
+import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,9 +27,11 @@ import java.util.concurrent.TimeUnit;
 public class CartController {
 
     private final CartService cartService;
+    private final AccessTokenService accessTokenService;
 
-    public CartController(CartService cartService) {
+    public CartController(CartService cartService, AccessTokenService accessTokenService) {
         this.cartService = cartService;
+        this.accessTokenService = accessTokenService;
     }
 
     @Operation(summary = "Get products in user's cart")
@@ -45,10 +48,11 @@ public class CartController {
                             schema = @Schema(implementation = CartSerialisationException.class))})
     })
     @GetMapping("/products")
-    public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
+    public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "Authorization", required = false) String authHeader,
                                                                   @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, Pageable pageable) {
         log.info("Calling get shopping cart product(s) API, page {}", pageable.getPageNumber());
 
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
         return ResponseEntity.ok(cartService.getCartProducts(userID, sessionID, pageable));
     }
 
@@ -77,10 +81,11 @@ public class CartController {
                             schema = @Schema(implementation = DatabaseInsertionException.class))})
     })
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
+    public ResponseEntity<String> addToCart(@RequestHeader(value = "Authorization", required = false) String authHeader,
                                             @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, @RequestBody CartItemDTO cartItemDTO) {
-        log.info("Calling add to cart API for userID = {}", userID);
+        log.info("Calling add to cart API");
 
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
         cartService.addItemToCart(userID, sessionID, cartItemDTO);
         return ResponseEntity.ok("Product added to cart");
     }
@@ -104,10 +109,11 @@ public class CartController {
                             schema = @Schema(implementation = DatabaseInsertionException.class))})
     })
     @DeleteMapping("/remove/{productID}")
-    public ResponseEntity<String> removeFromCart(@RequestHeader(value = "X-User-Id", required = false) UUID userID,
+    public ResponseEntity<String> removeFromCart(@RequestHeader(value = "Authorization", required = false) String authHeader,
                                                  @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, @PathVariable String productID) {
-        log.info("Calling remove from cart API for userID = {}, productID = {}", userID, productID);
+        log.info("Calling remove from cart API");
 
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
         cartService.removeItemFromCart(userID, sessionID, productID);
         return ResponseEntity.ok("Product removed from cart");
     }
@@ -135,14 +141,15 @@ public class CartController {
     })
     @PutMapping("/{productID}/quantity")
     public ResponseEntity<String> updateQuantity(
-            @RequestHeader(value = "X-User-Id", required = false) UUID userID,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID,
             @PathVariable String productID,
             @RequestParam int quantity
     ) {
-        log.info("Calling update item quantity API for userID = {}, productID = {}", userID, productID);
-        cartService.updateItemQuantity(userID, sessionID, productID, quantity);
+        log.info("Calling update item quantity API");
 
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        cartService.updateItemQuantity(userID, sessionID, productID, quantity);
         return ResponseEntity.ok("Quantity updated successfully");
     }
 
@@ -166,12 +173,13 @@ public class CartController {
     })
     @PutMapping
     public ResponseEntity<String> clearCart(
-            @RequestHeader(value = "X-User-Id", required = false) UUID userID,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID
     ) {
-        log.info("Calling clear API for userID = {}", userID);
-        cartService.clearCart(userID, sessionID);
+        log.info("Calling clear cart API");
 
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        cartService.clearCart(userID, sessionID);
         return ResponseEntity.ok("Cart cleared successfully");
     }
 }
