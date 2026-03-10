@@ -4,6 +4,7 @@ import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.model.Product;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ public interface ProductMapper {
 
     Product toEntity(ProductDTO dto);
 
+    @Mapping(source = "id", target = "productID")
     ProductSliderItemDTO toSliderItemDTO(Product product);
 
     List<ProductSliderItemDTO> toSliderItemDTOList(List<Product> productList);

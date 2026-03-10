@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Setter
 public class ProductSliderItemDTO {
 
-    private String id;
+    private String productID;
     private String name;
     private String slug;
     private String platform;
