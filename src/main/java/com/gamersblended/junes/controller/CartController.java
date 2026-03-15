@@ -171,7 +171,7 @@ public class CartController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = DatabaseInsertionException.class))})
     })
-    @PutMapping
+    @DeleteMapping("/items")
     public ResponseEntity<String> clearCart(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID
