@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Setter
 public class ProductVariantDTO {
 
+    private String productID;
     private String platform;
     private String region;
     private String edition;

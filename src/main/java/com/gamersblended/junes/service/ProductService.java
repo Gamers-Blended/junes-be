@@ -51,7 +51,7 @@ public class ProductService {
      * For get recommended products API
      * Case 1: logged users
      *
-     * @param userID     ID of logged user calling the API
+     * @param userID   ID of logged user calling the API
      * @param pageable Page number specified here
      * @return List of up to 5 recommended products
      */
@@ -81,7 +81,7 @@ public class ProductService {
      * Case 2: user not logged in
      *
      * @param requestDTO Contains historyCache, a list of up to 20 of the latest productIDs guest has viewed
-     * @param pageable Page number specified here
+     * @param pageable   Page number specified here
      * @return Page of up to 5 recommended products
      */
     public Page<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO, Pageable pageable) {
@@ -107,6 +107,7 @@ public class ProductService {
 
     /**
      * Check if given pageNumber exceeds LAST_PAGE
+     *
      * @param pageNumber Input page number to check against
      */
     private void validatePageNumberLimit(Integer pageNumber) {
@@ -120,7 +121,7 @@ public class ProductService {
      * Calls external recommender system
      *
      * @param inputProductIDList List of up to 20 unique product IDs
-     * @param pageable         Page number specified here
+     * @param pageable           Page number specified here
      * @return Page of up to 5 recommended products
      */
     public Page<ProductSliderItemDTO> callRecommenderSystem(List<String> inputProductIDList, Pageable pageable) {
@@ -223,20 +224,20 @@ public class ProductService {
     /**
      * For get product listings for specific platform API
      *
-     * @param platform       Listings will only be limited to this platform
-     * @param name           Filter for name substring
-     * @param availability   Filter for in stock, out of stock and preorder
-     * @param minPrice       lower bound for price
-     * @param maxPrice       upper bound for price
-     * @param genres         Filter for list of genres
-     * @param regions        Filter for list of regions
-     * @param publishers     Filter for list of publishers
-     * @param editions       Filter for list of editions
-     * @param languages      Filter for list of languages
+     * @param platform        Listings will only be limited to this platform
+     * @param name            Filter for name substring
+     * @param availability    Filter for in stock, out of stock and preorder
+     * @param minPrice        lower bound for price
+     * @param maxPrice        upper bound for price
+     * @param genres          Filter for list of genres
+     * @param regions         Filter for list of regions
+     * @param publishers      Filter for list of publishers
+     * @param editions        Filter for list of editions
+     * @param languages       Filter for list of languages
      * @param startingLetters Filter for list of the first character of a product's name
      * @param releaseDates    Filter for products released in specific list of (month and year)
-     * @param currentDate    Reference date to determine if a product is preorder or not
-     * @param pageable       Page number and sort settings
+     * @param currentDate     Reference date to determine if a product is preorder or not
+     * @param pageable        Page number and sort settings
      * @return List of products under platform and optional filters
      */
     public Page<ProductSliderItemDTO> getProductListings(String platform, String name, List<String> availability, BigDecimal minPrice, BigDecimal maxPrice, List<String> genres, List<String> regions, List<String> publishers, List<String> editions, List<String> languages, List<String> startingLetters, List<String> releaseDates, String currentDate, Pageable pageable) {
@@ -245,7 +246,7 @@ public class ProductService {
             List<YearMonth> releaseYearMonthList = new ArrayList<>();
             if (null != releaseDates && !releaseDates.isEmpty()) {
 
-                for (String currentReleaseDate: releaseDates) {
+                for (String currentReleaseDate : releaseDates) {
                     releaseYearMonthList.add(YearMonth.parse(currentReleaseDate));
                 }
                 log.info("releaseYearMonthList filter provided: {}", releaseYearMonthList);
@@ -294,6 +295,7 @@ public class ProductService {
             List<ProductVariantDTO> productVariantDTOList = new ArrayList<>();
             for (Product currentProduct : productList) {
                 ProductVariantDTO productVariantDTO = new ProductVariantDTO();
+                productVariantDTO.setProductID(currentProduct.getId());
                 productVariantDTO.setPlatform(currentProduct.getPlatform());
                 productVariantDTO.setRegion(currentProduct.getRegion());
                 productVariantDTO.setEdition(currentProduct.getEdition());
