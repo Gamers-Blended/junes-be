@@ -79,7 +79,7 @@ public class OrderService {
 
                 if (!reserved) {
                     rollbackInventory(reservedProductList, consolidatedItemMap);
-                    log.error("Requested quantity of {} exceeds available stock", entry.getValue());
+                    log.error("Requested quantity of {} exceeds available stock for {}", entry.getValue(), entry.getKey());
                     throw new InsufficientStockException("Requested quantity exceeds available stock");
                 }
 

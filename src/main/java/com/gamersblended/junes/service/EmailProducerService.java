@@ -183,7 +183,7 @@ public class EmailProducerService {
             itemList.add(emailItem);
         }
 
-        String orderDetailsUrl = appUrl + ORDER_DETAILS_STATIC_SEGMENT + transaction.getTransactionID();
+        String orderDetailsUrl = appUrl + ORDER_DETAILS_STATIC_SEGMENT + transaction.getOrderNumber();
         try {
             Map<String, Object> variables = getCommonVariableMap();
             variables.put("orderNumber", transaction.getOrderNumber());
