@@ -1,4 +1,4 @@
-package com.gamersblended.junes.dto.reponse;
+package com.gamersblended.junes.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;

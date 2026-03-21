@@ -2,8 +2,8 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.constant.Role;
 import com.gamersblended.junes.dto.request.LoginRequest;
-import com.gamersblended.junes.dto.reponse.LoginResponse;
-import com.gamersblended.junes.dto.reponse.LogoutResponse;
+import com.gamersblended.junes.dto.response.LoginResponse;
+import com.gamersblended.junes.dto.response.LogoutResponse;
 import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;

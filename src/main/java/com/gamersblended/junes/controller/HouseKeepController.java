@@ -1,6 +1,6 @@
 package com.gamersblended.junes.controller;
 
-import com.gamersblended.junes.dto.reponse.ResponseMessage;
+import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.exception.DatabaseDeletionException;
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;

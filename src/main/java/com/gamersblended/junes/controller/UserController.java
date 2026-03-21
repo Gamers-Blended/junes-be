@@ -1,8 +1,8 @@
 package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.reponse.ResponseMessage;
-import com.gamersblended.junes.dto.reponse.UserDetailsResponse;
+import com.gamersblended.junes.dto.response.ResponseMessage;
+import com.gamersblended.junes.dto.response.UserDetailsResponse;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
 import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
 import com.gamersblended.junes.exception.InputValidationException;

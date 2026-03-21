@@ -3,7 +3,7 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
-import com.gamersblended.junes.dto.reponse.ResponseMessage;
+import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.SetAsDefaultRequest;

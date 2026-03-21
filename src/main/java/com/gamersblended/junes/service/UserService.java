@@ -1,6 +1,6 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.reponse.UserDetailsResponse;
+import com.gamersblended.junes.dto.response.UserDetailsResponse;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
 import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
 import com.gamersblended.junes.exception.EmailDeliveryException;
