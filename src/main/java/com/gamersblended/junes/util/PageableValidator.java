@@ -16,7 +16,7 @@ public class PageableValidator {
 
     public static final Integer DEFAULT_PAGE_SIZE = 20;
     public static final Set<Integer> PAGE_SIZE_OPTIONS = Set.of(10, 20, 30, 50);
-    public static final Set<String> SORT_OPTIONS = Set.of("order_date", "total_amount", "status");
+    public static final Set<String> SORT_OPTIONS = Set.of("orderDate", "totalAmount", "status");
 
     public Pageable sanitizePageable(Pageable pageable) {
         int pageSize = pageable.getPageSize();
