@@ -29,7 +29,7 @@ public class ShippingService {
         DecimalFormat df = new DecimalFormat("$#,##0.00");
 
         if (null == orderItemDTOList || orderItemDTOList.isEmpty()) {
-            return df.format(0.00);
+            return BigDecimal.valueOf(0.00).toString();
         }
 
         BigDecimal totalShippingWeight = getTotalShippingWeight(orderItemDTOList);
@@ -45,15 +45,15 @@ public class ShippingService {
 
 
         if (totalShippingWeight.compareTo(BigDecimal.ZERO) <= 0) {
-            return df.format(0.00);
+            return BigDecimal.valueOf(0.00).toString();
         } else if (totalShippingWeight.compareTo(BigDecimal.ONE) <= 0) {
-            return df.format(5.00);
+            return BigDecimal.valueOf(5.00).toString();
         } else if (totalShippingWeight.compareTo(BigDecimal.valueOf(5)) <= 0) {
-            return df.format(7.00);
+            return BigDecimal.valueOf(7.00).toString();
         } else if (totalShippingWeight.compareTo(BigDecimal.valueOf(10)) <= 0) {
-            return df.format(10.00);
+            return BigDecimal.valueOf(10.00).toString();
         } else {
-            return df.format(15.00);
+            return BigDecimal.valueOf(15.00).toString();
         }
     }
 
