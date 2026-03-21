@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,11 +24,10 @@ public class ShippingService {
         this.transactionService = transactionService;
     }
 
-    public String getShippingFee(List<OrderItemDTO> orderItemDTOList) {
-        DecimalFormat df = new DecimalFormat("$#,##0.00");
+    public BigDecimal getShippingFee(List<OrderItemDTO> orderItemDTOList) {
 
         if (null == orderItemDTOList || orderItemDTOList.isEmpty()) {
-            return BigDecimal.valueOf(0.00).toString();
+            return BigDecimal.valueOf(0.00);
         }
 
         BigDecimal totalShippingWeight = getTotalShippingWeight(orderItemDTOList);
@@ -45,15 +43,15 @@ public class ShippingService {
 
 
         if (totalShippingWeight.compareTo(BigDecimal.ZERO) <= 0) {
-            return BigDecimal.valueOf(0.00).toString();
+            return BigDecimal.valueOf(0.00);
         } else if (totalShippingWeight.compareTo(BigDecimal.ONE) <= 0) {
-            return BigDecimal.valueOf(5.00).toString();
+            return BigDecimal.valueOf(5.00);
         } else if (totalShippingWeight.compareTo(BigDecimal.valueOf(5)) <= 0) {
-            return BigDecimal.valueOf(7.00).toString();
+            return BigDecimal.valueOf(7.00);
         } else if (totalShippingWeight.compareTo(BigDecimal.valueOf(10)) <= 0) {
-            return BigDecimal.valueOf(10.00).toString();
+            return BigDecimal.valueOf(10.00);
         } else {
-            return BigDecimal.valueOf(15.00).toString();
+            return BigDecimal.valueOf(15.00);
         }
     }
 
