@@ -55,6 +55,6 @@ public class OrderController {
 
         log.info("Placing order for userID: {}", userID);
         String orderNumber = orderService.placeOrder(userID, placeOrderRequest);
-        return ResponseEntity.ok(new ResponseMessage("Order placed, order number: " + orderNumber));
+        return ResponseEntity.ok(new ResponseMessage(orderNumber));
     }
 }

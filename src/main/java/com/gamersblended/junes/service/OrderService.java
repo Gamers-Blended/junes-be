@@ -62,7 +62,7 @@ public class OrderService {
     @Transactional
     public String placeOrder(UUID userID, PlaceOrderRequest placeOrderRequest) {
         // Validate shipping address and payment method
-        validateUserData(userID, placeOrderRequest.getAddressID(), placeOrderRequest.getPaymentMethodID());
+        validateUserData(userID, placeOrderRequest.getAddressDTO().getAddressID(), placeOrderRequest.getPaymentMethodID());
 
         // Deduplicate cart items
         // Product ID -> quantity
@@ -162,7 +162,7 @@ public class OrderService {
         transaction.setShippingCost(placeOrderRequest.getShippingCost());
         transaction.setShippingWeight(shippingWeight);
         transaction.setTrackingNumber("123");
-        transaction.setShippingAddressID(placeOrderRequest.getAddressID());
+        transaction.setShippingAddressID(placeOrderRequest.getAddressDTO().getAddressID());
         transaction.setUserID(userID);
 
         List<TransactionItem> itemList = createTransactionItems(transaction, consolidatedItemMap);

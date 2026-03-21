@@ -15,7 +15,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PlaceOrderRequest {
 
-    private UUID addressID;
     private AddressDTO addressDTO;
     private UUID paymentMethodID;
     private List<OrderItemDTO> orderItemDTOList;
