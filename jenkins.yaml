@@ -1,0 +1,93 @@
+jenkins:
+  numExecutors: 0 # Controller runs no jobs directly, only agents
+  mode: EXCLUSIVE
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: ${JENKINS_ADMIN_PASSWORD}
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  clouds:
+    - docker:
+        name: "docker-cloud"
+        dockerApi:
+          dockerHost:
+            uri: "unix:///var/run/docker.sock"
+          connectTimeout: 60
+          readTimeout: 60
+        containerCap: 10
+        templates:
+          - labelString: "docker-agent"
+            name: "docker-agent"
+            dockerTemplateBase:
+              image: "custom-jenkins-agent:latest"
+              mounts:
+                - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
+            pullStrategy: PULL_NEVER
+            pullTimeout: 300
+            remoteFs: "/home/jenkins/agent"
+            instanceCapStr: "3"
+            retentionStrategy:
+              idleMinutes: 5
+            connector:
+              attach:
+                user: "jenkins"
+
+          - labelString: "python-agent"
+            name: "python-agent"
+            dockerTemplateBase:
+              image: "python:3.12-slim"
+              mounts:
+                - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
+            remoteFs: "/home/jenkins/agent"
+            instanceCapStr: "3"
+            retentionStrategy:
+              idleMinutes: 5
+            connector:
+              attach:
+                user: "root"
+
+          - labelString: "node-agent"
+            name: "node-agent"
+            dockerTemplateBase:
+              image: "node:20-alpine"
+              mounts:
+                - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
+            remoteFs: "/home/jenkins/agent"
+            instanceCapStr: "3"
+            retentionStrategy:
+              idleMinutes: 5
+            connector:
+              attach:
+                user: "root"
+
+          - labelString: "maven-agent"
+            name: "maven-agent"
+            dockerTemplateBase:
+              image: "jenkins/agent:latest-jdk17"
+              mounts:
+                - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
+              environment:
+                - "MAVEN_OPTS=-Xmx2048m"
+            remoteFs: "/home/jenkins/agent"
+            instanceCapStr: "3"
+            retentionStrategy:
+              idleMinutes: 10
+            connector:
+              attach:
+                user: "jenkins"
+
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy: "acceptFirstConnectionStrategy"
+
+unclassified:
+  location:
+    url: ${JENKINS_URL}
+    adminAddress: "admin@dummy.com"

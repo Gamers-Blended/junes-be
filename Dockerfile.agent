@@ -1,0 +1,40 @@
+FROM jenkins/agent:latest-jdk17
+
+USER root
+
+ARG DOCKER_GID=${DOCKER_GID}
+
+# Install Docker CLI so Jenkins can run docker commands
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    maven \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg \
+        | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+        https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+        > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Docker Compose V2
+RUN mkdir -p /usr/local/lib/docker/cli-plugins && \
+    curl -sSL https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64 \
+        -o /usr/local/lib/docker/cli-plugins/docker-compose && \
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Match host Docker GID to avoid socket permission errors
+RUN groupadd -f -g ${DOCKER_GID} docker && usermod -aG docker jenkins
+
+USER jenkins
+
+# Verify installations
+RUN docker --version && \
+    docker compose version && \
+    mvn --version

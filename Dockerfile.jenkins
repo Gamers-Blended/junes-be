@@ -1,0 +1,62 @@
+FROM jenkins/jenkins:lts-jdk17
+
+# Switch to root to install Docker CLI
+USER root
+
+ARG DOCKER_GID=${DOCKER_GID}
+
+# Install Docker CLI so Jenkins can run docker commands
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    python3 \
+    python3-pip \
+    python-is-python3 \
+    maven \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg \
+        | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+        https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+        > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Match host Docker GID to avoid socket permission errors
+RUN groupadd -f -g ${DOCKER_GID} docker && usermod -aG docker jenkins
+
+# Create symbolic link for python (since many scripts expect 'python' command)
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+# Install Jenkins plugins
+RUN jenkins-plugin-cli --plugins \
+    blueocean:1.27.25 \
+    docker-plugin:1316.v75635a_002b_0a_ \
+    docker-workflow:572.v950f58993843 \
+    git:5.8.1 \
+    pipeline-stage-view:2.34 \
+    sonar:2.15 \
+    junit:1403.vd9d1413fd205 \
+    configuration-as-code:2069.vb_a_36d7a_570c8 \
+    credentials-binding:719.v80e905ef14eb_ \
+    workflow-aggregator:608.v67378e9d3db_1 \
+    github:1.46.0 \
+    github-branch-source:1967.vdea_d580c1a_b_a_ \
+    pipeline-github-lib:65.v203688e7727e \
+    maven-plugin:3.27
+
+# JCasC config
+COPY jenkins.yaml /var/jenkins_home/jenkins.yaml
+ENV CASC_JENKINS_CONFIG=/var/jenkins_home/jenkins.yaml
+
+# Create volumes directory for Maven cache
+RUN mkdir -p /var/jenkins_home/.m2 && \
+    chown -R jenkins:jenkins /var/jenkins_home/.m2
+
+# Switch back to jenkins user
+USER jenkins
