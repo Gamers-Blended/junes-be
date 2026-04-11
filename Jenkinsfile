@@ -19,14 +19,12 @@ pipeline {
         stage('Start Dependencies') {
             steps {
                 sh """
-                    # Start required services for build/test
+                    docker compose -f ${COMPOSE_FILE} down
+
                     docker compose -f ${COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka
 
                     echo 'Waiting for services to be ready...'
                     sleep 15
-
-                    # Verify services are running
-                    docker compose -f ${COMPOSE_FILE} ps
                 """
             }
         }
