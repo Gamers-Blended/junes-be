@@ -1,0 +1,40 @@
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: jenkins-controller
+    ports:
+      - "8090:8080"
+      - "50000:50000" # JNLP agent port
+    volumes:
+      - jenkins_home:/var/jenkins_home # Jenkins data persistence
+      - ./jenkins.yaml:/var/jenkins_home/jenkins.yaml
+      - /var/run/docker.sock:/var/run/docker.sock # Docker socket for Docker-in-Docker
+      - maven-cache:/var/jenkins_home/.m2  # Shared Maven cache
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - JENKINS_OPTS="--prefix=/jenkins"
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/jenkins.yaml
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - custom-agent-builder
+
+  custom-agent-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    image: custom-jenkins-agent:latest
+    command: echo "Agent image built successfully"
+    networks:
+      - app-network
+volumes:
+  jenkins_home:
+  maven-cache:
+    driver: local
+
+networks:
+  app-network:
+    external: true

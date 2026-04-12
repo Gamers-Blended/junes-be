@@ -7,6 +7,8 @@ pipeline {
         APP_NAME = 'junes'
         COMPOSE_FILE = 'docker-compose.app.yml'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
+
+        PROD_CONFIG = credentials('4a919fc7-01bb-438b-9e14-ae05845032d4')
     }
 
     stages {
