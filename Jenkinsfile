@@ -8,6 +8,17 @@ pipeline {
         COMPOSE_FILE = 'docker-compose.app.yml'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
+        // For docker-compose
+        POSTGRES_USER            = credentials('POSTGRES_USER')
+        POSTGRES_PASSWORD        = credentials('POSTGRES_PASSWORD')
+        MONGO_INITDB_ROOT_USERNAME = credentials('MONGO_INITDB_ROOT_USERNAME')
+        MONGO_INITDB_ROOT_PASSWORD = credentials('MONGO_INITDB_ROOT_PASSWORD')
+        PGADMIN_DEFAULT_EMAIL    = credentials('PGADMIN_DEFAULT_EMAIL')
+        PGADMIN_DEFAULT_PASSWORD = credentials('PGADMIN_DEFAULT_PASSWORD')
+        RABBITMQ_DEFAULT_USER    = credentials('RABBITMQ_DEFAULT_USER')
+        RABBITMQ_DEFAULT_PASS    = credentials('RABBITMQ_DEFAULT_PASS')
+        KAFKA_CLUSTER_ID         = credentials('KAFKA_CLUSTER_ID')
+
         PROD_CONFIG = credentials('4a919fc7-01bb-438b-9e14-ae05845032d4')
     }
 
