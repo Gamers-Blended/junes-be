@@ -9,7 +9,7 @@ pipeline {
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
         // Tell Maven to use mounted cache directory
-        MAVEN_OPTS = '-Dmaven.repo.local=/root/.m2/repository'
+        MAVEN_OPTS = '-Dmaven.repo.local=/home/jenkins/.m2/repository'
 
         // For docker-compose
         POSTGRES_USER            = credentials('POSTGRES_USER')
