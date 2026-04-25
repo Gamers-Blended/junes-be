@@ -8,6 +8,9 @@ pipeline {
         COMPOSE_FILE = 'docker-compose.app.yml'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
+        // Tell Maven to use mounted cache directory
+        MAVEN_OPTS = '-Dmaven.repo.local=/root/.m2/repository'
+
         // For docker-compose
         POSTGRES_USER            = credentials('POSTGRES_USER')
         POSTGRES_PASSWORD        = credentials('POSTGRES_PASSWORD')
@@ -20,6 +23,10 @@ pipeline {
         KAFKA_CLUSTER_ID         = credentials('KAFKA_CLUSTER_ID')
 
         PROD_CONFIG = credentials('4a919fc7-01bb-438b-9e14-ae05845032d4')
+    }
+
+    options {
+        disableConcurrentBuilds()
     }
 
     stages {
