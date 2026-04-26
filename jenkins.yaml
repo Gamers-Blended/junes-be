@@ -29,7 +29,7 @@ jenkins:
               image: "custom-jenkins-agent:latest"
               mounts:
                 - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
-                - "type=bind,source=/var/jenkins_home/.m2,destination=/home/jenkins/.m2"
+                - "type=volume,source=jenkins-m2-repo,destination=/home/jenkins/.m2"
             pullStrategy: PULL_NEVER
             pullTimeout: 300
             remoteFs: "/home/jenkins/agent"
