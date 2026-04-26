@@ -9,7 +9,7 @@ pipeline {
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
         // Tell Maven to use mounted cache directory
-        MAVEN_OPTS = '-Dmaven.repo.local=/home/jenkins/.m2/repository'
+        MAVEN_OPTS = '-Dmaven.repo.local=${HOME}/.m2/repository'
 
         // For docker-compose
         POSTGRES_USER            = credentials('POSTGRES_USER')
@@ -46,6 +46,16 @@ pipeline {
                     echo 'Waiting for services to be ready...'
                     sleep 15
                 """
+            }
+        }
+
+        stage('Debug Permissions') {
+            steps {
+                sh '''
+                    id
+                    echo "Home is: $HOME"
+                    ls -ld $HOME
+                '''
             }
         }
 
