@@ -37,11 +37,7 @@ pipeline {
         KAFKA_CONSUMER_GROUP = credentials('KAFKA_CONSUMER_GROUP')
         POSTGRES_URL = credentials('POSTGRES_URL')
         POSTGRES_USERNAME = credentials('POSTGRES_USERNAME')
-        MONGODB_HOST = credentials('MONGODB_HOST')
-        MONGODB_PORT = credentials('MONGODB_PORT')
-        MONGODB_DATABASE = credentials('MONGODB_DATABASE')
-        MONGODB_USERNAME = credentials('MONGODB_USERNAME')
-        MONGODB_PASSWORD = credentials('MONGODB_PASSWORD')
+        MONGODB_URI = credentials('MONGODB_URI')
 
         PROD_CONFIG = credentials('4a919fc7-01bb-438b-9e14-ae05845032d4')
     }
