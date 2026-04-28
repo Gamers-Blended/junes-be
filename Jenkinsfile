@@ -126,15 +126,16 @@ pipeline {
                     curl -f http://localhost:8080/actuator/health || true
                 """
             }
-        }
-    }
-
-    post {
-        always {
-                node('docker-agent') {
+            post {
+                always {
                     sh "docker compose -f ${env.COMPOSE_FILE} stop postgres mongodb redis rabbitmq kafka || true"
                 }
             }
+        }
+
+    }
+
+    post {
         success {
             echo 'Pipeline completed successfully!'
         }
