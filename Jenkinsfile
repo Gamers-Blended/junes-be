@@ -131,11 +131,10 @@ pipeline {
 
     post {
         always {
-            // Cleanup: stop test dependencies but keep volumes
-            sh """
-                docker compose -f ${env.COMPOSE_FILE} stop postgres mongodb redis rabbitmq kafka || true
-            """
-        }
+                node('docker-agent') {
+                    sh "docker compose -f ${env.COMPOSE_FILE} stop postgres mongodb redis rabbitmq kafka || true"
+                }
+            }
         success {
             echo 'Pipeline completed successfully!'
         }
