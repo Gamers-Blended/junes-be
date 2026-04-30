@@ -94,13 +94,22 @@ services:
     image: junes-app:${BUILD_NUMBER:-latest}
     restart: always
     environment:
-      - POSTGRES_URL=jdbc:postgresql://postgres:5432/junes
-      - MONGODB_URI=${MONGODB_URI}
-      - MONGODB_HOST=mongodb
-      - MONGODB_PORT=27017
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MAILGUN_API_KEY_2
+      - MAILGUN_DOMAIN
+      - MAILGUN_FROM_EMAIL
+      - IMAGE_URL_PREFIX
+      - JWT_ACCESS_SECRET
+      - JWT_EMAIL_SECRET
+      - RABBITMQ_HOST
+      - RABBITMQ_PORT
+      - RABBITMQ_USERNAME
+      - RABBITMQ_PASSWORD
+      - KAFKA_BOOTSTRAP_SERVERS
+      - KAFKA_CONSUMER_GROUP
+      - POSTGRES_URL
+      - POSTGRES_USERNAME
+      - POSTGRES_PASSWORD
+      - MONGODB_URI
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_CONFIG_IMPORT=file:/config/application.properties
     volumes:
