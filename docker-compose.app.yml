@@ -90,6 +90,7 @@ services:
       - app-network
 
   junes-app:
+    build: .
     image: junes-app:${BUILD_NUMBER:-latest}
     restart: always
     environment:

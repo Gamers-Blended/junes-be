@@ -89,6 +89,7 @@ pipeline {
             steps {
                 sh """
                     docker compose -f ${env.COMPOSE_FILE} run --rm \
+                        --build \
                         --entrypoint "" \
                         junes-app \
                         mvn test
