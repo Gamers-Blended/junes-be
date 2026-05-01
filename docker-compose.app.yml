@@ -116,6 +116,9 @@ services:
       - SPRING_CONFIG_IMPORT=file:/config/application.properties
     volumes:
       - ${PROD_CONFIG}:/config/application.properties:ro
+      - .:/app # Mount current directory to /app inside container
+      - maven-cache:/root/.m2 # Persist dependencies
+    working_dir: /app
     ports:
       - "8080:8080"
     depends_on:
