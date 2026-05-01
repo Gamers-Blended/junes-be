@@ -90,7 +90,9 @@ services:
       - app-network
 
   junes-app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
     image: junes-app:${BUILD_NUMBER:-latest}
     restart: always
     environment:
