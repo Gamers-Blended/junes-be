@@ -83,7 +83,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
     volumes:
       - kafka-data:/var/lib/kafka/data
     networks:
@@ -93,6 +93,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.agent
+      args:
+        - DOCKER_GID=${HOST_DOCKER_GID:-999}
     image: junes-app:${BUILD_NUMBER:-latest}
     restart: always
     environment:
