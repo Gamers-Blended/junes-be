@@ -66,21 +66,11 @@ pipeline {
             }
         }
 
-        stage('Debug Permissions') {
-            steps {
-                sh '''
-                    id
-                    echo "Home is: $HOME"
-                    ls -ld $HOME
-                '''
-            }
-        }
-
         stage('Build Spring Boot App') {
             steps {
                 sh """
-                    chmod +x mvnw 2>/dev/null || true
-                    mvn clean compile
+                    docker compose -f ${env.COMPOSE_FILE} run --rm junes-app \
+                        mvn clean compile -Dmaven.repo.local=/root/.m2/repository
                 """
             }
         }
