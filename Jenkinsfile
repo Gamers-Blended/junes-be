@@ -53,6 +53,20 @@ pipeline {
             }
         }
 
+        stage('Setup Environment') {
+            steps {
+                script {
+                    env.HOST_DOCKER_GID = sh(script: "stat -c '%g' /var/run/docker.sock", returnStdout: true).trim()
+                }
+            }
+        }
+
+        stage('Build Agent') {
+            steps {
+                sh "docker build --build-arg DOCKER_GID=${env.HOST_DOCKER_GID} -t custom-jenkins-agent ."
+            }
+        }
+
         stage('Start Dependencies') {
             steps {
                 sh """
