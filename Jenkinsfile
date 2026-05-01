@@ -64,7 +64,7 @@ pipeline {
         stage('Build Agent') {
             steps {
                 sh """
-                    export DOCKER_BUILDKIT=1
+                    export DOCKER_BUILDKIT=0
                     docker build --build-arg DOCKER_GID=${env.HOST_DOCKER_GID} \
                         -t custom-jenkins-agent \
                         -f Dockerfile.agent .
