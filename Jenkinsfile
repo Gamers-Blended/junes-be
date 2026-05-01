@@ -9,7 +9,7 @@ pipeline {
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
         // Tell Maven to use mounted cache directory
-        MAVEN_OPTS = '-Dmaven.repo.local=${HOME}/.m2/repository'
+        MAVEN_OPTS = '-Dmaven.repo.local=/home/jenkins/.m2/repository'
 
         // For docker-compose
         POSTGRES_USER            = credentials('POSTGRES_USER')
@@ -92,7 +92,7 @@ pipeline {
                     export HOST_DOCKER_GID=${env.HOST_DOCKER_GID}
 
                     docker compose -f ${env.COMPOSE_FILE} run --rm junes-app \
-                        mvn clean compile -Dmaven.repo.local=/root/.m2/repository
+                        mvn clean compile -Dmaven.repo.local=/home/jenkins/.m2/repository
                 """
             }
         }
