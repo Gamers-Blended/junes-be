@@ -89,12 +89,7 @@ pipeline {
         stage('Build Spring Boot App') {
             steps {
                 sh """
-                    # For docker-compose
-                    export HOST_WORKSPACE=${env.HOST_WORKSPACE}
-                    export HOST_DOCKER_GID=${env.HOST_DOCKER_GID}
-
-                    docker compose -f ${env.COMPOSE_FILE} run --rm junes-app \
-                        mvn clean compile -Dmaven.repo.local=/home/jenkins/.m2/repository
+                    mvn clean compile -Dmaven.repo.local=/home/jenkins/.m2/repository
                 """
             }
         }
@@ -102,11 +97,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh """
-                    docker compose -f ${env.COMPOSE_FILE} run --rm \
-                        --build \
-                        --entrypoint "" \
-                        junes-app \
-                        mvn test
+                    mvn test -Dmaven.repo.local=/home/jenkins/.m2/repository
                 """
             }
         }
@@ -114,7 +105,7 @@ pipeline {
         stage('Package Application') {
             steps {
                 sh """
-                    mvn package -DskipTests
+                    mvn package -DskipTests -Dmaven.repo.local=/home/jenkins/.m2/repository
                 """
             }
         }
