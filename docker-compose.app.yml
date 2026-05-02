@@ -117,7 +117,7 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_CONFIG_IMPORT=file:/config/application.properties
     volumes:
-      - ${HOST_WORKSPACE}:/app
+      - ${HOST_WORKSPACE:-.}:/app
       - ${PROD_CONFIG}:/config/application.properties:ro
       - maven-cache:/home/jenkins/.m2 # Persist dependencies
     working_dir: /app
