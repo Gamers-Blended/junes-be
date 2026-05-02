@@ -87,13 +87,18 @@ pipeline {
 
         stage('Build Spring Boot App') {
             steps {
-                sh """
-                    # For docker-compose
-                    export HOST_DOCKER_GID=${env.HOST_DOCKER_GID}
+                script {
+                    def workspacePath = sh(script: 'pwd', returnStdout: true).trim()
 
-                    docker compose -f ${env.COMPOSE_FILE} run --rm junes-app \
-                        mvn clean compile -Dmaven.repo.local=/home/jenkins/.m2/repository
-                """
+                    sh """
+                        # For docker-compose
+                        export HOST_WORKSPACE=${workspacePath}
+                        export HOST_DOCKER_GID=${env.HOST_DOCKER_GID}
+
+                        docker compose -f ${env.COMPOSE_FILE} run --rm junes-app \
+                            mvn clean compile -Dmaven.repo.local=/home/jenkins/.m2/repository
+                    """
+                }
             }
         }
 
