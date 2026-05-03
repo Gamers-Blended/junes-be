@@ -10,7 +10,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - app-network
+      app-network:
+        aliases:
+          - postgres
 
   mongodb:
     image: mongo:6.0
@@ -22,7 +24,9 @@ services:
     volumes:
       - mongodb_data:/data/db
     networks:
-      - app-network
+      app-network:
+        aliases:
+          - mongodb
 
   pgadmin:
     image: dpage/pgadmin4
@@ -47,7 +51,9 @@ services:
     command: redis-server --appendonly yes
     restart: unless-stopped
     networks:
-      - app-network
+      app-network:
+        aliases:
+          - redis
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -65,7 +71,9 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - app-network
+      app-network:
+        aliases:
+          - rabbitmq
 
   kafka:
     image: confluentinc/cp-kafka:7.7.0
@@ -87,7 +95,9 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
     networks:
-      - app-network
+      app-network:
+        aliases:
+          - kafka
 
   junes-app:
     build:
