@@ -22,23 +22,6 @@ pipeline {
         RABBITMQ_DEFAULT_PASS    = credentials('RABBITMQ_DEFAULT_PASS')
         KAFKA_CLUSTER_ID         = credentials('KAFKA_CLUSTER_ID')
 
-        // application.properties
-        MAILGUN_API_KEY_2 = credentials('MAILGUN_API_KEY_2')
-        MAILGUN_DOMAIN = credentials('MAILGUN_DOMAIN')
-        MAILGUN_FROM_EMAIL = credentials('MAILGUN_FROM_EMAIL')
-        IMAGE_URL_PREFIX = credentials('IMAGE_URL_PREFIX')
-        JWT_ACCESS_SECRET = credentials('JWT_ACCESS_SECRET')
-        JWT_EMAIL_SECRET = credentials('JWT_EMAIL_SECRET')
-        RABBITMQ_HOST = credentials('RABBITMQ_HOST')
-        RABBITMQ_PORT = credentials('RABBITMQ_PORT')
-        RABBITMQ_USERNAME = credentials('RABBITMQ_USERNAME')
-        RABBITMQ_PASSWORD = credentials('RABBITMQ_PASSWORD')
-        KAFKA_BOOTSTRAP_SERVERS = credentials('KAFKA_BOOTSTRAP_SERVERS')
-        KAFKA_CONSUMER_GROUP = credentials('KAFKA_CONSUMER_GROUP')
-        POSTGRES_URL = credentials('POSTGRES_URL')
-        POSTGRES_USERNAME = credentials('POSTGRES_USERNAME')
-        MONGODB_URI = credentials('MONGODB_URI')
-
         PROD_CONFIG = credentials('4a919fc7-01bb-438b-9e14-ae05845032d4')
     }
 
@@ -96,9 +79,44 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                sh """
-                    mvn test -Dmaven.repo.local=/home/jenkins/.m2/repository
-                """
+                // application.properties
+                withCredentials([
+                    string(credentialsId: 'MAILGUN_API_KEY_2', variable: 'MAILGUN_API_KEY_2'),
+                    string(credentialsId: 'MAILGUN_DOMAIN', variable: 'MAILGUN_DOMAIN'),
+                    string(credentialsId: 'MAILGUN_FROM_EMAIL', variable: 'MAILGUN_FROM_EMAIL'),
+                    string(credentialsId: 'IMAGE_URL_PREFIX', variable: 'IMAGE_URL_PREFIX'),
+                    string(credentialsId: 'JWT_ACCESS_SECRET', variable: 'JWT_ACCESS_SECRET'),
+                    string(credentialsId: 'JWT_EMAIL_SECRET', variable: 'JWT_EMAIL_SECRET'),
+                    string(credentialsId: 'RABBITMQ_HOST', variable: 'RABBITMQ_HOST'),
+                    string(credentialsId: 'RABBITMQ_PORT', variable: 'RABBITMQ_PORT'),
+                    string(credentialsId: 'RABBITMQ_USERNAME', variable: 'RABBITMQ_USERNAME'),
+                    string(credentialsId: 'RABBITMQ_PASSWORD', variable: 'RABBITMQ_PASSWORD'),
+                    string(credentialsId: 'KAFKA_BOOTSTRAP_SERVERS', variable: 'KAFKA_BOOTSTRAP_SERVERS'),
+                    string(credentialsId: 'KAFKA_CONSUMER_GROUP', variable: 'KAFKA_CONSUMER_GROUP'),
+                    string(credentialsId: 'POSTGRES_URL', variable: 'POSTGRES_URL'),
+                    string(credentialsId: 'POSTGRES_USERNAME', variable: 'POSTGRES_USERNAME'),
+                    string(credentialsId: 'MONGODB_URI', variable: 'MONGODB_URI')
+                ]) {
+                    sh '''
+                        mvn test \
+                            -Dmaven.repo.local=/home/jenkins/.m2/repository \
+                            -DMAILGUN_API_KEY_2="$MAILGUN_API_KEY_2" \
+                            -DMAILGUN_DOMAIN="$MAILGUN_DOMAIN" \
+                            -DMAILGUN_FROM_EMAIL="$MAILGUN_FROM_EMAIL" \
+                            -DIMAGE_URL_PREFIX="$IMAGE_URL_PREFIX" \
+                            -DJWT_ACCESS_SECRET="$JWT_ACCESS_SECRET" \
+                            -DJWT_EMAIL_SECRET="$JWT_EMAIL_SECRET" \
+                            -DRABBITMQ_HOST="$RABBITMQ_HOST" \
+                            -DRABBITMQ_PORT="$RABBITMQ_PORT" \
+                            -DRABBITMQ_USERNAME="$RABBITMQ_USERNAME" \
+                            -DRABBITMQ_PASSWORD="$RABBITMQ_PASSWORD" \
+                            -DKAFKA_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
+                            -DKAFKA_CONSUMER_GROUP="$KAFKA_CONSUMER_GROUP" \
+                            -DPOSTGRES_URL="$POSTGRES_URL" \
+                            -DPOSTGRES_USERNAME="$POSTGRES_USERNAME" \
+                            -DMONGODB_URI="$MONGODB_URI"
+                    '''
+                }
             }
         }
 
