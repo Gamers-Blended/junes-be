@@ -58,14 +58,7 @@ pipeline {
 
         stage('Start Dependencies') {
             steps {
-                sh """
-                    docker compose -f ${env.COMPOSE_FILE} down
-
-                    docker compose -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka
-
-                    echo 'Waiting for services to be ready...'
-                    sleep 15
-                """
+                sh "docker compose -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka"
             }
         }
 
@@ -106,21 +99,11 @@ pipeline {
             when { branch 'main' }
             steps {
                 sh """
-                    # Stop existing app container if running
-                    docker compose -f ${env.COMPOSE_FILE} stop ${APP_NAME} || true
-                    docker compose -f ${env.COMPOSE_FILE} rm -f ${APP_NAME} || true
+                    docker compose -f ${env.COMPOSE_FILE} up -d --no-deps --build ${APP_NAME}
 
-                    # Update the image reference in docker-compose or just run
-                    docker compose -f ${env.COMPOSE_FILE} up -d ${APP_NAME}
-
-                    sleep 10
-                    curl -f http://localhost:8080/actuator/health || true
+                    curl --retry 10 --retry-delay 5 --retry-connrefused \
+                        -f http://localhost:8080/actuator/health
                 """
-            }
-            post {
-                always {
-                    sh "docker compose -f ${env.COMPOSE_FILE} stop postgres mongodb redis rabbitmq kafka || true"
-                }
             }
         }
 
@@ -132,6 +115,7 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed. Check logs for details.'
+            sh "docker compose -f ${env.COMPOSE_FILE} down"
         }
     }
 }
