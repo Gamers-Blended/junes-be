@@ -99,18 +99,6 @@ services:
         aliases:
           - kafka
 
-  jenkins-agent:
-    image: custom-jenkins-agent
-    container_name: jenkins-agent
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - maven-cache:/home/jenkins/.m2
-    networks:
-      app-network:
-        aliases:
-          - jenkins-agent
-
   junes-app:
     build:
       context: .
