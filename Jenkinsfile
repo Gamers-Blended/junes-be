@@ -94,7 +94,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh """
-                    docker build -t ${APP_NAME}:${BUILD_NUMBER} -t ${APP_NAME}:latest .
+                    docker build --build-arg DOCKER_GID=${env.HOST_DOCKER_GID} \
+                    -t ${APP_NAME}:${BUILD_NUMBER} \
+                    -t ${APP_NAME}:latest \
+                    -f Dockerfile.agent .
                 """
             }
         }
