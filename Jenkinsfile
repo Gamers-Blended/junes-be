@@ -4,7 +4,7 @@ pipeline {
     }
 
     environment {
-        APP_NAME = 'junes'
+        APP_NAME = 'junes-app'
         COMPOSE_FILE = 'docker-compose.app.yml'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
