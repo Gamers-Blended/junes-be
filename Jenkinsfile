@@ -101,8 +101,17 @@ pipeline {
                 sh """
                     docker compose -f ${env.COMPOSE_FILE} up -d --no-deps --build ${APP_NAME}
 
-                    curl --retry 10 --retry-delay 5 --retry-connrefused \
-                        -f http://localhost:8080/actuator/health
+                    echo "Polling container health status..."
+                    ATTEMPTS=0
+                    MAX=30
+                    until [ "\$(docker inspect --format='{{.State.Health.Status}}' \
+                        \$(docker compose -f ${env.COMPOSE_FILE} ps -q junes-app))" = "healthy" ]; do
+                        ATTEMPTS=\$((ATTEMPTS+1))
+                        [ \$ATTEMPTS -ge \$MAX ] && echo "Timed out!" && exit 1
+                        echo "Attempt \$ATTEMPTS/\$MAX — waiting 10s..."
+                        sleep 10
+                    done
+                    echo "junes-app is healthy!"
                 """
             }
         }
