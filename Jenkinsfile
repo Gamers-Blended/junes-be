@@ -6,6 +6,7 @@ pipeline {
     environment {
         APP_NAME = 'junes-app'
         COMPOSE_FILE = 'docker-compose.app.yml'
+        COMPOSE_PROJECT = 'junes'
         DOCKER_HOST = 'unix:///var/run/docker.sock'
 
         // Tell Maven to use mounted cache directory
@@ -58,7 +59,7 @@ pipeline {
 
         stage('Start Dependencies') {
             steps {
-                sh "docker compose -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka"
+                sh "docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka"
             }
         }
 
@@ -99,19 +100,24 @@ pipeline {
             when { branch 'main' }
             steps {
                 sh """
-                    docker compose -f ${env.COMPOSE_FILE} up -d --no-deps --build ${APP_NAME}
+                    docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d ${APP_NAME}
 
-                    echo "Polling container health status..."
+                    docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} logs ${APP_NAME}
+
+                    echo "Waiting for junes-app to be healthy..."
                     ATTEMPTS=0
-                    MAX=30
-                    until [ "\$(docker inspect --format='{{.State.Health.Status}}' \
-                        \$(docker compose -f ${env.COMPOSE_FILE} ps -q junes-app))" = "healthy" ]; do
-                        ATTEMPTS=\$((ATTEMPTS+1))
-                        [ \$ATTEMPTS -ge \$MAX ] && echo "Timed out!" && exit 1
-                        echo "Attempt \$ATTEMPTS/\$MAX — waiting 10s..."
+                    MAX_ATTEMPTS=5
+                    until docker inspect --format='{{.State.Health.Status}}' \$(docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} ps -q ${APP_NAME}) | grep -q 'healthy'; do
+                        ATTEMPTS=\$((ATTEMPTS + 1))
+                        if [ \$ATTEMPTS -ge \$MAX_ATTEMPTS ]; then
+                            echo "ERROR: App did not become healthy after \${MAX_ATTEMPTS} attempts"
+                            docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} logs ${APP_NAME}
+                            exit 1
+                        fi
+                        echo "Attempt \$ATTEMPTS/\$MAX_ATTEMPTS — waiting 10s..."
                         sleep 10
                     done
-                    echo "junes-app is healthy!"
+                    echo "App is healthy!"
                 """
             }
         }
