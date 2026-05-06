@@ -9,6 +9,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d junes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       app-network:
         aliases:
@@ -23,6 +28,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     volumes:
       - mongodb_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--username", "${MONGO_INITDB_ROOT_USERNAME}", "--password", "${MONGO_INITDB_ROOT_PASSWORD}", "--authenticationDatabase", "admin" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       app-network:
         aliases:
@@ -48,6 +59,12 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     command: redis-server --appendonly yes
     restart: unless-stopped
     networks:
@@ -94,6 +111,12 @@ services:
       CLUSTER_ID: ${KAFKA_CLUSTER_ID}
     volumes:
       - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
     networks:
       app-network:
         aliases:
@@ -130,11 +153,16 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - mongodb
-      - rabbitmq
-      - kafka
-      - redis
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - app-network
 
