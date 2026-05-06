@@ -102,17 +102,9 @@ services:
   junes-app:
     build:
       context: .
-      dockerfile: Dockerfile.agent
-      args:
-        - DOCKER_GID=${HOST_DOCKER_GID:-999}
+      dockerfile: Dockerfile
     image: junes-app:${BUILD_NUMBER:-latest}
     restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s # Give JVM time to boot before counting failure
     environment:
       - MAILGUN_API_KEY_2
       - MAILGUN_DOMAIN
@@ -134,8 +126,6 @@ services:
       - SPRING_CONFIG_IMPORT=file:/config/application.properties
     volumes:
       - ${HOST_WORKSPACE:-.}:/app
-      - ${PROD_CONFIG}:/config/application.properties:ro
-      - maven-cache:/home/jenkins/.m2 # Persist dependencies
     working_dir: /app
     ports:
       - "8080:8080"
