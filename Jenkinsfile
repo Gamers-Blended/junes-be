@@ -23,6 +23,23 @@ pipeline {
         RABBITMQ_DEFAULT_PASS    = credentials('RABBITMQ_DEFAULT_PASS')
         KAFKA_CLUSTER_ID         = credentials('KAFKA_CLUSTER_ID')
 
+        // For application.properties
+        MAILGUN_API_KEY_2       = credentials('MAILGUN_API_KEY_2')
+        MAILGUN_DOMAIN          = credentials('MAILGUN_DOMAIN')
+        MAILGUN_FROM_EMAIL      = credentials('MAILGUN_FROM_EMAIL')
+        IMAGE_URL_PREFIX        = credentials('IMAGE_URL_PREFIX')
+        JWT_ACCESS_SECRET       = credentials('JWT_ACCESS_SECRET')
+        JWT_EMAIL_SECRET        = credentials('JWT_EMAIL_SECRET')
+        RABBITMQ_HOST           = credentials('RABBITMQ_HOST')
+        RABBITMQ_PORT           = credentials('RABBITMQ_PORT')
+        RABBITMQ_USERNAME       = credentials('RABBITMQ_USERNAME')
+        RABBITMQ_PASSWORD       = credentials('RABBITMQ_PASSWORD')
+        KAFKA_BOOTSTRAP_SERVERS = credentials('KAFKA_BOOTSTRAP_SERVERS')
+        KAFKA_CONSUMER_GROUP    = credentials('KAFKA_CONSUMER_GROUP')
+        POSTGRES_URL            = credentials('POSTGRES_URL')
+        POSTGRES_USERNAME       = credentials('POSTGRES_USERNAME')
+        MONGODB_URI             = credentials('MONGODB_URI')
+
         PROD_CONFIG = credentials('4a919fc7-01bb-438b-9e14-ae05845032d4')
     }
 
