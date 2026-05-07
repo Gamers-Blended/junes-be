@@ -11,6 +11,7 @@ pipeline {
 
         // Tell Maven to use mounted cache directory
         MAVEN_OPTS = '-Dmaven.repo.local=/home/jenkins/.m2/repository'
+        MVN           = 'mvn -Dmaven.repo.local=/home/jenkins/.m2/repository'
 
         // For docker-compose
         POSTGRES_USER            = credentials('POSTGRES_USER')
@@ -80,24 +81,24 @@ pipeline {
             }
         }
 
-        stage('Build Spring Boot App') {
-            steps {
-                sh """
-                    mvn clean compile -Dmaven.repo.local=/home/jenkins/.m2/repository
-                """
-            }
-        }
-
         stage('Run Unit Tests') {
             steps {
-                sh 'mvn clean test'
+                sh "${MVN} clean test"
+            }
+            post {
+                always {
+                    junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
+                }
             }
         }
 
         stage('Package Application') {
             steps {
                 sh """
-                    mvn package -DskipTests -Dmaven.repo.local=/home/jenkins/.m2/repository
+                    ${MVN} package -DskipTests
+
+                    echo "==> Verifying JAR exists before docker build:"
+                    ls -lh target/*.jar
                 """
             }
         }
