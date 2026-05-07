@@ -60,6 +60,8 @@ pipeline {
                 script {
                     env.HOST_WORKSPACE = sh(script: 'pwd', returnStdout: true).trim()
                     env.HOST_DOCKER_GID = sh(script: "stat -c '%g' /var/run/docker.sock", returnStdout: true).trim()
+                    env.GIT_SHORT_SHA    = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG        = "${BUILD_NUMBER}-${env.GIT_SHORT_SHA}"
                 }
             }
         }
@@ -103,13 +105,13 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Production Image') {
             steps {
                 sh """
-                    docker build --build-arg DOCKER_GID=${env.HOST_DOCKER_GID} \
-                    -t ${APP_NAME}:${BUILD_NUMBER} \
-                    -t ${APP_NAME}:latest \
-                    -f Dockerfile.agent .
+                    docker build \
+                        -t ${APP_NAME}:${env.IMAGE_TAG} \
+                        -t ${APP_NAME}:latest \
+                        -f Dockerfile .
                 """
             }
         }
