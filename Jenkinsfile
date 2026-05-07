@@ -120,25 +120,56 @@ pipeline {
             when { branch 'main' }
             steps {
                 sh """
-                    docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d ${APP_NAME}
+                    set -e
+
+                    COMPOSE_CMD="docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE}"
 
                     docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} logs ${APP_NAME}
+                    echo "==> Tagging current image as rollback target..."
+                    docker tag ${APP_NAME}:latest ${APP_NAME}:rollback || true
 
-                    echo "Waiting for junes-app to be healthy..."
+                    echo "==> Deploying image ${APP_NAME}:${env.IMAGE_TAG}..."
+                    BUILD_NUMBER=${env.IMAGE_TAG} \$COMPOSE_CMD up -d --no-deps ${APP_NAME}
+
+                    echo "==> Waiting for JVM to initialize (start_period)..."
+                    sleep 65
+
+                    echo "==> Polling health status..."
                     ATTEMPTS=0
                     MAX_ATTEMPTS=5
-                    until docker inspect --format='{{.State.Health.Status}}' \$(docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} ps -q ${APP_NAME}) | grep -q 'healthy'; do
+                    until [ "\$(docker inspect --format='{{.State.Health.Status}}' \$(\$COMPOSE_CMD ps -q --status running ${APP_NAME} | head -1))" = "healthy" ]; do
                         ATTEMPTS=\$((ATTEMPTS + 1))
                         if [ \$ATTEMPTS -ge \$MAX_ATTEMPTS ]; then
-                            echo "ERROR: App did not become healthy after \${MAX_ATTEMPTS} attempts"
-                            docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} logs ${APP_NAME}
+                            echo "ERROR: App did not become healthy after \$((MAX_ATTEMPTS * 15))s"
+                            echo "==> Last 100 lines of logs:"
+                            \$COMPOSE_CMD logs --tail=100 ${APP_NAME}
+                            echo "==> Container inspect:"
+                            docker inspect \$(\$COMPOSE_CMD ps -q --status running ${APP_NAME} | head -1)
                             exit 1
                         fi
-                        echo "Attempt \$ATTEMPTS/\$MAX_ATTEMPTS — waiting 10s..."
-                        sleep 10
+                        echo "Attempt \$ATTEMPTS/\$MAX_ATTEMPTS — not yet healthy, waiting 15s..."
+                        sleep 15
                     done
-                    echo "App is healthy!"
+
+                    echo "==> App is healthy! Deployed ${APP_NAME}:${env.IMAGE_TAG}"
+                    echo "==> Recent logs:"
+                    \$COMPOSE_CMD logs --tail=50 ${APP_NAME}
                 """
+            }
+            post {
+                failure {
+                    sh """
+                        echo "==> Deploy failed — rolling back to previous image..."
+                        docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} \
+                            up -d --no-deps \
+                            -e BUILD_NUMBER=rollback \
+                            ${APP_NAME} || true
+
+                        echo "==> Full logs from failed deploy:"
+                        docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} \
+                            logs --tail=200 ${APP_NAME} || true
+                    """
+                }
             }
         }
 
