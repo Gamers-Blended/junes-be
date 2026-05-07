@@ -172,8 +172,6 @@ volumes:
   redis-data:
   rabbitmq_data:
   kafka-data:
-  maven-cache:
-    driver: local
 
 networks:
   app-network:
