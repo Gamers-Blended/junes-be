@@ -148,8 +148,7 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_CONFIG_IMPORT=file:/config/application.properties
     volumes:
-      - ${HOST_WORKSPACE:-.}:/app
-    working_dir: /app
+      - ${PROD_CONFIG}:/config/application.properties:ro
     ports:
       - "8080:8080"
     depends_on:
