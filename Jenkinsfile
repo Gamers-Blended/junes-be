@@ -131,7 +131,7 @@ pipeline {
                     BUILD_NUMBER=${env.IMAGE_TAG} \$COMPOSE_CMD up -d --no-deps ${APP_NAME}
 
                     echo "==> Waiting for JVM to initialize (start_period)..."
-                    sleep 65
+                    sleep 60
 
                     echo "==> Polling health status..."
                     ATTEMPTS=0
