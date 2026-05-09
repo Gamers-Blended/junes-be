@@ -1,0 +1,4 @@
+FROM postgres:15
+
+# Bakes the script INTO image, no volume mount needed
+COPY init-scripts/init.sql /docker-entrypoint-initdb.d/
