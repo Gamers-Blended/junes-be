@@ -23,7 +23,7 @@ public class GeoLocationService {
     public void init() throws IOException {
         // Load from resources
         ClassPathResource resource = new ClassPathResource("GeoLite2-City.mmdb");
-        databaseReader = new DatabaseReader.Builder(resource.getFile()).build();
+        databaseReader = new DatabaseReader.Builder(resource.getInputStream()).build();
         log.info("GeoLite2 database loaded");
     }
 
