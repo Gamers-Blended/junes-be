@@ -124,7 +124,6 @@ pipeline {
 
                     COMPOSE_CMD="docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE}"
 
-                    docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} logs ${APP_NAME}
                     echo "==> Tagging current image as rollback target..."
                     docker tag ${APP_NAME}:latest ${APP_NAME}:rollback || true
 
@@ -180,8 +179,32 @@ pipeline {
             echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
-            sh "docker compose -f ${env.COMPOSE_FILE} down"
+            script {
+                def proj = env.COMPOSE_PROJECT ?: 'junes'
+                def file = env.COMPOSE_FILE ?: 'docker-compose.app.yml'
+                def app  = env.APP_NAME ?: 'junes-app'
+
+                sh "docker compose -p ${proj} -f ${file} ps 2>&1 || true"
+
+                // Logs via compose (needs correct project name)
+                sh "docker compose -p ${proj} -f ${file} logs --timestamps --tail=300 ${app} 2>&1 || true"
+
+                // Fallback: direct docker logs by full container name
+                sh "docker logs --timestamps --tail=300 ${proj}-${app}-1 2>&1 || true"
+
+                // Inspect exit code if container exists
+                sh "docker inspect ${proj}-${app}-1 --format='ExitCode={{.State.ExitCode}} Error={{.State.Error}}' 2>&1 || true"
+
+                sh "docker compose -p ${proj} -f ${file} down || true"
+            }
+        }
+        always {
+            script {
+                def proj = env.COMPOSE_PROJECT ?: 'junes'
+                def file = env.COMPOSE_FILE ?: 'docker-compose.app.yml'
+                sh "docker compose -p ${proj} -f ${file} logs --timestamps 2>&1 > build-logs.txt || true"
+            }
+            archiveArtifacts artifacts: 'build-logs.txt', allowEmptyArchive: true
         }
     }
 }
