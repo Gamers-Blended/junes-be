@@ -36,3 +36,8 @@ localhost:5050
 ```
 Login with the credentials stated inside `docker-compose.yml`. <br>
 Manage the user and cartItems database here.
+
+## Jenkins UI
+```
+localhost:8090/jenkins
+```
