@@ -302,6 +302,7 @@ public class ProductService {
                 productVariantDTO.setPrice(currentProduct.getPrice());
                 productVariantDTO.setStock(currentProduct.getStock());
                 productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
+                productVariantDTO.setEditionNotes(currentProduct.getEditionNotes());
 
                 productVariantDTOList.add(productVariantDTO);
             }

@@ -16,4 +16,5 @@ public class ProductVariantDTO {
     private BigDecimal price;
     private Integer stock;
     private String productImageUrl;
+    private String editionNotes;
 }
