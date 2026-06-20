@@ -294,15 +294,7 @@ public class ProductService {
             // Create 2nd part from each product variant
             List<ProductVariantDTO> productVariantDTOList = new ArrayList<>();
             for (Product currentProduct : productList) {
-                ProductVariantDTO productVariantDTO = new ProductVariantDTO();
-                productVariantDTO.setProductID(currentProduct.getId());
-                productVariantDTO.setPlatform(currentProduct.getPlatform());
-                productVariantDTO.setRegion(currentProduct.getRegion());
-                productVariantDTO.setEdition(currentProduct.getEdition());
-                productVariantDTO.setPrice(currentProduct.getPrice());
-                productVariantDTO.setStock(currentProduct.getStock());
-                productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
-                productVariantDTO.setEditionNotes(currentProduct.getEditionNotes());
+                ProductVariantDTO productVariantDTO = getProductVariantDTO(currentProduct);
 
                 productVariantDTOList.add(productVariantDTO);
             }
@@ -315,5 +307,21 @@ public class ProductService {
             log.error("Exception in getProductDetails for productSlug = {}: {}", productSlug, ex.getMessage());
             throw new RuntimeException("Service error in getProductDetails: Could not retrieve product details for " + productSlug + ".", ex);
         }
+    }
+
+    private ProductVariantDTO getProductVariantDTO(Product currentProduct) {
+        ProductVariantDTO productVariantDTO = new ProductVariantDTO();
+        productVariantDTO.setProductID(currentProduct.getId());
+        productVariantDTO.setName(currentProduct.getName());
+        productVariantDTO.setPrice(currentProduct.getPrice());
+        productVariantDTO.setPlatform(currentProduct.getPlatform());
+        productVariantDTO.setRegion(currentProduct.getRegion());
+        productVariantDTO.setEdition(currentProduct.getEdition());
+        productVariantDTO.setReleaseDate(currentProduct.getReleaseDate());
+        productVariantDTO.setLanguages(currentProduct.getLanguages());
+        productVariantDTO.setStock(currentProduct.getStock());
+        productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
+        productVariantDTO.setEditionNotes(currentProduct.getEditionNotes());
+        return productVariantDTO;
     }
 }
