@@ -1,7 +1,6 @@
 package com.gamersblended.junes.repository.mongodb;
 
 import com.gamersblended.junes.model.Product;
-import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -11,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository("mongoProductsRepository") //  MongoDB repository bean
 public interface ProductRepository extends MongoRepository<Product, String>, CustomProductRepository {
@@ -32,9 +32,11 @@ public interface ProductRepository extends MongoRepository<Product, String>, Cus
     @Query("{ 'created_on': { '$lte': '?0' } }")
     Page<Product> findBestSellersBeforeDateWithPagination(LocalDate currentDate, Pageable pageable);
 
-    Optional<Product> findById(ObjectId id);
+    Optional<Product> findById(String id);
 
-    List<Product> findByIdIn(List<ObjectId> idList);
+    List<Product> findByIdIn(List<String> idList);
+
+    List<Product> findByIdIn(Set<String> isSet);
 
     List<Product> findBySlug(String slug);
 

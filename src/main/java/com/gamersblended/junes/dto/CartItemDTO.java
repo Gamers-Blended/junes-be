@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class CartItemDTO {
 
     private String productID;
+    private String productName;
     private BigDecimal price;
     private Integer quantity;
     private LocalDateTime createdOn;
