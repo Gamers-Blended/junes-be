@@ -16,6 +16,7 @@ import com.gamersblended.junes.repository.jpa.TransactionRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import com.gamersblended.junes.util.PageableValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -175,8 +176,21 @@ public class TransactionService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        List<Product> productList = productRepository.findByIdIn(productIDList);
+        // Convert String IDs to ObjectId
+        List<ObjectId> productObjectIDList = productIDList.stream()
+                .map(id -> {
+                    try {
+                        return new ObjectId(id);
+                    } catch (IllegalArgumentException ex) {
+                        log.error("Invalid ObjectId format: {}", id);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        List<Product> productList = productRepository.findByIdIn(productObjectIDList);
         return productList.stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+                .collect(Collectors.toMap(product -> product.getId().toHexString(), Function.identity()));
     }
 }

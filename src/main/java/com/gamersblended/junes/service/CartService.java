@@ -14,6 +14,7 @@ import com.gamersblended.junes.repository.jpa.CartDatabaseRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -161,14 +162,14 @@ public class CartService {
             return Page.empty(pageable);
         }
         // Extract product IDs to fetch metadata from product database
-        List<String> productIDFromCartList = cart.getItemList().stream()
-                .map(CartItem::getProductID)
+        List<ObjectId> productIDFromCartList = cart.getItemList().stream()
+                .map(item -> new ObjectId(item.getProductID()))
                 .toList();
 
         // Fetch product metadata from product database
         List<Product> metadataList = productRepository.findByIdIn(productIDFromCartList);
         Map<String, Product> productMap = metadataList.stream()
-                .collect(Collectors.toMap(Product::getId, Function.identity()));
+                .collect(Collectors.toMap(product -> product.getId().toHexString(), Function.identity()));
 
         // Create DTO using cart items and metadata data
         List<ProductInCartDTO> productsInCartList = cart.getItemList().stream()
@@ -243,7 +244,7 @@ public class CartService {
             throw new MissingIdentifierException("User ID or Session ID required");
         }
 
-        productRepository.findById(productID)
+        productRepository.findById(new ObjectId(productID))
                 .orElseThrow(() -> {
                     log.error("Product ID not found: {}", productID);
                     return new ProductNotFoundException("Product not found");
