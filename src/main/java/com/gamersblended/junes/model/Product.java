@@ -4,6 +4,7 @@ import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -18,7 +19,7 @@ public class Product {
 
     @Id
     @Field("_id")
-    private String id; // Maps to _id field in MongoDB
+    private ObjectId id; // Maps to _id field in MongoDB
 
     @NonNull
     private String name;
