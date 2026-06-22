@@ -232,7 +232,7 @@ public class CartService {
             throw new InvalidQuantityException("Error in updating quantity due to invalid quantity value: " + quantity);
         }
 
-        productRepository.findById(productID)
+        productRepository.findById(new ObjectId(productID))
                 .orElseThrow(() -> {
                     log.error("Product ID not found: {}", productID);
                     return new ProductNotFoundException("Product not found");

@@ -3,6 +3,7 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.model.Product;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -25,7 +26,7 @@ public class InventoryService {
 
     public boolean reserveStock(String productID, int quantity) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(productID)
+        query.addCriteria(Criteria.where("_id").is(new ObjectId(productID))
                 .and("stock").gte(quantity));
 
         Update update = new Update();
@@ -40,7 +41,7 @@ public class InventoryService {
 
         if (result.getModifiedCount() > 0) {
             // Successfully reserved, publish event
-            Product product = mongoTemplate.findById(productID, Product.class);
+            Product product = mongoTemplate.findById(new ObjectId(productID), Product.class);
             eventPublisher.publishInventoryChanged(
                     productID,
                     product.getStock() + quantity,
