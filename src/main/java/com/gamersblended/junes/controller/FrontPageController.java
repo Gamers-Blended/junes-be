@@ -3,14 +3,15 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
-import com.gamersblended.junes.dto.RecommendedProductNotLoggedRequestDTO;
+import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +34,7 @@ public class FrontPageController {
         this.productService = productService;
     }
 
-    @Operation(summary = "Get a list of recommended products for logged user")
+    @Operation(summary = "Get a list of recommended products")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Recommended products shown",
                     content = {@Content(mediaType = "application/json",
@@ -43,31 +44,10 @@ public class FrontPageController {
             @ApiResponse(responseCode = "404", description = "Products not found",
                     content = @Content)
     })
-    @GetMapping("/recommended")
-    public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsLoggedIn(@RequestParam Integer userID, Pageable pageable) {
-        log.info("Calling get recommended products API while userID {} is logged in, page {}!", userID, pageable.getPageNumber());
-        return ResponseEntity.ok(productService.getRecommendedProductsWithID(userID, pageable));
-    }
-
-    @Operation(summary = "Get a list of recommended products for not logged user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Recommended products shown",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid userID given",
-                    content = @Content),
-            @ApiResponse(responseCode = "404", description = "Products not found",
-                    content = @Content)
-    })
-    @PostMapping("/recommended/no-user")
-    public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsNotLoggedIn(@io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "List of up to 20 productIDs and pageNumber", required = true,
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = RecommendedProductNotLoggedRequestDTO.class),
-                    examples = @ExampleObject(value = "{ \"pageNumber\": 0, \"historyCache\": [\"681a55f2cb20535492b5e695\", \"681a55f2cb20535492b5e691\"] }")))
-                                                                        @RequestBody RecommendedProductNotLoggedRequestDTO requestDTO, Pageable pageable) {
-        log.info("Calling get recommended products API while user is NOT logged in, page {}! Size of historyCache: {}", pageable.getPageNumber(), requestDTO.getHistoryCache().size());
-        return ResponseEntity.ok(productService.getRecommendedProductsWithoutID(requestDTO, pageable));
+    @PostMapping("/recommended")
+    public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsLoggedIn(@Valid @RequestBody RecommendedProductRequestDTO requestDTO, Pageable pageable, HttpServletRequest httpRequest) {
+        log.info("Calling get recommended products API, page {}!", pageable.getPageNumber());
+        return ResponseEntity.ok(productService.getRecommendedProducts(requestDTO, pageable, httpRequest));
     }
 
     @Operation(summary = "Get a list of preorder products")

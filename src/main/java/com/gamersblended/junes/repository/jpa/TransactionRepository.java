@@ -21,11 +21,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     Optional<Transaction> findByUserIDAndOrderNumber(UUID userID, String orderNumber);
 
     @Query("""
-                SELECT new com.gamersblended.junes.dto.OrderEvent(ti.productID, t.createdOn)
-                FROM TransactionItem ti
-                JOIN ti.transaction t
-                WHERE t.userID = :userID
-                ORDER BY t.createdOn DESC
+            SELECT new com.gamersblended.junes.dto.OrderEvent(ti.productID, t.createdOn)
+            FROM TransactionItem ti
+            JOIN ti.transaction t
+            WHERE t.userID = :userID
+            ORDER BY t.createdOn DESC
             """)
     List<OrderEvent> findRecentItemsByUserID(@Param("userID") UUID userID, Pageable pageable);
 }

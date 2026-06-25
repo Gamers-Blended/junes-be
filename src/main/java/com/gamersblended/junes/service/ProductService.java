@@ -1,12 +1,14 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.*;
+import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,25 +29,50 @@ import java.util.Optional;
 @Service
 public class ProductService {
 
-    private static final int MAX_CACHE_SIZE = 20;
+    private static final int MAX_BROWSING_CACHE_SIZE = 30;
     private static final int PAGE_SIZE = 5;
     private static final int LAST_PAGE = 3;
     private static final String UNITS_SOLD = "units_sold";
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final ProductRecommendationContextBuilder productRecommendationContextBuilder;
     private final ProductMapper productMapper;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationContextBuilder productRecommendationContextBuilder, ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
+        this.productRecommendationContextBuilder = productRecommendationContextBuilder;
         this.productMapper = productMapper;
     }
 
-    public List<Product> getAllProducts() {
-        List<Product> res = productRepository.findAll();
-        log.info("Total number of products returned from db: {}", res.size());
-        return res;
+    public Page<ProductSliderItemDTO> getRecommendedProducts(RecommendedProductRequestDTO requestDTO, Pageable pageable, HttpServletRequest httpRequest) {
+        List<RecommendedProductRequestDTO.HistoryItem> historyCache = requestDTO.getHistoryCache();
+        validatePageNumberLimit(pageable.getPageNumber());
+
+        try {
+            // Keep only the most recent n products in historyCache
+            if (null != historyCache && historyCache.size() > MAX_BROWSING_CACHE_SIZE) {
+                log.info("browsingCache exceeded max capacity, keeping only the most recent {} products...", MAX_BROWSING_CACHE_SIZE);
+
+                List<RecommendedProductRequestDTO.HistoryItem> sortedCache = new ArrayList<>(historyCache);
+                sortedCache.sort(Comparator.comparing(RecommendedProductRequestDTO.HistoryItem::getViewAt).reversed());
+                List<RecommendedProductRequestDTO.HistoryItem> trimmedCache = sortedCache.stream()
+                        .limit(MAX_BROWSING_CACHE_SIZE)
+                        .toList();
+
+                requestDTO.setHistoryCache(trimmedCache);
+            }
+
+            UserContext userContext = productRecommendationContextBuilder.buildUserContext(requestDTO, httpRequest);
+            log.info("userContext: {}", userContext.getProductIDList());
+
+        } catch (Exception ex) {
+            log.error("Exception in getRecommendedProductsWithoutID for historyCache {}: ", historyCache, ex);
+        }
+
+
+        return null;
     }
 
     /**
@@ -90,9 +118,9 @@ public class ProductService {
 
         try {
             // Keep only the most recent 20 products in browsingCache
-            if (browsingCache.size() > MAX_CACHE_SIZE) {
-                log.info("browsingCache exceeded max capacity of {}, keeping only the most recent {} products...", MAX_CACHE_SIZE, MAX_CACHE_SIZE);
-                browsingCache = browsingCache.subList(browsingCache.size() - MAX_CACHE_SIZE, browsingCache.size());
+            if (browsingCache.size() > MAX_BROWSING_CACHE_SIZE) {
+                log.info("browsingCache exceeded max capacity of {}, keeping only the most recent {} products...", MAX_BROWSING_CACHE_SIZE, MAX_BROWSING_CACHE_SIZE);
+                browsingCache = browsingCache.subList(browsingCache.size() - MAX_BROWSING_CACHE_SIZE, browsingCache.size());
             }
             if (!browsingCache.contains("") && !browsingCache.isEmpty()) {
                 return callRecommenderSystem(browsingCache, pageable);
