@@ -311,7 +311,7 @@ public class ProductService {
 
     private ProductVariantDTO getProductVariantDTO(Product currentProduct) {
         ProductVariantDTO productVariantDTO = new ProductVariantDTO();
-        productVariantDTO.setProductID(currentProduct.getId());
+        productVariantDTO.setProductID(currentProduct.getId().toHexString());
         productVariantDTO.setName(currentProduct.getName());
         productVariantDTO.setPrice(currentProduct.getPrice());
         productVariantDTO.setPlatform(currentProduct.getPlatform());
