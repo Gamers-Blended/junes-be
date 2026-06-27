@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 
@@ -45,9 +45,10 @@ public class FrontPageController {
                     content = @Content)
     })
     @PostMapping("/recommended")
-    public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsLoggedIn(@Valid @RequestBody RecommendedProductRequestDTO requestDTO, Pageable pageable, HttpServletRequest httpRequest) {
+    public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsLoggedIn(@Valid @RequestBody RecommendedProductRequestDTO requestDTO,
+                                                                                     @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, Pageable pageable) {
         log.info("Calling get recommended products API, page {}!", pageable.getPageNumber());
-        return ResponseEntity.ok(productService.getRecommendedProducts(requestDTO, pageable, httpRequest));
+        return ResponseEntity.ok(productService.getRecommendedProducts(requestDTO, pageable, sessionID));
     }
 
     @Operation(summary = "Get a list of preorder products")

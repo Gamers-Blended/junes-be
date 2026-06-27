@@ -8,7 +8,6 @@ import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,10 +19,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -35,18 +31,18 @@ public class ProductService {
     private static final String UNITS_SOLD = "units_sold";
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final ProductRecommendationContextBuilder productRecommendationContextBuilder;
+    private final ProductRecommendationRequestBuilder productRecommendationRequestBuilder;
     private final ProductMapper productMapper;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationContextBuilder productRecommendationContextBuilder, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
-        this.productRecommendationContextBuilder = productRecommendationContextBuilder;
+        this.productRecommendationRequestBuilder = productRecommendationRequestBuilder;
         this.productMapper = productMapper;
     }
 
-    public Page<ProductSliderItemDTO> getRecommendedProducts(RecommendedProductRequestDTO requestDTO, Pageable pageable, HttpServletRequest httpRequest) {
+    public Page<ProductSliderItemDTO> getRecommendedProducts(RecommendedProductRequestDTO requestDTO, Pageable pageable, UUID sessionID) {
         List<RecommendedProductRequestDTO.HistoryItem> historyCache = requestDTO.getHistoryCache();
         validatePageNumberLimit(pageable.getPageNumber());
 
@@ -64,7 +60,7 @@ public class ProductService {
                 requestDTO.setHistoryCache(trimmedCache);
             }
 
-            UserContext userContext = productRecommendationContextBuilder.buildUserContext(requestDTO, httpRequest);
+            UserContext userContext = productRecommendationRequestBuilder.buildUserContext(requestDTO, sessionID);
             log.info("userContext: {}", userContext.getProductIDList());
 
         } catch (Exception ex) {

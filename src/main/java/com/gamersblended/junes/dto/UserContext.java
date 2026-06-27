@@ -10,8 +10,6 @@ import java.util.UUID;
 @Builder
 public class UserContext {
     private final UUID userID;
-    private final String sessionID;
+    private final UUID sessionID;
     private final List<RecommendationInputDTO> productIDList;
-    private final String pageType;
-
 }
