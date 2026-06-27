@@ -1,9 +1,9 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.constant.SignalEnums;
-import com.gamersblended.junes.dto.OrderEvent;
-import com.gamersblended.junes.dto.RecommendationInputDTO;
-import com.gamersblended.junes.dto.UserContext;
+import com.gamersblended.junes.constant.SignalTypeEnums;
+import com.gamersblended.junes.dto.recommender.OrderEvent;
+import com.gamersblended.junes.dto.recommender.ProductSignalDTO;
+import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
@@ -21,24 +21,29 @@ import java.util.*;
 public class ProductRecommendationRequestBuilder {
 
     private static final int MAX_ITEMS_SIZE = 30;
+    private static final int MAX_ITEMS = 20;
+    private static final String ADD_ID_TO_LIST_LOG_MESSAGE = "Adding {} IDs under {} to request body for recommender system";
 
     private final TransactionRepository transactionRepository;
     private final CartService cartService;
 
-    public UserContext buildUserContext(RecommendedProductRequestDTO requestDTO, UUID sessionID) {
+    public List<ProductSignalDTO> getRecommendationInputDTOList(RecommendedProductRequestDTO requestDTO, UUID sessionID) {
         // (1) Browsing cache
-        List<RecommendationInputDTO> productIDList = new ArrayList<>(requestDTO.getHistoryCache().stream()
-                .map(item -> new RecommendationInputDTO(item.getProductID(),
-                        item.getViewAt(),
-                        SignalEnums.BROWSE))
+        log.info(ADD_ID_TO_LIST_LOG_MESSAGE, requestDTO.getHistoryCache().size(), SignalTypeEnums.BROWSE);
+        List<ProductSignalDTO> productIDList = new ArrayList<>(requestDTO.getHistoryCache().stream()
+                .map(item -> new ProductSignalDTO(item.getProductID(),
+                        SignalTypeEnums.BROWSE,
+                        item.getViewAt()
+                ))
                 .toList());
 
         // (2) Purchased items
-        List<RecommendationInputDTO> purchasedProductIDList = requestDTO.getUserID() != null
+        List<ProductSignalDTO> purchasedProductIDList = requestDTO.getUserID() != null
                 ? fetchOrderHistory(requestDTO.getUserID())
                 : Collections.emptyList();
 
         if (!purchasedProductIDList.isEmpty()) {
+            log.info(ADD_ID_TO_LIST_LOG_MESSAGE, purchasedProductIDList.size(), SignalTypeEnums.PURCHASE);
             productIDList.addAll(purchasedProductIDList);
         }
 
@@ -59,29 +64,34 @@ public class ProductRecommendationRequestBuilder {
         }
 
         if (null != cartItemList && !cartItemList.isEmpty()) {
-            List<RecommendationInputDTO> cartProductIDList = cartItemList.stream()
-                    .map(item -> new RecommendationInputDTO(item.getProductID(),
-                            item.getCreatedOn(),
-                            SignalEnums.CART_ADD))
+            log.info(ADD_ID_TO_LIST_LOG_MESSAGE, cartItemList.size(), SignalTypeEnums.CART_ADD);
+            List<ProductSignalDTO> cartProductIDList = cartItemList.stream()
+                    .map(item -> new ProductSignalDTO(item.getProductID(),
+                            SignalTypeEnums.CART_ADD,
+                            item.getCreatedOn()))
                     .toList();
 
             productIDList.addAll(cartProductIDList);
         }
 
-        return UserContext.builder()
-                .userID(requestDTO.getUserID())
-                .sessionID(sessionID)
-                .productIDList(productIDList)
-                .build();
+        return productIDList;
     }
 
-    private List<RecommendationInputDTO> fetchOrderHistory(UUID userID) {
+    public RecommendationRequestDTO getRecommendationRequestDTO(List<ProductSignalDTO> productSignalDTOList) {
+        RecommendationRequestDTO recommendationRequestDTO = new RecommendationRequestDTO();
+        recommendationRequestDTO.setSignalList(productSignalDTOList);
+        recommendationRequestDTO.setMaxResult(MAX_ITEMS);
+
+        return recommendationRequestDTO;
+    }
+
+    private List<ProductSignalDTO> fetchOrderHistory(UUID userID) {
         List<OrderEvent> productIDList = transactionRepository.findRecentItemsByUserID(userID, PageRequest.of(0, MAX_ITEMS_SIZE));
 
         return productIDList.stream()
-                .map(item -> new RecommendationInputDTO(item.getProductID(),
-                        item.getCreatedOn(),
-                        SignalEnums.PURCHASE))
+                .map(item -> new ProductSignalDTO(item.getProductID(),
+                        SignalTypeEnums.PURCHASE,
+                        item.getCreatedOn()))
                 .toList();
     }
 }

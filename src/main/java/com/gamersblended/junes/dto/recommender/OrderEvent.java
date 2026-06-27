@@ -1,4 +1,4 @@
-package com.gamersblended.junes.dto;
+package com.gamersblended.junes.dto.recommender;
 
 import lombok.Value;
 

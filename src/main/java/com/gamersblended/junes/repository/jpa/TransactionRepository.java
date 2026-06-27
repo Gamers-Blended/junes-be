@@ -1,6 +1,6 @@
 package com.gamersblended.junes.repository.jpa;
 
-import com.gamersblended.junes.dto.OrderEvent;
+import com.gamersblended.junes.dto.recommender.OrderEvent;
 import com.gamersblended.junes.model.Transaction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +21,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     Optional<Transaction> findByUserIDAndOrderNumber(UUID userID, String orderNumber);
 
     @Query("""
-            SELECT new com.gamersblended.junes.dto.OrderEvent(ti.productID, t.createdOn)
+            SELECT new com.gamersblended.junes.dto.recommender.OrderEvent(ti.productID, t.createdOn)
             FROM TransactionItem ti
             JOIN ti.transaction t
             WHERE t.userID = :userID

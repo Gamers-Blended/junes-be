@@ -1,6 +1,8 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.*;
+import com.gamersblended.junes.dto.recommender.ProductSignalDTO;
+import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
@@ -60,9 +62,11 @@ public class ProductService {
                 requestDTO.setHistoryCache(trimmedCache);
             }
 
-            UserContext userContext = productRecommendationRequestBuilder.buildUserContext(requestDTO, sessionID);
-            log.info("userContext: {}", userContext.getProductIDList());
+            List<ProductSignalDTO> productSignalDTOList = productRecommendationRequestBuilder.getRecommendationInputDTOList(requestDTO, sessionID);
 
+            RecommendationRequestDTO recommendationRequestDTO = productRecommendationRequestBuilder.getRecommendationRequestDTO(productSignalDTOList);
+
+            log.info("Total of {} IDs to be fed to recommender", recommendationRequestDTO.getSignalList().size());
         } catch (Exception ex) {
             log.error("Exception in getRecommendedProductsWithoutID for historyCache {}: ", historyCache, ex);
         }
