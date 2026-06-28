@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -21,7 +22,7 @@ import java.util.*;
 public class ProductRecommendationRequestBuilder {
 
     private static final int MAX_ITEMS_SIZE = 30;
-    private static final int MAX_ITEMS = 20;
+    private static final int MAX_RESULTS = 20;
     private static final String ADD_ID_TO_LIST_LOG_MESSAGE = "Adding {} IDs under {} to request body for recommender system";
 
     private final TransactionRepository transactionRepository;
@@ -32,7 +33,7 @@ public class ProductRecommendationRequestBuilder {
         log.info(ADD_ID_TO_LIST_LOG_MESSAGE, requestDTO.getHistoryCache().size(), SignalTypeEnums.BROWSE);
         List<ProductSignalDTO> productIDList = new ArrayList<>(requestDTO.getHistoryCache().stream()
                 .map(item -> new ProductSignalDTO(item.getProductID(),
-                        SignalTypeEnums.BROWSE,
+                        SignalTypeEnums.BROWSE.getName(),
                         item.getViewAt()
                 ))
                 .toList());
@@ -67,20 +68,20 @@ public class ProductRecommendationRequestBuilder {
             log.info(ADD_ID_TO_LIST_LOG_MESSAGE, cartItemList.size(), SignalTypeEnums.CART_ADD);
             List<ProductSignalDTO> cartProductIDList = cartItemList.stream()
                     .map(item -> new ProductSignalDTO(item.getProductID(),
-                            SignalTypeEnums.CART_ADD,
+                            SignalTypeEnums.CART_ADD.getName(),
                             item.getCreatedOn()))
                     .toList();
 
             productIDList.addAll(cartProductIDList);
         }
 
-        return productIDList;
+        return filterHighestWeightSignals(productIDList);
     }
 
     public RecommendationRequestDTO getRecommendationRequestDTO(List<ProductSignalDTO> productSignalDTOList) {
         RecommendationRequestDTO recommendationRequestDTO = new RecommendationRequestDTO();
         recommendationRequestDTO.setSignalList(productSignalDTOList);
-        recommendationRequestDTO.setMaxResult(MAX_ITEMS);
+        recommendationRequestDTO.setMaxResult(MAX_RESULTS);
 
         return recommendationRequestDTO;
     }
@@ -90,8 +91,24 @@ public class ProductRecommendationRequestBuilder {
 
         return productIDList.stream()
                 .map(item -> new ProductSignalDTO(item.getProductID(),
-                        SignalTypeEnums.PURCHASE,
+                        SignalTypeEnums.PURCHASE.getName(),
                         item.getCreatedOn()))
                 .toList();
+    }
+
+    private List<ProductSignalDTO> filterHighestWeightSignals(List<ProductSignalDTO> productSignalDTOList) {
+        Map<String, ProductSignalDTO> highestWeightMap = productSignalDTOList.stream()
+                .collect(Collectors.toMap(
+                        ProductSignalDTO::getProductID,
+                        signal -> signal,
+                        (existing, replacement) -> {
+                            int existingWeight = SignalTypeEnums.valueOf(existing.getType()).getWeight();
+                            int replacementWeight = SignalTypeEnums.valueOf(replacement.getType()).getWeight();
+
+                            return existingWeight >= replacementWeight ? existing : replacement;
+                        }
+                ));
+
+        return new ArrayList<>(highestWeightMap.values());
     }
 }
