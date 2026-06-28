@@ -113,6 +113,33 @@ services:
     networks:
       - app-network
 
+  recommendation-api:
+    build:
+      context: ../recommendation-engine
+    container_name: recommendation-engine
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "8000:8000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB_NAME}?authSource=admin
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+      - MONGO_COLLECTION_NAME=${MONGO_COLLECTION_NAME}
+      - REDIS_URL=${REDIS_URL}
+      - ENV=production
+      - LOG_LEVEL=info
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
   mongodb_data:

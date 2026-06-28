@@ -159,8 +159,31 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(RedisDataException.class)
-    public ResponseEntity<Object> handleCRedisDataException(RedisDataException ex, WebRequest request) {
+    public ResponseEntity<Object> handleRedisDataException(RedisDataException ex, WebRequest request) {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
+    @ExceptionHandler(RecommendationClientException.class)
+    public ResponseEntity<Object> handleRecommendationClientException(RecommendationClientException ex, WebRequest request) {
+        return buildErrorResponse(
+                "Unable to process recommendation request due to a configuration issue.",
+                HttpStatus.BAD_GATEWAY, request);
+    }
+
+    @ExceptionHandler(RecommendationServerException.class)
+    public ResponseEntity<Object> handleRecommendationServerException(
+            RecommendationServerException ex, WebRequest request) {
+        return buildErrorResponse(
+                "Recommendation service is currently unavailable. Please try again later.",
+                HttpStatus.SERVICE_UNAVAILABLE, request);
+    }
+
+    @ExceptionHandler(WebClientRequestException.class)
+    public ResponseEntity<Object> handleWebClientRequestException(
+            WebClientRequestException ex, WebRequest request) {
+        return buildErrorResponse(
+                "Could not reach the recommendation service. Please try again later.",
+                HttpStatus.GATEWAY_TIMEOUT, request);
     }
 
     // Generic exception handler for unhandled exceptions

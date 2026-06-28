@@ -3,6 +3,7 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.dto.*;
 import com.gamersblended.junes.dto.recommender.ProductSignalDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
+import com.gamersblended.junes.dto.recommender.RecommendationResponseDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
@@ -34,13 +35,15 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final ProductRecommendationRequestBuilder productRecommendationRequestBuilder;
+    private final RecommendationService recommendationService;
     private final ProductMapper productMapper;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, RecommendationService recommendationService, ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.productRecommendationRequestBuilder = productRecommendationRequestBuilder;
+        this.recommendationService = recommendationService;
         this.productMapper = productMapper;
     }
 
@@ -67,12 +70,15 @@ public class ProductService {
             RecommendationRequestDTO recommendationRequestDTO = productRecommendationRequestBuilder.getRecommendationRequestDTO(productSignalDTOList);
 
             log.info("Total of {} IDs to be fed to recommender", recommendationRequestDTO.getSignalList().size());
+
+            RecommendationResponseDTO responseDTO = recommendationService.getRecommendations(recommendationRequestDTO).block();
+
+            return recommendationService.convertToPage(responseDTO);
         } catch (Exception ex) {
             log.error("Exception in getRecommendedProductsWithoutID for historyCache {}: ", historyCache, ex);
         }
 
-
-        return null;
+        return Page.empty();
     }
 
     /**
