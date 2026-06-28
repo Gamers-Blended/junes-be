@@ -1,6 +1,5 @@
 package com.gamersblended.junes.repository.jpa;
 
-import com.gamersblended.junes.dto.recommender.OrderEvent;
 import com.gamersblended.junes.model.Transaction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,12 +19,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     Optional<Transaction> findByUserIDAndOrderNumber(UUID userID, String orderNumber);
 
-    @Query("""
-            SELECT new com.gamersblended.junes.dto.recommender.OrderEvent(ti.productID, t.createdOn)
-            FROM TransactionItem ti
-            JOIN ti.transaction t
-            WHERE t.userID = :userID
-            ORDER BY t.createdOn DESC
-            """)
-    List<OrderEvent> findRecentItemsByUserID(@Param("userID") UUID userID, Pageable pageable);
+    @Query(value = """
+            SELECT DISTINCT ON (ti.product_id)
+                ti.product_id as productID,
+                t.created_on as createdOn
+            FROM junes_rel.transaction_items ti
+            JOIN junes_rel.transactions t ON ti.transaction_id = t.transaction_id
+            WHERE t.user_id = :userID
+            ORDER BY ti.product_id, t.created_on DESC
+            """, nativeQuery = true)
+    List<Object[]> findRecentItemsByUserID(@Param("userID") UUID userID, Pageable pageable);
 }

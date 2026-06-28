@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,7 +88,13 @@ public class ProductRecommendationRequestBuilder {
     }
 
     private List<ProductSignalDTO> fetchOrderHistory(UUID userID) {
-        List<OrderEvent> productIDList = transactionRepository.findRecentItemsByUserID(userID, PageRequest.of(0, MAX_ITEMS_SIZE));
+        List<OrderEvent> productIDList = transactionRepository.findRecentItemsByUserID(userID, PageRequest.of(0, MAX_ITEMS_SIZE))
+                .stream()
+                .map(row -> new OrderEvent(
+                        (String) row[0], // productID
+                        ((Timestamp) row[1]).toLocalDateTime() // createdOn
+                ))
+                .toList();
 
         return productIDList.stream()
                 .map(item -> new ProductSignalDTO(item.getProductID(),
