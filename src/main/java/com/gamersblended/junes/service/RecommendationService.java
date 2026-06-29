@@ -1,16 +1,10 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.ProductSliderItemDTO;
-import com.gamersblended.junes.dto.recommender.ProductRecommendationDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationResponseDTO;
 import com.gamersblended.junes.exception.RecommendationClientException;
 import com.gamersblended.junes.exception.RecommendationServerException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -19,7 +13,6 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -80,7 +73,7 @@ public class RecommendationService {
                 })
                 .doOnSuccess(result -> {
                     if (result != null) {
-                        log.info("[RecommendationService] Received {} recommendations", result.getTotal());
+                        log.info("[RecommendationService] Received {} recommendations", result.getProducts().size());
                     }
                 });
     }

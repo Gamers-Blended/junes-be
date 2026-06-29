@@ -10,6 +10,5 @@ import java.util.List;
 @Setter
 public class RecommendationResponseDTO {
     List<ProductRecommendationDTO> products;
-    Integer total;
     LocalDateTime servedAt;
 }
