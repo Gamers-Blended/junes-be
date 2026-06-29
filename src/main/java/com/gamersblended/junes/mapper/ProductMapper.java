@@ -2,6 +2,7 @@ package com.gamersblended.junes.mapper;
 
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
+import com.gamersblended.junes.dto.recommender.ProductRecommendationDTO;
 import com.gamersblended.junes.model.Product;
 import org.bson.types.ObjectId;
 import org.mapstruct.Mapper;
@@ -19,4 +20,6 @@ public interface ProductMapper {
 
     @Mapping(source = "id", target = "productID")
     ProductSliderItemDTO toSliderItemDTO(Product product);
+
+    ProductSliderItemDTO recommendationToSliderItemDTO(ProductRecommendationDTO productRecommendationDTO);
 }

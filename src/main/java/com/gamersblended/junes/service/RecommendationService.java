@@ -85,30 +85,4 @@ public class RecommendationService {
                 });
     }
 
-    public Page<ProductSliderItemDTO> convertToPage(RecommendationResponseDTO responseDTO) {
-        if (null == responseDTO || null == responseDTO.getProducts()) {
-            return Page.empty();
-        }
-
-        List<ProductSliderItemDTO> sliderItems = responseDTO.getProducts().stream()
-                .map(this::mapToSliderItem)
-                .toList();
-
-        Pageable pageable = PageRequest.of(0, Math.max(10, sliderItems.size()));
-        return new PageImpl<>(sliderItems, pageable, sliderItems.size());
-
-    }
-
-    private ProductSliderItemDTO mapToSliderItem(ProductRecommendationDTO product) {
-        ProductSliderItemDTO sliderItem = new ProductSliderItemDTO();
-        sliderItem.setProductID(product.getProductID());
-        sliderItem.setName(product.getName());
-        sliderItem.setSlug(product.getSlug());
-        sliderItem.setPlatform(product.getPlatform());
-        sliderItem.setRegion(product.getRegion());
-        sliderItem.setEdition(product.getEdition());
-        sliderItem.setPrice(product.getPrice());
-        sliderItem.setProductImageUrl(product.getProductImageUrl());
-        return sliderItem;
-    }
 }

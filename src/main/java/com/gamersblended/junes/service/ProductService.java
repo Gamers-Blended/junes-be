@@ -1,6 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.*;
+import com.gamersblended.junes.dto.recommender.ProductRecommendationDTO;
 import com.gamersblended.junes.dto.recommender.ProductSignalDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationResponseDTO;
@@ -13,10 +14,7 @@ import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -49,16 +47,14 @@ public class ProductService {
 
     public Page<ProductSliderItemDTO> getRecommendedProducts(RecommendedProductRequestDTO requestDTO, Pageable pageable, UUID sessionID) {
         List<RecommendedProductRequestDTO.HistoryItem> historyCache = requestDTO.getHistoryCache();
-        validatePageNumberLimit(pageable.getPageNumber());
 
         try {
-            // Keep only the most recent n products in historyCache
+            // Trim browsing cache to most recent N items
             if (null != historyCache && historyCache.size() > MAX_BROWSING_CACHE_SIZE) {
                 log.info("browsingCache exceeded max capacity, keeping only the most recent {} products...", MAX_BROWSING_CACHE_SIZE);
 
-                List<RecommendedProductRequestDTO.HistoryItem> sortedCache = new ArrayList<>(historyCache);
-                sortedCache.sort(Comparator.comparing(RecommendedProductRequestDTO.HistoryItem::getViewAt).reversed());
-                List<RecommendedProductRequestDTO.HistoryItem> trimmedCache = sortedCache.stream()
+                List<RecommendedProductRequestDTO.HistoryItem> trimmedCache = historyCache.stream()
+                        .sorted(Comparator.comparing(RecommendedProductRequestDTO.HistoryItem::getViewAt).reversed())
                         .limit(MAX_BROWSING_CACHE_SIZE)
                         .toList();
 
@@ -73,12 +69,17 @@ public class ProductService {
 
             RecommendationResponseDTO responseDTO = recommendationService.getRecommendations(recommendationRequestDTO).block();
 
-            return recommendationService.convertToPage(responseDTO);
-        } catch (Exception ex) {
-            log.error("Exception in getRecommendedProductsWithoutID for historyCache {}: ", historyCache, ex);
-        }
+            if (null == responseDTO || null == responseDTO.getProducts() || responseDTO.getProducts().isEmpty()) {
+                log.warn("Recommendation engine returned empty response - returning empty page");
+                return Page.empty(pageable);
+            }
 
-        return Page.empty();
+            return toPagedSliderItems(responseDTO.getProducts(), pageable);
+
+        } catch (Exception ex) {
+            log.error("Exception in getRecommendedProductsWithoutID: ", ex);
+            return Page.empty(pageable);
+        }
     }
 
     /**
@@ -357,5 +358,24 @@ public class ProductService {
         productVariantDTO.setProductImageUrl(currentProduct.getProductImageUrl());
         productVariantDTO.setEditionNotes(currentProduct.getEditionNotes());
         return productVariantDTO;
+    }
+
+    private Page<ProductSliderItemDTO> toPagedSliderItems(List<ProductRecommendationDTO> productRecommendationDTOList, Pageable pageable) {
+        int pageNumber = pageable.getPageNumber();
+        int offset = pageNumber * PAGE_SIZE;
+
+        if (offset >= productRecommendationDTOList.size()) {
+            log.warn("Requested page {} is out of bounds (total products={})", pageNumber, productRecommendationDTOList.size());
+            return Page.empty(pageable);
+        }
+
+        int toIndex = Math.min(offset + PAGE_SIZE, productRecommendationDTOList.size());
+
+        List<ProductSliderItemDTO> pageContent = productRecommendationDTOList.subList(offset, toIndex)
+                .stream()
+                .map(productMapper::recommendationToSliderItemDTO)
+                .toList();
+
+        return new PageImpl<>(pageContent, PageRequest.of(pageNumber, PAGE_SIZE), productRecommendationDTOList.size());
     }
 }
