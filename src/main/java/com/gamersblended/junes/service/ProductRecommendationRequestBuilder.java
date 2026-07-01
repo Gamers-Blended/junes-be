@@ -8,8 +8,8 @@ import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProductRecommendationRequestBuilder {
 
     private static final int MAX_ITEMS_SIZE = 30;
@@ -28,6 +27,12 @@ public class ProductRecommendationRequestBuilder {
 
     private final TransactionRepository transactionRepository;
     private final CartService cartService;
+
+    @Autowired
+    public ProductRecommendationRequestBuilder(TransactionRepository transactionRepository, CartService cartService) {
+        this.transactionRepository = transactionRepository;
+        this.cartService = cartService;
+    }
 
     public List<ProductSignalDTO> getRecommendationInputDTOList(RecommendedProductRequestDTO requestDTO, UUID sessionID) {
         // (1) Browsing cache

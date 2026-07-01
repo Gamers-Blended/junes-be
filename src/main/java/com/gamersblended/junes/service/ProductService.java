@@ -34,14 +34,16 @@ public class ProductService {
     private final UserRepository userRepository;
     private final ProductRecommendationRequestBuilder productRecommendationRequestBuilder;
     private final RecommendationService recommendationService;
+    private final RecommendationCacheService recommendationCacheService;
     private final ProductMapper productMapper;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, RecommendationService recommendationService, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, RecommendationService recommendationService, RecommendationCacheService recommendationCacheService, ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.productRecommendationRequestBuilder = productRecommendationRequestBuilder;
         this.recommendationService = recommendationService;
+        this.recommendationCacheService = recommendationCacheService;
         this.productMapper = productMapper;
     }
 
@@ -67,7 +69,21 @@ public class ProductService {
 
             log.info("Total of {} IDs to be fed to recommender", recommendationRequestDTO.getSignalList().size());
 
-            RecommendationResponseDTO responseDTO = recommendationService.getRecommendations(recommendationRequestDTO).block();
+            // Check cache first
+            RecommendationResponseDTO responseDTO = recommendationCacheService.get(productSignalDTOList)
+                    .orElseGet(() -> {
+                        // Call Recommender
+                        RecommendationResponseDTO newResponseDTO = recommendationService
+                                .getRecommendations(recommendationRequestDTO)
+                                .block();
+
+                        if (null != newResponseDTO && null != newResponseDTO.getProducts() && !newResponseDTO.getProducts().isEmpty()) {
+                            // Product signals = key
+                            recommendationCacheService.put(productSignalDTOList, newResponseDTO);
+                        }
+
+                        return newResponseDTO;
+                    });
 
             if (null == responseDTO || null == responseDTO.getProducts() || responseDTO.getProducts().isEmpty()) {
                 log.warn("Recommendation engine returned empty response - returning empty page");
