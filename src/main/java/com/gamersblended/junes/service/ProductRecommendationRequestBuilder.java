@@ -8,6 +8,7 @@ import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
+import com.gamersblended.junes.service.cache.OrderHistoryCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -27,11 +28,13 @@ public class ProductRecommendationRequestBuilder {
 
     private final TransactionRepository transactionRepository;
     private final CartService cartService;
+    private final OrderHistoryCacheService orderHistoryCacheService;
 
     @Autowired
-    public ProductRecommendationRequestBuilder(TransactionRepository transactionRepository, CartService cartService) {
+    public ProductRecommendationRequestBuilder(TransactionRepository transactionRepository, CartService cartService, OrderHistoryCacheService orderHistoryCacheService) {
         this.transactionRepository = transactionRepository;
         this.cartService = cartService;
+        this.orderHistoryCacheService = orderHistoryCacheService;
     }
 
     public List<ProductSignalDTO> getRecommendationInputDTOList(RecommendedProductRequestDTO requestDTO, UUID sessionID) {
@@ -93,6 +96,21 @@ public class ProductRecommendationRequestBuilder {
     }
 
     private List<ProductSignalDTO> fetchOrderHistory(UUID userID) {
+        // Check cache
+        return orderHistoryCacheService.get(userID)
+                .orElseGet(() -> {
+                    // Query database
+                    List<ProductSignalDTO> newProductSignalDTOList = fetchOrderHistoryFromDB(userID);
+
+                    if (!newProductSignalDTOList.isEmpty()) {
+                        orderHistoryCacheService.put(userID, newProductSignalDTOList);
+                    }
+
+                    return newProductSignalDTOList;
+                });
+    }
+
+    private List<ProductSignalDTO> fetchOrderHistoryFromDB(UUID userID) {
         List<OrderEvent> productIDList = transactionRepository.findRecentItemsByUserID(userID, PageRequest.of(0, MAX_ITEMS_SIZE))
                 .stream()
                 .map(row -> new OrderEvent(
