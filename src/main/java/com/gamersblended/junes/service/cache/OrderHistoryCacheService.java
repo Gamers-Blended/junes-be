@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class OrderHistoryCacheService {
 
-    private final RedisTemplate<String, List<ProductSignalDTO>> orderHistoryRedisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
     private static final TypeReference<List<ProductSignalDTO>> TYPE_REF = new TypeReference<>() {
@@ -29,8 +29,8 @@ public class OrderHistoryCacheService {
     private long cacheTtlMinutes;
 
     @Autowired
-    public OrderHistoryCacheService(RedisTemplate<String, List<ProductSignalDTO>> orderHistoryRedisTemplate, ObjectMapper objectMapper) {
-        this.orderHistoryRedisTemplate = orderHistoryRedisTemplate;
+    public OrderHistoryCacheService(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
+        this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
     }
 
@@ -42,14 +42,14 @@ public class OrderHistoryCacheService {
         String key = buildKey(userID);
 
         try {
-            Object raw = orderHistoryRedisTemplate.opsForValue().get(key);
+            String jsonString = (String) redisTemplate.opsForValue().get(key);
 
-            if (null == raw) {
+            if (null == jsonString) {
                 log.info("[OrderHistoryCache] MISS for userID = {}", userID);
                 return Optional.empty();
             }
 
-            List<ProductSignalDTO> cached = objectMapper.convertValue(raw, TYPE_REF);
+            List<ProductSignalDTO> cached = objectMapper.readValue(jsonString, TYPE_REF);
             log.info("[OrderHistoryCache] HIT for userID = {}", userID);
             return Optional.of(cached);
         } catch (Exception ex) {
@@ -62,7 +62,8 @@ public class OrderHistoryCacheService {
         String key = buildKey(userID);
 
         try {
-            orderHistoryRedisTemplate.opsForValue().set(key, productSignalDTOList, cacheTtlMinutes, TimeUnit.MINUTES);
+            String json = objectMapper.writeValueAsString(productSignalDTOList);
+            redisTemplate.opsForValue().set(key, json, cacheTtlMinutes, TimeUnit.MINUTES);
             log.info("[OrderHistoryCache] Stored for userID = {} TTL = {}min", userID, cacheTtlMinutes);
         } catch (Exception ex) {
             log.error("[OrderHistoryCache] Write failed for userID = {}: {}", userID, ex.getMessage());
