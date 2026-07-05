@@ -12,6 +12,7 @@ import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
+import com.gamersblended.junes.service.cache.RecommendationCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;

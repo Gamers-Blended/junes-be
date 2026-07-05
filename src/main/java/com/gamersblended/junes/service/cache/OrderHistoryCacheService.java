@@ -21,7 +21,7 @@ public class OrderHistoryCacheService {
     private final RedisTemplate<String, List<ProductSignalDTO>> orderHistoryRedisTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final TypeReference<List<ProductSignalDTO>> TYPE_REF = new TypeReference<List<ProductSignalDTO>>() {
+    private static final TypeReference<List<ProductSignalDTO>> TYPE_REF = new TypeReference<>() {
     };
     private static final String KEY_PREFIX = "order-history:";
 
