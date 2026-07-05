@@ -69,4 +69,15 @@ public class OrderHistoryCacheService {
             log.error("[OrderHistoryCache] Write failed for userID = {}: {}", userID, ex.getMessage());
         }
     }
+
+    public void evict(UUID userID) {
+        String key = buildKey(userID);
+
+        try {
+            Boolean isDeleted = redisTemplate.delete(key);
+            log.info("[OrderHistoryCache] Evicted key = {} success = {}", key, isDeleted);
+        } catch (Exception ex) {
+            log.error("[OrderHistoryCache] Eviction failed for userID = {}: {}", userID, ex.getMessage());
+        }
+    }
 }

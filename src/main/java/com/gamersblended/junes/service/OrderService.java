@@ -12,6 +12,7 @@ import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.service.cache.OrderHistoryCacheService;
 import com.gamersblended.junes.util.SnowflakeIDGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class OrderService {
     private final ShippingService shippingService;
     private final TransactionService transactionService;
     private final EmailProducerService emailProducerService;
+    private final OrderHistoryCacheService orderHistoryCacheService;
     private static final SnowflakeIDGenerator idGenerator = new SnowflakeIDGenerator(1);
     private static final String ORDER_ID_PREFIX = "J";
 
@@ -47,7 +49,8 @@ public class OrderService {
             InventoryService inventoryService,
             ShippingService shippingService,
             TransactionService transactionService,
-            EmailProducerService emailProducerService) {
+            EmailProducerService emailProducerService,
+            OrderHistoryCacheService orderHistoryCacheService) {
         this.eventPublisher = eventPublisher;
         this.addressRepository = addressRepository;
         this.paymentMethodRepository = paymentMethodRepository;
@@ -57,6 +60,7 @@ public class OrderService {
         this.shippingService = shippingService;
         this.transactionService = transactionService;
         this.emailProducerService = emailProducerService;
+        this.orderHistoryCacheService = orderHistoryCacheService;
     }
 
     @Transactional
@@ -101,6 +105,10 @@ public class OrderService {
                         return new EmailNotFoundException("User's email not found");
                     });
             emailProducerService.sendOrderConfirmedEmail(email, transaction, productMap, shippingAddress);
+
+            orderHistoryCacheService.evict(userID);
+            log.info("[OrderService] Order history cache evicted for userID = {} after purchase", userID);
+
             return transaction.getOrderNumber();
 
         } catch (Exception ex) {
