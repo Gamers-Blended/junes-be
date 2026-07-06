@@ -1,6 +1,9 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.*;
+import com.gamersblended.junes.dto.ProductDTO;
+import com.gamersblended.junes.dto.ProductDetailsDTO;
+import com.gamersblended.junes.dto.ProductSliderItemDTO;
+import com.gamersblended.junes.dto.ProductVariantDTO;
 import com.gamersblended.junes.dto.recommender.ProductRecommendationDTO;
 import com.gamersblended.junes.dto.recommender.ProductSignalDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
@@ -10,7 +13,6 @@ import com.gamersblended.junes.exception.InvalidProductIdException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
-import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import com.gamersblended.junes.service.cache.RecommendationCacheService;
 import lombok.extern.slf4j.Slf4j;
@@ -29,19 +31,16 @@ public class ProductService {
 
     private static final int MAX_BROWSING_CACHE_SIZE = 30;
     private static final int PAGE_SIZE = 5;
-    private static final int LAST_PAGE = 3;
     private static final String UNITS_SOLD = "units_sold";
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
     private final ProductRecommendationRequestBuilder productRecommendationRequestBuilder;
     private final RecommendationService recommendationService;
     private final RecommendationCacheService recommendationCacheService;
     private final ProductMapper productMapper;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, RecommendationService recommendationService, RecommendationCacheService recommendationCacheService, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, ProductRecommendationRequestBuilder productRecommendationRequestBuilder, RecommendationService recommendationService, RecommendationCacheService recommendationCacheService, ProductMapper productMapper) {
         this.productRepository = productRepository;
-        this.userRepository = userRepository;
         this.productRecommendationRequestBuilder = productRecommendationRequestBuilder;
         this.recommendationService = recommendationService;
         this.recommendationCacheService = recommendationCacheService;
@@ -87,116 +86,16 @@ public class ProductService {
                     });
 
             if (null == responseDTO || null == responseDTO.getProducts() || responseDTO.getProducts().isEmpty()) {
-                log.warn("Recommendation engine returned empty response - returning empty page");
-                return Page.empty(pageable);
+                log.warn("Recommendation engine returned empty response — falling back to best sellers");
+                return getBestSellers(LocalDate.now(), pageable.getPageNumber());
             }
 
             return toPagedSliderItems(responseDTO.getProducts(), pageable);
 
         } catch (Exception ex) {
-            log.error("Exception in getRecommendedProductsWithoutID: ", ex);
-            return Page.empty(pageable);
+            log.error("Exception in getRecommendedProducts — falling back to best sellers: ", ex);
+            return getBestSellers(LocalDate.now(), pageable.getPageNumber());
         }
-    }
-
-    /**
-     * For get recommended products API
-     * Case 1: logged users
-     *
-     * @param userID   ID of logged user calling the API
-     * @param pageable Page number specified here
-     * @return List of up to 5 recommended products
-     */
-    public Page<ProductSliderItemDTO> getRecommendedProductsWithID(Integer userID, Pageable pageable) {
-        validatePageNumberLimit(pageable.getPageNumber());
-
-        try {
-            if (null != userID) {
-                // Get user's browsing history
-                List<String> userHistoryList = userRepository.getUserHistory(userID);
-                log.info("Retrieved userHistoryList: {}", userHistoryList);
-
-                // Call Recommender System API if browsing history non-empty
-                if (!userHistoryList.isEmpty() && !userHistoryList.contains("")) {
-                    return callRecommenderSystem(userHistoryList, pageable);
-                }
-                log.info("UserID {} doesn't have any browsing history", userID);
-            }
-        } catch (Exception ex) {
-            log.error("Exception in getRecommendedProductsWithID for userID {}: ", userID, ex);
-        }
-        return returnDefaultRecommendedProducts(pageable);
-    }
-
-    /**
-     * For get recommended products API
-     * Case 2: user not logged in
-     *
-     * @param requestDTO Contains historyCache, a list of up to 20 of the latest productIDs guest has viewed
-     * @param pageable   Page number specified here
-     * @return Page of up to 5 recommended products
-     */
-    public Page<ProductSliderItemDTO> getRecommendedProductsWithoutID(RecommendedProductNotLoggedRequestDTO requestDTO, Pageable pageable) {
-        List<String> browsingCache = requestDTO.getHistoryCache();
-        validatePageNumberLimit(pageable.getPageNumber());
-
-        try {
-            // Keep only the most recent 20 products in browsingCache
-            if (browsingCache.size() > MAX_BROWSING_CACHE_SIZE) {
-                log.info("browsingCache exceeded max capacity of {}, keeping only the most recent {} products...", MAX_BROWSING_CACHE_SIZE, MAX_BROWSING_CACHE_SIZE);
-                browsingCache = browsingCache.subList(browsingCache.size() - MAX_BROWSING_CACHE_SIZE, browsingCache.size());
-            }
-            if (!browsingCache.contains("") && !browsingCache.isEmpty()) {
-                return callRecommenderSystem(browsingCache, pageable);
-            }
-        } catch (Exception ex) {
-            log.error("Exception in getRecommendedProductsWithoutID for browsingCache {}: ", browsingCache, ex);
-        }
-        log.info("browsingCache is empty, returning default products...");
-        return returnDefaultRecommendedProducts(pageable);
-    }
-
-
-    /**
-     * Check if given pageNumber exceeds LAST_PAGE
-     *
-     * @param pageNumber Input page number to check against
-     */
-    private void validatePageNumberLimit(Integer pageNumber) {
-        if (pageNumber > LAST_PAGE) {
-            log.error("Requested pageNumber exceeded last page! pageNumber: {}", pageNumber);
-            throw new IllegalArgumentException("Requested pageNumber exceeded last page! pageNumber: " + pageNumber);
-        }
-    }
-
-    /**
-     * Calls external recommender system
-     *
-     * @param inputProductIDList List of up to 20 unique product IDs
-     * @param pageable           Page number specified here
-     * @return Page of up to 5 recommended products
-     */
-    public Page<ProductSliderItemDTO> callRecommenderSystem(List<String> inputProductIDList, Pageable pageable) {
-        log.info("Recommender API called with {} product(s) for page {}!", inputProductIDList.size(), pageable.getPageNumber());
-        PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), PAGE_SIZE);
-        // Mocked result
-        Page<Product> mockedResultPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
-        return mockedResultPage.map(productMapper::toSliderItemDTO);
-    }
-
-
-    /**
-     * By default, gives products with most units sold, descending
-     *
-     * @param pageable Page number specified here
-     * @return Page of up to 5 products with most units sold as default
-     */
-    public Page<ProductSliderItemDTO> returnDefaultRecommendedProducts(Pageable pageable) {
-        log.info("Returning default products with most units sold for page {}!", pageable.getPageNumber());
-        PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), PAGE_SIZE);
-
-        Page<Product> recommendedProductPage = productRepository.findAllByOrderByUnitsSoldDesc(pageRequest);
-        return recommendedProductPage.map(productMapper::toSliderItemDTO);
     }
 
     /**

@@ -39,6 +39,8 @@
         <libphonenumber.version>9.0.21</libphonenumber.version>
         <shedlock.version>7.5.0</shedlock.version>
         <shedlock-provider.version>7.5.0</shedlock-provider.version>
+        <resilience4j-spring-boot3.version>2.4.0</resilience4j-spring-boot3.version>
+        <resilience4j-reactor.version>2.4.0</resilience4j-reactor.version>
     </properties>
     <dependencies>
         <dependency>
@@ -228,6 +230,18 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j-spring-boot3.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-reactor</artifactId>
+            <version>${resilience4j-reactor.version}</version>
         </dependency>
 
     </dependencies>
