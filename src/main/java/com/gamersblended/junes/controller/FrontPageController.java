@@ -4,6 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
+import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,9 +30,11 @@ import java.util.concurrent.TimeUnit;
 public class FrontPageController {
 
     private final ProductService productService;
+    private final AccessTokenService accessTokenService;
 
-    public FrontPageController(ProductService productService) {
+    public FrontPageController(ProductService productService, AccessTokenService accessTokenService) {
         this.productService = productService;
+        this.accessTokenService = accessTokenService;
     }
 
     @Operation(summary = "Get a list of recommended products")
@@ -46,9 +49,11 @@ public class FrontPageController {
     })
     @PostMapping("/recommended")
     public ResponseEntity<Page<ProductSliderItemDTO>> getRecommendedProductsLoggedIn(@Valid @RequestBody RecommendedProductRequestDTO requestDTO,
+                                                                                     @RequestHeader(value = "Authorization", required = false) String authHeader,
                                                                                      @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, Pageable pageable) {
         log.info("Calling get recommended products API, page {}!", pageable.getPageNumber());
-        return ResponseEntity.ok(productService.getRecommendedProducts(requestDTO, pageable, sessionID));
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        return ResponseEntity.ok(productService.getRecommendedProducts(requestDTO, pageable, userID, sessionID));
     }
 
     @Operation(summary = "Get a list of preorder products")
