@@ -47,7 +47,7 @@ public class ProductService {
         this.productMapper = productMapper;
     }
 
-    public Page<ProductSliderItemDTO> getRecommendedProducts(RecommendedProductRequestDTO requestDTO, Pageable pageable, UUID sessionID) {
+    public Page<ProductSliderItemDTO> getRecommendedProducts(RecommendedProductRequestDTO requestDTO, Pageable pageable, UUID userID, UUID sessionID) {
         List<RecommendedProductRequestDTO.HistoryItem> historyCache = requestDTO.getHistoryCache();
 
         try {
@@ -63,7 +63,7 @@ public class ProductService {
                 requestDTO.setHistoryCache(trimmedCache);
             }
 
-            List<ProductSignalDTO> productSignalDTOList = productRecommendationRequestBuilder.getRecommendationInputDTOList(requestDTO, sessionID);
+            List<ProductSignalDTO> productSignalDTOList = productRecommendationRequestBuilder.getRecommendationInputDTOList(requestDTO, userID, sessionID);
 
             RecommendationRequestDTO recommendationRequestDTO = productRecommendationRequestBuilder.getRecommendationRequestDTO(productSignalDTOList);
 

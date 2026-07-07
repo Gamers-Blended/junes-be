@@ -10,13 +10,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
 public class RecommendedProductRequestDTO {
-
-    private UUID userID;
 
     @Valid
     private List<HistoryItem> historyCache = new ArrayList<>();

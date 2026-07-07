@@ -37,7 +37,7 @@ public class ProductRecommendationRequestBuilder {
         this.orderHistoryCacheService = orderHistoryCacheService;
     }
 
-    public List<ProductSignalDTO> getRecommendationInputDTOList(RecommendedProductRequestDTO requestDTO, UUID sessionID) {
+    public List<ProductSignalDTO> getRecommendationInputDTOList(RecommendedProductRequestDTO requestDTO, UUID userID, UUID sessionID) {
         // (1) Browsing cache
         log.info(ADD_ID_TO_LIST_LOG_MESSAGE, requestDTO.getHistoryCache().size(), SignalTypeEnums.BROWSE);
         List<ProductSignalDTO> productIDList = new ArrayList<>(requestDTO.getHistoryCache().stream()
@@ -48,8 +48,8 @@ public class ProductRecommendationRequestBuilder {
                 .toList());
 
         // (2) Purchased items
-        List<ProductSignalDTO> purchasedProductIDList = requestDTO.getUserID() != null
-                ? fetchOrderHistory(requestDTO.getUserID())
+        List<ProductSignalDTO> purchasedProductIDList = userID != null
+                ? fetchOrderHistory(userID)
                 : Collections.emptyList();
 
         if (!purchasedProductIDList.isEmpty()) {
@@ -58,7 +58,7 @@ public class ProductRecommendationRequestBuilder {
         }
 
         // (3) Cart items
-        Cart cart = cartService.getOrCreateCart(requestDTO.getUserID(), sessionID);
+        Cart cart = cartService.getOrCreateCart(userID, sessionID);
         List<CartItem> cartItemList = cart.getItemList();
 
         // Keep only the most recent n products in cartItemList
