@@ -1,14 +1,11 @@
 package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.response.ResponseMessage;
-import com.gamersblended.junes.dto.response.UserDetailsResponse;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
 import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
-import com.gamersblended.junes.exception.InputValidationException;
-import com.gamersblended.junes.exception.InvalidTokenException;
-import com.gamersblended.junes.exception.QueueEmailException;
-import com.gamersblended.junes.exception.UserNotFoundException;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
+import com.gamersblended.junes.dto.response.ResponseMessage;
+import com.gamersblended.junes.dto.response.UserDetailsResponse;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,10 +43,10 @@ public class UserController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "404", description = "User with given ID not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/details")
     public ResponseEntity<UserDetailsResponse> getUserDetails(@RequestHeader("Authorization") String authHeader) {
@@ -67,16 +64,16 @@ public class UserController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid email(s) given",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InputValidationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "404", description = "User with given current email not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error in queuing email",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = QueueEmailException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PatchMapping("/email")
     public ResponseEntity<ResponseMessage> updateEmail(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdateEmailRequest updateEmailRequest) {
@@ -94,16 +91,16 @@ public class UserController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid new password and/or current password given",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InputValidationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "404", description = "Current password does not match user's in database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error in queuing email",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = QueueEmailException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PatchMapping("/password")
     public ResponseEntity<ResponseMessage> updatePassword(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdatePasswordRequest updatePasswordRequest,

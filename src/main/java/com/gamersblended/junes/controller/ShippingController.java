@@ -2,9 +2,8 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.request.CalculateShippingRequest;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.dto.response.ShippingCalculationResponse;
-import com.gamersblended.junes.exception.InvalidProductIdException;
-import com.gamersblended.junes.exception.NegativeWeightException;
 import com.gamersblended.junes.service.ShippingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -40,10 +39,10 @@ public class ShippingController {
                             schema = @Schema(implementation = ShippingCalculationResponse.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid product ID",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidProductIdException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Calculated shipping weight is negative",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = NegativeWeightException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/calculate")
     public ResponseEntity<ShippingCalculationResponse> getShippingFee(@RequestBody CalculateShippingRequest calculateShippingRequest) {

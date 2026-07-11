@@ -1,11 +1,9 @@
 package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
-import com.gamersblended.junes.exception.CreateOrderException;
-import com.gamersblended.junes.exception.InvalidTokenException;
-import com.gamersblended.junes.exception.SavedItemNotFoundException;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
+import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,13 +39,13 @@ public class OrderController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "404", description = "Address and/or payment method not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SavedItemNotFoundException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error placing order",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CreateOrderException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
     })
     @PostMapping("/place")
     public ResponseEntity<ResponseMessage> orderPlace(@RequestHeader("Authorization") String authHeader, @RequestBody PlaceOrderRequest placeOrderRequest) {

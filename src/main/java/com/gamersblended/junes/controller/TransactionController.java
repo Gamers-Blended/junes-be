@@ -3,8 +3,7 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.TransactionDetailsDTO;
 import com.gamersblended.junes.dto.TransactionHistoryDTO;
-import com.gamersblended.junes.exception.InvalidTokenException;
-import com.gamersblended.junes.exception.TransactionNotFoundException;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,7 +42,7 @@ public class TransactionController {
                             schema = @Schema(implementation = TransactionHistoryDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/history")
     public ResponseEntity<Page<TransactionHistoryDTO>> getUserTransactionHistory(@RequestHeader("Authorization") String authHeader, Pageable pageable) {
@@ -61,10 +60,10 @@ public class TransactionController {
                             schema = @Schema(implementation = TransactionDetailsDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "404", description = "Transaction not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = TransactionNotFoundException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/{orderNumber}/details")
     public ResponseEntity<TransactionDetailsDTO> getTransactionDetails(@RequestHeader(value = "Authorization", required = false) String authHeader, @PathVariable String orderNumber) {

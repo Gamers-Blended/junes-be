@@ -1,7 +1,7 @@
 package com.gamersblended.junes.controller;
 
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.dto.response.ResponseMessage;
-import com.gamersblended.junes.exception.DatabaseDeletionException;
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,7 +35,7 @@ public class HouseKeepController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "500", description = "Error in deleting expired tokens",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseDeletionException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/tokens")
     public ResponseEntity<ResponseMessage> houseKeepExpiredTokens() {
@@ -52,7 +52,7 @@ public class HouseKeepController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "500", description = "Error in deleting unverified emails",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseDeletionException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/unverified-emails")
     public ResponseEntity<ResponseMessage> houseKeepUnverifiedEmails() {

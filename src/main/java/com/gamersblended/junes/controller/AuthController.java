@@ -1,13 +1,13 @@
 package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
-import com.gamersblended.junes.dto.response.LoginResponse;
-import com.gamersblended.junes.dto.response.LogoutResponse;
-import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.dto.request.CreateUserRequest;
 import com.gamersblended.junes.dto.request.LoginRequest;
 import com.gamersblended.junes.dto.request.PasswordResetRequest;
-import com.gamersblended.junes.exception.*;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
+import com.gamersblended.junes.dto.response.LoginResponse;
+import com.gamersblended.junes.dto.response.LogoutResponse;
+import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.service.AuthService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.util.ValidationResult;
@@ -49,7 +49,7 @@ public class AuthController {
                             schema = @Schema(implementation = ValidationResult.class))}),
             @ApiResponse(responseCode = "500", description = "Error in sending email",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmailDeliveryException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/add-user")
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestBody = "email")
@@ -66,13 +66,13 @@ public class AuthController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "404", description = "User with given email not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Email is already verified, no need to verify again",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmailAlreadyVerifiedException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error in sending email",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = EmailDeliveryException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/resend-verification")
     @RateLimit(requests = 5, duration = 1, timeUnit = TimeUnit.HOURS, keyFromRequestParam = "email")
@@ -102,7 +102,7 @@ public class AuthController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "500", description = "Error in queuing email",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = QueueEmailException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/forgot-password")
     public ResponseEntity<ResponseMessage> forgotPassword(@RequestParam
@@ -121,7 +121,7 @@ public class AuthController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/validate-reset-token/{token}")
     public ResponseEntity<ResponseMessage> validateResetToken(@PathVariable String token) {
@@ -137,7 +137,7 @@ public class AuthController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/reset-password")
     public ResponseEntity<ResponseMessage> resetPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest) {
@@ -153,16 +153,16 @@ public class AuthController {
                             schema = @Schema(implementation = LoginResponse.class))}),
             @ApiResponse(responseCode = "404", description = "User with given email not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotFoundException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid password given",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InputValidationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "403", description = "User's account is disabled",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserDisabledException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "403", description = "User's email is not verified",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserNotVerifiedException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -177,13 +177,13 @@ public class AuthController {
                             schema = @Schema(implementation = ResponseMessage.class))}),
             @ApiResponse(responseCode = "401", description = "Token from request header not given",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingTokenException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error inserting token into database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseInsertionException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(@RequestHeader("Authorization") String authHeader) {

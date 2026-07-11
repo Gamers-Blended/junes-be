@@ -3,7 +3,7 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;
-import com.gamersblended.junes.exception.*;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,13 +39,13 @@ public class CartController {
             @ApiResponse(responseCode = "200", description = "Paged list of products in cart"),
             @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingIdentifierException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = RedisDataException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartSerialisationException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/products")
     public ResponseEntity<Page<ProductInCartDTO>> getCartProducts(@RequestHeader(value = "Authorization", required = false) String authHeader,
@@ -63,22 +63,22 @@ public class CartController {
                             schema = @Schema(implementation = String.class))}),
             @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingIdentifierException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid quantity given",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidQuantityException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "404", description = "Product ID not found",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProductNotFoundException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = RedisDataException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartSerialisationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error persisting cart to database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseInsertionException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/add")
     public ResponseEntity<String> addToCart(@RequestHeader(value = "Authorization", required = false) String authHeader,
@@ -97,16 +97,16 @@ public class CartController {
                             schema = @Schema(implementation = String.class))}),
             @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingIdentifierException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = RedisDataException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartSerialisationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error inserting token into database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseInsertionException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @DeleteMapping("/remove/{productID}")
     public ResponseEntity<String> removeFromCart(@RequestHeader(value = "Authorization", required = false) String authHeader,
@@ -125,19 +125,19 @@ public class CartController {
                             schema = @Schema(implementation = String.class))}),
             @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingIdentifierException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid quantity given",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidQuantityException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = RedisDataException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartSerialisationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error inserting token into database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseInsertionException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PutMapping("/{productID}/quantity")
     public ResponseEntity<String> updateQuantity(
@@ -160,16 +160,16 @@ public class CartController {
                             schema = @Schema(implementation = String.class))}),
             @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = MissingIdentifierException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Corrupt cart data",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = RedisDataException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Failed to serialise cart",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CartSerialisationException.class))}),
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error inserting token into database",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = DatabaseInsertionException.class))})
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @DeleteMapping("/items")
     public ResponseEntity<String> clearCart(
