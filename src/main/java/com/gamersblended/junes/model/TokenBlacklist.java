@@ -16,7 +16,7 @@ public class TokenBlacklist {
     @Column(name = "token_id")
     private UUID tokenID;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 500)
     private String token;
 
     @Column(name = "blacklisted_at", nullable = false)

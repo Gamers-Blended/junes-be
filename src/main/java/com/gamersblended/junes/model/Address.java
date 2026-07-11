@@ -20,22 +20,22 @@ public class Address {
     @Column(name = "address_id")
     private UUID addressID;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
     @Column(name = "address_line", nullable = false)
     private String addressLine;
 
-    @Column(name = "unit_number")
+    @Column(name = "unit_number", length = 50)
     private String unitNumber;
 
-    @Column(name = "country", nullable = false)
+    @Column(name = "country", nullable = false, length = 50)
     private String country;
 
-    @Column(name = "zip_code", nullable = false)
+    @Column(name = "zip_code", nullable = false, length = 20)
     private String zipCode;
 
-    @Column(name = "phone_number", nullable = false)
+    @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 
     @Column(name = "is_default")

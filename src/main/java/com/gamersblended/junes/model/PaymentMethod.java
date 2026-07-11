@@ -20,19 +20,19 @@ public class PaymentMethod {
     @Column(name = "payment_method_id")
     private UUID paymentMethodID;
 
-    @Column(name = "card_type", nullable = false)
+    @Column(name = "card_type", nullable = false, length = 20)
     private String cardType;
 
-    @Column(name = "card_last_four", nullable = false)
+    @Column(name = "card_last_four", nullable = false, length = 4)
     private String cardLastFour;
 
-    @Column(name = "card_holder_name", nullable = false)
+    @Column(name = "card_holder_name", nullable = false, length = 100)
     private String cardHolderName;
 
-    @Column(name = "expiration_month", nullable = false)
+    @Column(name = "expiration_month", nullable = false, length = 2)
     private String expirationMonth;
 
-    @Column(name = "expiration_year", nullable = false)
+    @Column(name = "expiration_year", nullable = false, length = 4)
     private String expirationYear;
 
     @Column(name = "billing_address_id")

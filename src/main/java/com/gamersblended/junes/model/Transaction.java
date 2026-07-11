@@ -26,13 +26,13 @@ public class Transaction {
     @OneToMany(mappedBy = "transaction", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionItem> items;
 
-    @Column(name = "order_number", nullable = false)
+    @Column(name = "order_number", nullable = false, length = 100)
     private String orderNumber;
 
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String status;
 
     @Min(0)
