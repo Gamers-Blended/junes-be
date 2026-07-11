@@ -68,8 +68,13 @@ public class AccessTokenService {
             return null;
         }
 
+        String token = authHeader.replace("Bearer ", "");
+
+        if (Boolean.TRUE.equals(tokenBlacklistRepository.isTokenExist(token))) {
+            log.error("Token is already revoked");
+            throw new InvalidTokenException("Token has been revoked");
+        }
         try {
-            String token = authHeader.replace("Bearer ", "");
 
             Claims claims = Jwts.parser()
                     .verifyWith(jwtUtils.getSigningKey(accessSecretKey))

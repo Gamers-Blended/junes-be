@@ -4,6 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
+import com.gamersblended.junes.exception.InvalidTokenException;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,6 +43,9 @@ public class FrontPageController {
             @ApiResponse(responseCode = "200", description = "Recommended products shown",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProductSliderItemDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = InvalidTokenException.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid userID given",
                     content = @Content),
             @ApiResponse(responseCode = "404", description = "Products not found",
