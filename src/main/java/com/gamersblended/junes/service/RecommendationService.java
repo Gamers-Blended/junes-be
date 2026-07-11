@@ -9,6 +9,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,9 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Service
 public class RecommendationService {
+
+    @Value("${recommender.timeout-duration-seconds:3}")
+    private int timeoutDurationSeconds;
 
     private final WebClient recommenderClient;
     private final CircuitBreaker circuitBreaker;
@@ -75,7 +79,7 @@ public class RecommendationService {
                                 })
                 )
                 .bodyToMono(RecommendationResponseDTO.class)
-                .timeout(Duration.ofSeconds(3))
+                .timeout(Duration.ofSeconds(timeoutDurationSeconds))
                 .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
                 .doOnSuccess(result -> {
                     if (null != result) {
@@ -87,7 +91,7 @@ public class RecommendationService {
                     return Mono.empty();
                 })
                 .onErrorResume(RecommendationServerException.class, ex -> {
-                    // Circuit breaker re-throws or returns empty
+                    // Circuit breaker re-throws exception
                     log.warn("[RecommendationService] Server error, falling back: {}", ex.getMessage());
                     return Mono.error(ex);
                 })
