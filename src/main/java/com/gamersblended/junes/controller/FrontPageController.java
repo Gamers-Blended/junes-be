@@ -4,11 +4,12 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
-import com.gamersblended.junes.exception.InvalidTokenException;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -43,12 +44,35 @@ public class FrontPageController {
             @ApiResponse(responseCode = "200", description = "Recommended products shown",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProductSliderItemDTO.class))}),
+            @ApiResponse(responseCode = "200", description = "Fallback to best-sellers during error (circuit breaker open, timeout, or network error)",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
             @ApiResponse(responseCode = "400", description = "Token is invalid",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = InvalidTokenException.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid userID given",
-                    content = @Content),
-            @ApiResponse(responseCode = "404", description = "Products not found",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "400",
+                    description = "Invalid request - check signal list or parameters",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class),
+                            examples = @ExampleObject(
+                                    value = "{\"message\":\"Invalid signal list: must contain at least one signal\",\"errorCode\":\"INVALID_REQUEST\",\"timestamp\":1640995200000,\"path\":\"/api/v1/recommendations\"}"
+                            ))}),
+            @ApiResponse(responseCode = "502",
+                    description = "Bad Gateway - Recommendation engine configuration issue",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "503",
+                    description = "Service Unavailable - Recommendation engine is currently unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class),
+                            examples = @ExampleObject(
+                                    value = "{\"message\":\"Recommendation service is currently unavailable. Please try again later.\",\"errorCode\":\"REC_SERVICE_UNAVAILABLE\",\"timestamp\":1640995200000,\"path\":\"/api/v1/recommendations\"}"
+                            ))}),
+            @ApiResponse(responseCode = "504",
+                    description = "Gateway Timeout - Recommendation service unreachable or request timed out",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "404", description = "Recommended products not found",
                     content = @Content)
     })
     @PostMapping("/recommended")
