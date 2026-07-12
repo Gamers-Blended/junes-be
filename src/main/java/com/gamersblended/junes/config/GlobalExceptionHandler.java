@@ -156,27 +156,22 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    @ExceptionHandler(RecommendationClientException.class)
-    public ResponseEntity<Object> handleRecommendationClientException(RecommendationClientException ex, WebRequest request) {
-        return buildErrorResponse(
-                "Unable to process recommendation request due to a configuration issue.",
-                HttpStatus.BAD_GATEWAY, request);
-    }
-
     @ExceptionHandler(RecommendationServerException.class)
     public ResponseEntity<Object> handleRecommendationServerException(
             RecommendationServerException ex, WebRequest request) {
-        return buildErrorResponse(
-                "Recommendation service is currently unavailable. Please try again later.",
-                HttpStatus.SERVICE_UNAVAILABLE, request);
+        return buildErrorResponse(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, request);
     }
 
-    @ExceptionHandler(WebClientRequestException.class)
-    public ResponseEntity<Object> handleWebClientRequestException(
-            WebClientRequestException ex, WebRequest request) {
-        return buildErrorResponse(
-                "Could not reach the recommendation service. Please try again later.",
-                HttpStatus.GATEWAY_TIMEOUT, request);
+    @ExceptionHandler(InvalidProductQueryException.class)
+    public ResponseEntity<Object> handleInvalidProductQueryException(
+            InvalidProductQueryException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(ProductFetchException.class)
+    public ResponseEntity<Object> handleProductFetchException(
+            ProductFetchException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
     // Generic exception handler for unhandled exceptions

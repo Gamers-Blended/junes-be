@@ -10,6 +10,8 @@ import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationResponseDTO;
 import com.gamersblended.junes.dto.request.RecommendedProductRequestDTO;
 import com.gamersblended.junes.exception.InvalidProductIdException;
+import com.gamersblended.junes.exception.InvalidProductQueryException;
+import com.gamersblended.junes.exception.ProductFetchException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.mapper.ProductMapper;
 import com.gamersblended.junes.model.Product;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Slf4j
@@ -215,9 +218,12 @@ public class ProductService {
                     releaseYearMonthList, currentDate, pageable);
 
             return productsPage.map(productMapper::toSliderItemDTO);
+        } catch (IllegalArgumentException | DateTimeParseException ex) {
+            log.error("Validation failed in getProductListings for platform = {}: {}", platform, ex.getMessage());
+            throw new InvalidProductQueryException(ex.getMessage());
         } catch (Exception ex) {
-            log.error("Exception in getProductListings for platform = {}: {}", platform, ex.getMessage());
-            throw new RuntimeException("Service error in getProductListings: Could not retrieve product listings for " + platform + ".", ex);
+            log.error("Database or system exception in getProductListings for platform = {}: {}", platform, ex.getMessage());
+            throw new ProductFetchException("Could not retrieve product listings for " + platform + " due to an internal error.");
         }
     }
 
@@ -233,8 +239,8 @@ public class ProductService {
             log.info("There are {} variant of product: {}", productList.size(), productSlug);
 
             if (productList.isEmpty()) {
-                log.error("There is no information on this product in database: {}", productSlug);
-                return new ProductDetailsDTO();
+                log.error("Product slug not found in database: {}", productSlug);
+                throw new ProductNotFoundException("Product not found with slug: " + productSlug);
             }
 
             ProductDetailsDTO productDetailsDTO = new ProductDetailsDTO();
@@ -254,9 +260,11 @@ public class ProductService {
             productDetailsDTO.setProductVariantDTOList(productVariantDTOList);
 
             return productDetailsDTO;
+        } catch (ProductNotFoundException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Exception in getProductDetails for productSlug = {}: {}", productSlug, ex.getMessage());
-            throw new RuntimeException("Service error in getProductDetails: Could not retrieve product details for " + productSlug + ".", ex);
+            throw new ProductFetchException("Could not retrieve product details for " + productSlug + " due to an internal error.");
         }
     }
 

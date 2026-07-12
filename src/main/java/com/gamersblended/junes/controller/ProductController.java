@@ -3,7 +3,13 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductDetailsDTO;
 import com.gamersblended.junes.dto.ProductSliderItemDTO;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,12 +26,24 @@ import java.util.concurrent.TimeUnit;
 @RateLimit(requests = 100, duration = 1, timeUnit = TimeUnit.HOURS)
 public class ProductController {
 
-    private ProductService productService;
+    private final ProductService productService;
 
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
 
+    @Operation(summary = "Get products under a given platform")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated product listings.",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid search parameters or malformed query filters provided.",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Internal server or database error occurred while fetching products.",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+    })
     @GetMapping("/products/{platform}")
     public ResponseEntity<Page<ProductSliderItemDTO>> getProductListing(
             @PathVariable String platform,
@@ -60,6 +78,20 @@ public class ProductController {
                 pageable));
     }
 
+    @Operation(summary = "Get product details by slug")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", description = "Successfully retrieved product details and variants.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductDetailsDTO.class))),
+            @ApiResponse(
+                    responseCode = "404", description = "No product found matching the provided slug.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(
+                    responseCode = "500", description = "Internal server or database error occurred while fetching product details.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class)))})
     @GetMapping("/details/{productSlug}")
     public ResponseEntity<ProductDetailsDTO> getProductDetails(@PathVariable String productSlug) {
         log.info("Calling get product details API for title: {}!", productSlug);
