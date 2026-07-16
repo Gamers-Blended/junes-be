@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -93,7 +94,7 @@ public class FrontPageController {
                     content = @Content)
     })
     @GetMapping("/preorders")
-    public ResponseEntity<Page<ProductSliderItemDTO>> getPreOrderProducts(@RequestParam(required = false) LocalDate currentDate, Pageable pageable) {
+    public ResponseEntity<Page<ProductSliderItemDTO>> getPreOrderProducts(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate currentDate, Pageable pageable) {
         log.info("Calling get preorder products API, page {}!", pageable.getPageNumber());
         return ResponseEntity.ok(productService.getPreOrderProducts(currentDate, pageable.getPageNumber()));
     }
