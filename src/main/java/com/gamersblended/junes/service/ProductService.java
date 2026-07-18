@@ -113,7 +113,7 @@ public class ProductService {
             if (null == currentDate) {
                 currentDate = LocalDate.now();
             }
-            log.info("Searching for preorder products on and after the date: {}, page: {}", currentDate, pageNumber);
+            log.info("Searching for preorder products after the date: {}, page: {}", currentDate, pageNumber);
             PageRequest pageRequest = PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "release_date"));
             Page<Product> preorderPage = productRepository.findPreOrderProductsAfterDateWithPagination(currentDate, pageRequest);
             return preorderPage.map(productMapper::toSliderItemDTO);

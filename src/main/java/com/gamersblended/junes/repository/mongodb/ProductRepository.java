@@ -19,7 +19,7 @@ public interface ProductRepository extends MongoRepository<Product, String>, Cus
 
     Page<Product> findAllByOrderByUnitsSoldDesc(Pageable pageable);
 
-    @Query("{ 'release_date': { '$gte': '?0' } }")
+    @Query("{ 'release_date': { '$gt': '?0' } }")
     Page<Product> findPreOrderProductsAfterDateWithPagination(LocalDate currentDate, Pageable pageable);
 
     /**
