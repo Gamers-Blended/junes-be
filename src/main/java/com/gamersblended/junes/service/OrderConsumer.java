@@ -1,7 +1,7 @@
 package com.gamersblended.junes.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gamersblended.junes.dto.event.OrderPlacedEvent;
+import com.gamersblended.junes.dto.event.OrderCreatedEvent;
 import com.gamersblended.junes.repository.RedisCartRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -36,9 +36,9 @@ public class OrderConsumer {
             log.info("Received order placed event: offset={}, partition={}",
                     record.offset(), record.partition());
 
-            OrderPlacedEvent event = objectMapper.readValue(
+            OrderCreatedEvent event = objectMapper.readValue(
                     record.value(),
-                    OrderPlacedEvent.class
+                    OrderCreatedEvent.class
             );
 
             log.info("Processing order placed event: orderNumber = {}, userID = {}, sessionID = {}",
@@ -81,9 +81,9 @@ public class OrderConsumer {
             log.info("Received order cancelled event: offset = {}, partition= {}",
                     record.offset(), record.partition());
 
-            OrderPlacedEvent event = objectMapper.readValue(
+            OrderCreatedEvent event = objectMapper.readValue(
                     record.value(),
-                    OrderPlacedEvent.class
+                    OrderCreatedEvent.class
             );
 
             log.info("Processing order cancelled event: orderNumber = {}, userID = {}",

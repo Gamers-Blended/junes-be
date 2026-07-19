@@ -2,7 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.OrderItemDTO;
 import com.gamersblended.junes.dto.event.InventoryChangedEvent;
-import com.gamersblended.junes.dto.event.OrderPlacedEvent;
+import com.gamersblended.junes.dto.event.OrderCreatedEvent;
 import com.gamersblended.junes.model.Transaction;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ public class EventPublisher {
 
     public void publishOrderPlaced(Transaction transaction,
                                    Map<String, Integer> productMap) {
-        OrderPlacedEvent event = new OrderPlacedEvent();
+        OrderCreatedEvent event = new OrderCreatedEvent();
         event.setTransactionID(transaction.getTransactionID());
         event.setUserID(transaction.getUserID());
         event.setTotalAmount(transaction.getTotalAmount());

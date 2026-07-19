@@ -7,19 +7,20 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static com.gamersblended.junes.constant.KafkaConstants.ORDER_PLACED;
+import static com.gamersblended.junes.constant.KafkaConstants.ORDER_CREATED;
 
 @Data
-public class OrderPlacedEvent extends BaseEvent {
+public class OrderCreatedEvent extends BaseEvent {
 
     private UUID transactionID;
     private String orderNumber;
     private UUID userID;
     private UUID sessionID;
+    private UUID paymentMethodID;
     private BigDecimal totalAmount;
     private List<OrderItemDTO> itemList;
 
-    public OrderPlacedEvent() {
-        this.setEventType(ORDER_PLACED);
+    public OrderCreatedEvent() {
+        this.setEventType(ORDER_CREATED);
     }
 }
