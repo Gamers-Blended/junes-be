@@ -47,6 +47,12 @@ public class PaymentMethod {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    @Column(name = "stripe_customer_id")
+    private String stripeCustomerID;
+
+    @Column(name = "stripe_payment_method_id")
+    private String stripePaymentMethodID;
+
     @Column(name = "created_on", nullable = false)
     @CreationTimestamp
     private LocalDateTime createdOn;
