@@ -35,9 +35,31 @@ public class KafkaProducerConfig {
                 config);
     }
 
+    // Outbox payloads are already serialised JSON, cannot go through JsonSerializer again
+    @Bean
+    public ProducerFactory<String, String> outboxProducerFactory() {
+        Map<String, Object> config = new HashMap<>();
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+
+        // Reliability settings
+        config.put(ProducerConfig.ACKS_CONFIG, "all");
+        config.put(ProducerConfig.RETRIES_CONFIG, 3);
+        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+
+        return new DefaultKafkaProducerFactory<>(
+                config);
+    }
 
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
+
+    @Bean
+    public KafkaTemplate<String, String> outboxKafkaTemplate() {
+        return new KafkaTemplate<>(outboxProducerFactory());
+    }
+
 }
