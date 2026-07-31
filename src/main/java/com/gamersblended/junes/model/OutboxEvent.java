@@ -42,7 +42,7 @@ public class OutboxEvent {
 
     private boolean published;
 
-    @Column(name = "published_on", nullable = false)
+    @Column(name = "published_on")
     private LocalDateTime publishedOn;
 
     @Column(name = "retry_count", nullable = false)
