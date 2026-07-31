@@ -8,6 +8,7 @@ public enum TransactionStatus {
     COMPLETED("Completed"),
     CANCELLED("Cancelled"),
     ON_HOLD("On Hold"),
+    PAYMENT_FAILED("Payment Failed"),
     REFUNDED("Refunded");
 
     private final String transactionStatusValue;
