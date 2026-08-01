@@ -49,6 +49,9 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "stripe_customer_id", unique = true)
+    private String stripeCustomerID;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;

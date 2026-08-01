@@ -33,10 +33,12 @@ public class EmailVerificationTokenService {
     @Value("${jwt.verification.email.expiration:86400000}") // 24 hours default
     private long expirationTime;
 
+    private final StripeService stripeService;
     private final UserRepository userRepository;
     private final JwtUtils jwtUtils;
 
-    public EmailVerificationTokenService(UserRepository userRepository, JwtUtils jwtUtils) {
+    public EmailVerificationTokenService(StripeService stripeService, UserRepository userRepository, JwtUtils jwtUtils) {
+        this.stripeService = stripeService;
         this.userRepository = userRepository;
         this.jwtUtils = jwtUtils;
     }
@@ -136,7 +138,10 @@ public class EmailVerificationTokenService {
                 });
 
         try {
+            String stripeCustomerID = stripeService.createCustomer(user.getEmail(), user.getUserID());
+
             user.setIsEmailVerified(true);
+            user.setStripeCustomerID(stripeCustomerID);
             user.setVerificationTokenHash(null); // Clear token after verification
             user.setVerificationTokenIssuedAt(null);
             userRepository.save(user);
