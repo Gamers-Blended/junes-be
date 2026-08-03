@@ -1,14 +1,18 @@
 package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.constant.Role;
+import com.gamersblended.junes.constant.TokenPurpose;
 import com.gamersblended.junes.dto.request.LoginRequest;
 import com.gamersblended.junes.dto.response.LoginResponse;
 import com.gamersblended.junes.dto.response.LogoutResponse;
 import com.gamersblended.junes.exception.*;
+import com.gamersblended.junes.model.EmailVerificationToken;
 import com.gamersblended.junes.model.User;
+import com.gamersblended.junes.repository.jpa.EmailVerificationTokenRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
 import com.gamersblended.junes.util.ValidationResult;
+import com.stripe.exception.StripeException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,8 +22,11 @@ import org.springframework.stereotype.Service;
 
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
+import static com.gamersblended.junes.constant.TokenPurpose.SIGNUP_EMAIL;
 import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
+import static com.gamersblended.junes.util.TokenUtils.hashToken;
 
 @Slf4j
 @Service
@@ -33,6 +40,7 @@ public class AuthService {
     private final EmailProducerService emailProducerService;
     private final EmailValidatorService emailValidator;
     private final EmailVerificationTokenService emailTokenService;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final AccessTokenService accessTokenService;
     public static final String VERIFY_EMAIL_ROUTE = "/verify?token=";
 
@@ -41,12 +49,14 @@ public class AuthService {
             EmailProducerService emailProducerService,
             EmailValidatorService emailValidator,
             EmailVerificationTokenService emailTokenService,
+            EmailVerificationTokenRepository emailVerificationTokenRepository,
             AccessTokenService accessTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailProducerService = emailProducerService;
         this.emailValidator = emailValidator;
         this.emailTokenService = emailTokenService;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.accessTokenService = accessTokenService;
     }
 
@@ -74,7 +84,7 @@ public class AuthService {
         user.setIsActive(true);
 
         try {
-            sendVerificationEmail(email, user);
+            sendVerificationEmail(email, user, SIGNUP_EMAIL);
         } catch (Exception ex) {
             log.error("Exception in creating new user with email: {}: ", email, ex);
             throw new EmailDeliveryException("Unable to send verification email");
@@ -96,7 +106,7 @@ public class AuthService {
         }
 
         try {
-            sendVerificationEmail(email, user);
+            sendVerificationEmail(email, user, SIGNUP_EMAIL);
         } catch (Exception ex) {
             log.error("Exception in resending verification email to {}: ", email, ex);
             throw new EmailDeliveryException("Unable to resent verification email");
@@ -104,9 +114,8 @@ public class AuthService {
 
     }
 
-    public void sendVerificationEmail(String email, User user) throws NoSuchAlgorithmException {
-        String token = emailTokenService.generateVerificationToken(email, user);
-        userRepository.save(user);
+    public void sendVerificationEmail(String email, User user, TokenPurpose purpose) throws NoSuchAlgorithmException {
+        String token = emailTokenService.generateVerificationToken(user.getUserID(), email, purpose);
 
         String verificationLink = appURL + VERIFY_EMAIL_ROUTE + token;
 
@@ -115,17 +124,25 @@ public class AuthService {
     }
 
     @Transactional
-    public void verifyEmail(String token) {
-        if (!emailTokenService.isTokenValid(token)) {
-            log.error("Invalid or expired token");
-            throw new InvalidTokenException("Invalid or expired token");
+    public void verifyEmail(String token) throws NoSuchAlgorithmException, StripeException {
+        String tokenHash = hashToken(token);
+
+        EmailVerificationToken emailVerificationToken = emailVerificationTokenRepository
+                .getTokenEntityByToken(tokenHash)
+                .filter(t -> t.getExpiryDate().isAfter(LocalDateTime.now(ZoneId.of("Asia/Singapore"))))
+                .orElseThrow(() -> new InvalidTokenException("Invalid or expired token"));
+
+        switch (emailVerificationToken.getPurpose()) {
+            case SIGNUP_EMAIL -> emailTokenService.markSignupVerified(emailVerificationToken);
+            case CHANGE_EMAIL -> emailTokenService.markEmailChangeVerified(emailVerificationToken);
+            default ->
+                    throw new InvalidTokenException("Unsupported token purpose: " + emailVerificationToken.getPurpose());
         }
 
-        String email = emailTokenService.extractEmail(token);
+        emailVerificationToken.setUsed(true);
+        emailVerificationTokenRepository.save(emailVerificationToken);
 
-        emailTokenService.markAsVerified(email);
-
-        emailProducerService.sendWelcomeEmail(email);
+        emailProducerService.sendWelcomeEmail(emailVerificationToken.getEmail());
 
     }
 
@@ -153,7 +170,7 @@ public class AuthService {
             throw new UserNotVerifiedException("User's email is not verified");
         }
 
-        user.setLastLoginAt(LocalDateTime.now());
+        user.setLastLoginAt(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
         userRepository.save(user);
 
         String token = accessTokenService.generateAccessToken(user, email);

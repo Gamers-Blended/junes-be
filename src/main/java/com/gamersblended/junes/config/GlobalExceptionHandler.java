@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * Centralize exception handling and return standardized error responses
@@ -43,6 +44,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EmailAlreadyVerifiedException.class)
     public ResponseEntity<Object> handleEmailAlreadyVerifiedException(EmailAlreadyVerifiedException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
+    }
+
+    @ExceptionHandler(EmailAlreadyInUseException.class)
+    public ResponseEntity<Object> handleEmailAlreadyInUseException(EmailAlreadyInUseException ex, WebRequest request) {
         return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
     }
 
@@ -182,7 +188,7 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<Object> buildErrorResponse(String message, HttpStatus status, WebRequest request) {
         ErrorResponseDTO errorBody = new ErrorResponseDTO(
-                LocalDateTime.now(),
+                LocalDateTime.now(ZoneId.of("Asia/Singapore")),
                 status.value(),
                 status.getReasonPhrase(),
                 message,

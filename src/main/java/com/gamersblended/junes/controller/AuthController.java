@@ -11,6 +11,7 @@ import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.service.AuthService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.util.ValidationResult;
+import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -89,7 +91,7 @@ public class AuthController {
                             schema = @Schema(implementation = ResponseMessage.class))})
     })
     @GetMapping("/verify")
-    public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) {
+    public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) throws StripeException, NoSuchAlgorithmException {
         log.info("Verifying email from token...");
         authService.verifyEmail(token);
         return ResponseEntity.ok(new ResponseMessage("Email verified successfully"));

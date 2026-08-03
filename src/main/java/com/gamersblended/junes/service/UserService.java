@@ -1,8 +1,9 @@
 package com.gamersblended.junes.service;
 
-import com.gamersblended.junes.dto.response.UserDetailsResponse;
+import com.gamersblended.junes.constant.TokenPurpose;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
 import com.gamersblended.junes.dto.request.UpdatePasswordRequest;
+import com.gamersblended.junes.dto.response.UserDetailsResponse;
 import com.gamersblended.junes.exception.EmailDeliveryException;
 import com.gamersblended.junes.exception.EmailNotFoundException;
 import com.gamersblended.junes.exception.InputValidationException;
@@ -85,7 +86,7 @@ public class UserService {
         }
 
         try {
-            authService.sendVerificationEmail(newEmail, user);
+            authService.sendVerificationEmail(newEmail, user, TokenPurpose.CHANGE_EMAIL);
         } catch (Exception ex) {
             log.error("Exception in updating email: {} for userID: {}: ", newEmail, userID, ex);
             throw new EmailDeliveryException("Unable to send verification email for update email");
