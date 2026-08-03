@@ -82,6 +82,7 @@ public class AuthService {
         user.setEmail(email);
         user.setRole(Role.USER);
         user.setIsActive(true);
+        userRepository.save(user);
 
         try {
             sendVerificationEmail(email, user, SIGNUP_EMAIL);
