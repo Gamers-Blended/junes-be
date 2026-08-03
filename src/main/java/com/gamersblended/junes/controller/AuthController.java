@@ -69,7 +69,7 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "User with given email not found",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDTO.class))}),
-            @ApiResponse(responseCode = "400", description = "Email is already verified, no need to verify again",
+            @ApiResponse(responseCode = "409", description = "Email is already verified, no need to verify again",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponseDTO.class))}),
             @ApiResponse(responseCode = "500", description = "Error in sending email",
@@ -88,7 +88,25 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Email verified successfully",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ResponseMessage.class))})
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "400", description = "Token is invalid, has expired, or already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "404", description = "User with token's email not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "409", description = "Email is already verified, no need to verify again",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "409", description = "Email is already used",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Error with Stripe server",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in queuing email",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/verify")
     public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) throws StripeException, NoSuchAlgorithmException {
