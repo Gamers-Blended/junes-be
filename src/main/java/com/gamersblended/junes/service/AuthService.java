@@ -120,7 +120,7 @@ public class AuthService {
 
         String verificationLink = appURL + VERIFY_EMAIL_ROUTE + token;
 
-        emailProducerService.sendVerificationEmail(email, verificationLink);
+        emailProducerService.sendVerificationEmail(email, verificationLink, purpose);
 
     }
 

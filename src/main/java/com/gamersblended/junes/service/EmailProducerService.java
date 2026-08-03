@@ -1,5 +1,6 @@
 package com.gamersblended.junes.service;
 
+import com.gamersblended.junes.constant.TokenPurpose;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.EmailRequestDTO;
 import com.gamersblended.junes.dto.TransactionItemEmailDTO;
@@ -19,13 +20,14 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PASSWORD_EXPIRY_HOURS;
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.*;
 import static com.gamersblended.junes.constant.EmailTemplateConstants.*;
 
 @Slf4j
@@ -44,9 +46,6 @@ public class EmailProducerService {
     @Value("${app.url:}")
     private String appUrl;
 
-    @Value("${baseURL:}")
-    private String baseURL;
-
     @Value("${app.support.email:support@junes.com}")
     private String supportEmail;
 
@@ -64,19 +63,19 @@ public class EmailProducerService {
         this.emailValueFormatter = emailValueFormatter;
     }
 
-    public void sendEmailRequest(EmailRequestDTO emailRequestDTO) {
-        log.info("Sending email request to queue for: {}", emailRequestDTO.getTo());
-
-        rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
-        log.info("Email request queued successfully");
-    }
-
-    public void sendVerificationEmail(String toEmail, String verificationLink) {
+    public void sendVerificationEmail(String toEmail, String verificationLink, TokenPurpose purpose) {
         log.info("Queuing verification email for {}", toEmail);
 
         try {
             Map<String, Object> variables = getCommonVariableMap();
+
+            int expirationHours = switch (purpose) {
+                case SIGNUP_EMAIL -> SIGNUP_EMAIL_EXPIRY_HOURS;
+                case CHANGE_EMAIL -> CHANGE_EMAIL_EXPIRY_HOURS;
+            };
+
             variables.put("verificationLink", verificationLink);
+            variables.put("expirationHours", expirationHours);
 
             String htmlContent = processTemplate(VERIFICATION, variables);
 
@@ -132,7 +131,7 @@ public class EmailProducerService {
     public void sendPasswordChangedEmail(String toEmail, HttpServletRequest request) {
         log.info("Queuing for password changed email for: {}", toEmail);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Singapore"));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E, MMM dd yyyy, h:mma");
         String when = now.format(formatter);
 
