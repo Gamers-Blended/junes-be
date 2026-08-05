@@ -180,6 +180,12 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
+    @ExceptionHandler(StripeOperationException.class)
+    public ResponseEntity<Object> handleStripeOperationException(
+            StripeOperationException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.BAD_GATEWAY, request);
+    }
+
     // Generic exception handler for unhandled exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
