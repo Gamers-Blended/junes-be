@@ -12,7 +12,6 @@ import com.gamersblended.junes.repository.jpa.EmailVerificationTokenRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.EmailValidatorService;
 import com.gamersblended.junes.util.ValidationResult;
-import com.stripe.exception.StripeException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -125,7 +124,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void verifyEmail(String token) throws NoSuchAlgorithmException, StripeException {
+    public void verifyEmail(String token) throws NoSuchAlgorithmException {
         String tokenHash = hashToken(token);
 
         EmailVerificationToken emailVerificationToken = emailVerificationTokenRepository

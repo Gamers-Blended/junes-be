@@ -6,7 +6,6 @@ import com.gamersblended.junes.model.EmailVerificationToken;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.EmailVerificationTokenRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
-import com.stripe.exception.StripeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,7 +87,7 @@ public class EmailVerificationTokenService {
         }
 
         // Call Stripe
-        String stripeCustomerID = stripeService.createCustomer(user.getEmail(), user.getUserID());
+        String stripeCustomerID = stripeService.createCustomer(user.getUserID(), user.getEmail());
 
         // Commit to DB
         userVerificationWriter.completeSignupVerification(user, stripeCustomerID);
@@ -103,8 +102,11 @@ public class EmailVerificationTokenService {
             throw new EmailAlreadyInUseException("New email " + token.getEmail() + " is already in use, please use another email");
         }
 
-        user.setEmail(token.getEmail());
-        userRepository.save(user);
+        // Commit to DB first (real source of truth)
+        userVerificationWriter.completeEmailChange(user, token.getEmail());
+
+        // Then call Stripe as best-effort side effect
+        stripeService.updateCustomerEmail(user.getStripeCustomerID(), user.getEmail());
     }
 
     @Transactional

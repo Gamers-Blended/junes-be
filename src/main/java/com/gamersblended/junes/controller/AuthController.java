@@ -11,7 +11,6 @@ import com.gamersblended.junes.dto.response.ResponseMessage;
 import com.gamersblended.junes.service.AuthService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.util.ValidationResult;
-import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -109,7 +108,7 @@ public class AuthController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @GetMapping("/verify")
-    public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) throws StripeException, NoSuchAlgorithmException {
+    public ResponseEntity<ResponseMessage> verifyEmail(@RequestParam String token) throws NoSuchAlgorithmException {
         log.info("Verifying email from token...");
         authService.verifyEmail(token);
         return ResponseEntity.ok(new ResponseMessage("Email verified successfully"));

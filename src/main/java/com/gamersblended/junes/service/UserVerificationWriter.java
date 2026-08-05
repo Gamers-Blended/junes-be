@@ -20,4 +20,10 @@ public class UserVerificationWriter {
         user.setStripeCustomerID(stripeCustomerID);
         userRepository.saveAndFlush(user);
     }
+
+    @Transactional
+    public void completeEmailChange(User user, String newEmail) {
+        user.setEmail(newEmail);
+        userRepository.saveAndFlush(user);
+    }
 }

@@ -6,6 +6,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.CustomerUpdateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,7 @@ public class StripeService {
         this.stripeClient = stripeClient;
     }
 
-    public String createCustomer(String email, UUID userID) {
+    public String createCustomer(UUID userID, String email) {
         log.info("Creating Stripe customer for user: {} with email: {}", userID, email);
 
         try {
@@ -51,5 +52,25 @@ public class StripeService {
         }
     }
 
+    public void updateCustomerEmail(String customerID, String newEmail) {
+        log.info("Updating Stripe customer email: {}", customerID);
+
+        try {
+            CustomerUpdateParams params = CustomerUpdateParams.builder()
+                    .setEmail(newEmail)
+                    .build();
+
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey("update-customer-email-" + customerID + "-" + newEmail)
+                    .build();
+
+            stripeClient.v1().customers().update(customerID, params, options);
+            log.info("Updated Stripe customer {} email", customerID);
+        } catch (StripeException ex) {
+            log.error("Failed to update Stripe customer {} email", customerID, ex);
+            throw new StripeOperationException("Failed to update Stripe customer email: " + customerID);
+        }
+
+    }
 
 }
