@@ -27,12 +27,14 @@ import static com.gamersblended.junes.util.TokenUtils.hashToken;
 public class EmailVerificationTokenService {
 
     private final StripeService stripeService;
+    private final UserVerificationWriter userVerificationWriter;
     private final SecureRandom secureRandom;
     private final UserRepository userRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
-    public EmailVerificationTokenService(StripeService stripeService, SecureRandom secureRandom, UserRepository userRepository, EmailVerificationTokenRepository emailVerificationTokenRepository) {
+    public EmailVerificationTokenService(StripeService stripeService, UserVerificationWriter userVerificationWriter, SecureRandom secureRandom, UserRepository userRepository, EmailVerificationTokenRepository emailVerificationTokenRepository) {
         this.stripeService = stripeService;
+        this.userVerificationWriter = userVerificationWriter;
         this.secureRandom = secureRandom;
         this.userRepository = userRepository;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
@@ -64,7 +66,7 @@ public class EmailVerificationTokenService {
         return token;
     }
 
-    public void markSignupVerified(EmailVerificationToken token) throws StripeException {
+    public void markSignupVerified(EmailVerificationToken token) {
         User user = userRepository.getUserByID(token.getUserID())
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + token.getUserID()));
 
@@ -85,11 +87,11 @@ public class EmailVerificationTokenService {
             throw new InvalidTokenException("Invalid or expired token");
         }
 
+        // Call Stripe
         String stripeCustomerID = stripeService.createCustomer(user.getEmail(), user.getUserID());
 
-        user.setIsEmailVerified(true);
-        user.setStripeCustomerID(stripeCustomerID);
-        userRepository.save(user);
+        // Commit to DB
+        userVerificationWriter.completeSignupVerification(user, stripeCustomerID);
     }
 
     public void markEmailChangeVerified(EmailVerificationToken token) {
