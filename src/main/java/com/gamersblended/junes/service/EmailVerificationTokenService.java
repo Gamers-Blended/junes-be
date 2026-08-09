@@ -102,11 +102,7 @@ public class EmailVerificationTokenService {
             throw new EmailAlreadyInUseException("New email " + token.getEmail() + " is already in use, please use another email");
         }
 
-        // Commit to DB first (real source of truth)
         userVerificationWriter.completeEmailChange(user, token.getEmail());
-
-        // Then call Stripe as best-effort side effect
-        stripeService.updateCustomerEmail(user.getStripeCustomerID(), user.getEmail());
     }
 
     @Transactional
