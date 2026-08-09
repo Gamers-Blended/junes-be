@@ -8,6 +8,7 @@ CREATE TABLE outbox_events
     event_type     VARCHAR(100) NOT NULL, -- e.g. 'OrderCreated', 'PaymentSucceeded'
     topic          VARCHAR(100) NOT NULL DEFAULT 'order-events',
     payload        JSONB        NOT NULL,
+    status         VARCHAR(100) NOT NULL,
     created_on     TIMESTAMP    NOT NULL DEFAULT now(),
     published      BOOLEAN      NOT NULL DEFAULT FALSE,
     published_on   TIMESTAMP,

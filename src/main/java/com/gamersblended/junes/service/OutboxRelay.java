@@ -33,7 +33,7 @@ public class OutboxRelay {
 
     @Scheduled(fixedDelay = 500)
     public void relayOutboxEvents() {
-        List<OutboxEvent> pendingEvents = outboxEventRepository.findTop100UnpublishedOrderByCreatedOn();
+        List<OutboxEvent> pendingEvents = outboxEventRepository.findTop100PendingEvents();
 
         if (pendingEvents.isEmpty()) {
             return;
@@ -56,16 +56,17 @@ public class OutboxRelay {
             log.info("[OutboxRelay] Published event {} ({}) for aggregate {} to topic {}",
                     event.getId(), event.getEventType(), event.getAggregateID(), event.getTopic());
         } catch (Exception ex) {
-            outboxEventRepository.incrementRetryCount(event.getId());
-
-            int attemptNumber = event.getRetryCount() + 1; // count in DB already incremented in incrementRetryCount()
-            log.error("[OutboxRelay] Failed to publish event {} for aggregate {} (attempt {})",
-                    event.getId(), event.getAggregateID(), attemptNumber, ex);
+            int attemptNumber = event.getRetryCount() + 1;
 
             if (attemptNumber >= MAX_RETRY_COUNT) {
-                // TODO
+                outboxEventRepository.markFailedPermanently(event.getId(), LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+
                 log.error("[OutboxRelay] Event {} has exceeded max retry count ({}) - needs manual attention",
                         event.getId(), MAX_RETRY_COUNT);
+            } else {
+                outboxEventRepository.incrementRetryCount(event.getId());
+                log.error("[OutboxRelay] Failed to publish event {} for aggregate {} (attempt {})",
+                        event.getId(), event.getAggregateID(), attemptNumber, ex);
             }
         }
     }

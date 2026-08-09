@@ -34,6 +34,9 @@ public class OutboxEvent {
     @Column(nullable = false, columnDefinition = "jsonb")
     private String payload;
 
+    @Column(nullable = false, length = 100)
+    private String status;
+
     @Column(name = "created_on", nullable = false)
     private LocalDateTime createdOn;
 

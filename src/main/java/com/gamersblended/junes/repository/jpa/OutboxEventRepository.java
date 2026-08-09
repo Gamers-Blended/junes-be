@@ -18,11 +18,9 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     /**
      * Used by outbox relay's polling loop - oldest unpublished events first
      * Capped so 1 poll can't drain unbounded backlog
-     * Backed by partial index on (created_on) WHERE published = false
-     * so this stays cheap even as table grows with published rows
      */
-    @Query(value = "SELECT * FROM junes_rel.outbox_events WHERE published = false ORDER BY created_on LIMIT 100", nativeQuery = true)
-    List<OutboxEvent> findTop100UnpublishedOrderByCreatedOn();
+    @Query(value = "SELECT * FROM junes_rel.outbox_events WHERE published = false AND status = 'PENDING' ORDER BY created_on LIMIT 100", nativeQuery = true)
+    List<OutboxEvent> findTop100PendingEvents();
 
     /**
      * Called after a successful Kafka send
@@ -40,4 +38,12 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     @Transactional
     @Query(value = "UPDATE junes_rel.outbox_events SET retry_count = retry_count + 1 WHERE id = :id", nativeQuery = true)
     void incrementRetryCount(@Param("id") UUID id);
+
+    /**
+     * Called whenever a publish attempt fails
+     * Ensures failed events don't get picked up by relayer
+     */
+    @Modifying
+    @Query(value = "UPDATE junes_rel.outbox_events SET status = 'FAILED_PERMANENTLY', published_on = :publishedOn WHERE id = :id", nativeQuery = true)
+    void markFailedPermanently(@Param("id") UUID id, @Param("publishedOn") LocalDateTime publishedOn);
 }
