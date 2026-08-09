@@ -33,7 +33,6 @@ import java.util.UUID;
 public class PaymentEventConsumer {
 
     private static final String ORDER_EVENTS_TOPIC = "order-events";
-    private static final String AGGREGATE_TYPE_ORDER = "Order";
 
     private final KafkaEventParser kafkaEventParser;
     private final PaymentGatewayService paymentGatewayService;

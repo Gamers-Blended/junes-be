@@ -13,7 +13,6 @@ import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
-import com.gamersblended.junes.service.cache.OrderHistoryCacheService;
 import com.gamersblended.junes.util.SnowflakeIDGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,27 +34,20 @@ public class OrderCreationService {
     private final OutboxEventRepository outboxEventRepository;
     private final ShippingService shippingService;
     private final ObjectMapper objectMapper;
-    private final EmailProducerService emailProducerService;
-    private final OrderHistoryCacheService orderHistoryCacheService;
 
     private static final SnowflakeIDGenerator idGenerator = new SnowflakeIDGenerator(1);
     private static final String ORDER_ID_PREFIX = "J";
     private static final String ORDER_EVENTS_TOPIC = "order-events";
-    private static final String AGGREGATE_TYPE_ORDER = "Order";
 
     public OrderCreationService(TransactionRepository transactionRepository,
                                 OutboxEventRepository outboxEventRepository,
                                 ShippingService shippingService,
-                                ObjectMapper objectMapper,
-                                EmailProducerService emailProducerService,
-                                OrderHistoryCacheService orderHistoryCacheService
+                                ObjectMapper objectMapper
     ) {
         this.transactionRepository = transactionRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.shippingService = shippingService;
         this.objectMapper = objectMapper;
-        this.emailProducerService = emailProducerService;
-        this.orderHistoryCacheService = orderHistoryCacheService;
     }
 
     // Creates order in PAYMENT_PENDING status
@@ -79,7 +72,7 @@ public class OrderCreationService {
 
         Transaction transaction = new Transaction();
         transaction.setOrderNumber(ORDER_ID_PREFIX + idGenerator.generateOrderID());
-        transaction.setOrderDate(LocalDateTime.now());
+        transaction.setOrderDate(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
         transaction.setStatus(TransactionStatus.PAYMENT_PENDING.getTransactionStatusValue());
         transaction.setTotalAmount(totalAmount);
         transaction.setShippingCost(placeOrderRequest.getShippingCost());
@@ -163,7 +156,7 @@ public class OrderCreationService {
             outbox.setEventType(event.getEventType()); // "ORDER_PLACED" from BaseEvent
             outbox.setTopic(ORDER_EVENTS_TOPIC);
             outbox.setPayload(objectMapper.writeValueAsString(event));
-            outbox.setCreatedOn(LocalDateTime.now());
+            outbox.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
             outbox.setPublished(false);
             outbox.setRetryCount(0);
 
