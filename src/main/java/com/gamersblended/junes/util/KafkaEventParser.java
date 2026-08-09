@@ -3,10 +3,7 @@ package com.gamersblended.junes.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.constant.KafkaConstants;
-import com.gamersblended.junes.dto.event.BaseEvent;
-import com.gamersblended.junes.dto.event.OrderCreatedEvent;
-import com.gamersblended.junes.dto.event.PaymentFailedEvent;
-import com.gamersblended.junes.dto.event.PaymentSucceededEvent;
+import com.gamersblended.junes.dto.event.*;
 import com.gamersblended.junes.exception.UnknownEventTypeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,6 +18,7 @@ public class KafkaEventParser {
 
     // eventType String -> BaseEvent subclasses to deserialise into
     private final Map<String, Class<? extends BaseEvent>> eventTypeRegistry = Map.of(
+            KafkaConstants.EMAIL_UPDATED, StripeEmailUpdateEvent.class,
             KafkaConstants.ORDER_CREATED, OrderCreatedEvent.class,
             KafkaConstants.PAYMENT_SUCCEEDED, PaymentSucceededEvent.class,
             KafkaConstants.PAYMENT_FAILED, PaymentFailedEvent.class
