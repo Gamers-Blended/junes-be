@@ -147,13 +147,13 @@ public class PaymentEventConsumer {
         try {
             OutboxEvent outboxEvent = new OutboxEvent();
             outboxEvent.setId(UUID.randomUUID());
-            outboxEvent.setAggregateType(AGGREGATE_TYPE_ORDER);
             outboxEvent.setAggregateID(orderNumber); // same partition key as OrderCreated for ordering
             outboxEvent.setEventType(event.getEventType());
             outboxEvent.setTopic(ORDER_EVENTS_TOPIC);
             outboxEvent.setPayload(objectMapper.writeValueAsString(event));
             outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
             outboxEvent.setPublished(false);
+            outboxEvent.setRetryCount(0);
 
             outboxEventRepository.save(outboxEvent);
         } catch (Exception ex) {

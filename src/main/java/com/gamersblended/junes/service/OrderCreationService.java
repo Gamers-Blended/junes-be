@@ -159,7 +159,6 @@ public class OrderCreationService {
 
         try {
             OutboxEvent outbox = new OutboxEvent();
-            outbox.setAggregateType(AGGREGATE_TYPE_ORDER);
             outbox.setAggregateID(transaction.getOrderNumber()); // Kafka partition key
             outbox.setEventType(event.getEventType()); // "ORDER_PLACED" from BaseEvent
             outbox.setTopic(ORDER_EVENTS_TOPIC);

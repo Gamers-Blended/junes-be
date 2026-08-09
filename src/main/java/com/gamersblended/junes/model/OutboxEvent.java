@@ -19,9 +19,6 @@ public class OutboxEvent {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "aggregate_type", nullable = false, length = 100)
-    private String aggregateType;
-
     // Kafka partition key
     // Keep in same field as every producer/consumer in the saga keys on so events for 1 order stay ordered on 1 partition
     @Column(name = "aggregate_id", nullable = false, length = 100)

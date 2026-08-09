@@ -4,7 +4,6 @@
 CREATE TABLE outbox_events
 (
     id             UUID PRIMARY KEY,
-    aggregate_type VARCHAR(100) NOT NULL, -- e.g. 'Order'
     aggregate_id   VARCHAR(100) NOT NULL, -- e.g. orderNumber, also used as Kafka partition key
     event_type     VARCHAR(100) NOT NULL, -- e.g. 'OrderCreated', 'PaymentSucceeded'
     topic          VARCHAR(100) NOT NULL DEFAULT 'order-events',
@@ -25,4 +24,4 @@ CREATE INDEX idx_outbox_unpublished
 -- Debugging/sporrt: "get every event for order X"
 -- Since aggregate_id = Kafka partition key and natural trace-through field
 CREATE INDEX idx_outbox_aggregate
-    ON outbox_events (aggregate_type, aggregate_id, created_on);
+    ON outbox_events (aggregate_id, created_on);
