@@ -8,8 +8,11 @@ import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.SetAsDefaultRequest;
 import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.dto.response.ResponseMessage;
+import com.gamersblended.junes.dto.response.SetupIntentResponseDTO;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.SavedItemsService;
+import com.gamersblended.junes.service.StripeService;
+import com.stripe.exception.StripeException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -315,5 +318,13 @@ public class SavedItemsController {
         log.info("Setting {} with ID: {} as default for userID: {}...", setAsDefaultRequest.getMode(), setAsDefaultRequest.getSavedItemID(), userID);
         savedItemsService.setAsDefault(userID, setAsDefaultRequest.getMode(), setAsDefaultRequest.getSavedItemID());
         return ResponseEntity.ok(new ResponseMessage("Saved item successfully set as default"));
+    }
+
+    @PostMapping("payment-method/setup-intent")
+    public SetupIntentResponseDTO createSetupIntent(@RequestHeader("Authorization") String authHeader) throws StripeException {
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+
+        log.info("Creating SetupIntent for userID: {}...", userID);
+        return stripeService.createSetupIntent(userID);
     }
 }

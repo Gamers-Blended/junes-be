@@ -2,15 +2,19 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.event.BaseEvent;
 import com.gamersblended.junes.dto.event.StripeEmailUpdateEvent;
+import com.gamersblended.junes.dto.response.SetupIntentResponseDTO;
 import com.gamersblended.junes.exception.StripeOperationException;
 import com.gamersblended.junes.repository.jpa.ProcessedEventRepository;
+import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.KafkaEventParser;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
+import com.stripe.model.SetupIntent;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerUpdateParams;
+import com.stripe.param.SetupIntentCreateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -30,11 +34,13 @@ public class StripeService {
     private final StripeClient stripeClient;
     private final KafkaEventParser kafkaEventParser;
     private final ProcessedEventRepository processedEventRepository;
+    private final UserRepository userRepository;
 
-    public StripeService(StripeClient stripeClient, KafkaEventParser kafkaEventParser, ProcessedEventRepository processedEventRepository) {
+    public StripeService(StripeClient stripeClient, KafkaEventParser kafkaEventParser, ProcessedEventRepository processedEventRepository, UserRepository userRepository) {
         this.stripeClient = stripeClient;
         this.kafkaEventParser = kafkaEventParser;
         this.processedEventRepository = processedEventRepository;
+        this.userRepository = userRepository;
     }
 
     public String createCustomer(UUID userID, String email) {
@@ -107,4 +113,23 @@ public class StripeService {
         }
 
     }
+
+    public SetupIntentResponseDTO createSetupIntent(UUID userID) throws StripeException {
+        String stripeCustomerID = userRepository.getStripeCustomerID(userID)
+                .orElseThrow(() -> {
+                    log.error("User's Stripe customer ID not found for ID: {}", userID);
+                    return new StripeOperationException("User's Stripe customer ID not found");
+                });
+
+        SetupIntentCreateParams params = SetupIntentCreateParams.builder()
+                .setCustomer(stripeCustomerID)
+                .addPaymentMethodType("card")
+                .setUsage(SetupIntentCreateParams.Usage.OFF_SESSION)
+                .build();
+
+        SetupIntent setupIntent = stripeClient.v1().setupIntents().create(params);
+        return new SetupIntentResponseDTO(setupIntent.getClientSecret());
+    }
+
+
 }

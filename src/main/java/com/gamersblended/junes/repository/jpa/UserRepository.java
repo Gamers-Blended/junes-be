@@ -39,4 +39,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     @Query(value = "SELECT email FROM junes_rel.users WHERE user_id = :userID", nativeQuery = true)
     Optional<String> getUserEmail(@Param("userID") UUID userID);
+
+    @Query(value = "SELECT stripe_customer_id FROM junes_rel.users WHERE user_id = :userID", nativeQuery = true)
+    Optional<String> getStripeCustomerID(@Param("userID") UUID userID);
 }
