@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.exception.*;
@@ -11,8 +12,13 @@ import com.gamersblended.junes.model.Address;
 import com.gamersblended.junes.model.PaymentMethod;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
+import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.AddressValidator;
 import com.gamersblended.junes.util.PaymentMethodValidator;
+import com.stripe.StripeClient;
+import com.stripe.exception.StripeException;
+import com.stripe.net.RequestOptions;
+import com.stripe.param.CustomerUpdateParams;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,23 +35,28 @@ public class SavedItemsService {
 
     private final AddressRepository addressRepository;
     private final PaymentMethodRepository paymentMethodRepository;
+    private final UserRepository userRepository;
     private final AddressMapper addressMapper;
     private final PaymentMethodMapper paymentMethodMapper;
     private final AddressValidator addressValidator;
     private final PaymentMethodValidator paymentMethodValidator;
+    private final StripeClient stripeClient;
 
     private static final String ADDRESS = "address";
     private static final String PAYMENT_METHOD = "payment_method";
 
     public SavedItemsService(AddressRepository addressRepository, AddressMapper addressMapper,
                              PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper,
-                             AddressValidator addressValidator, PaymentMethodValidator paymentMethodValidator) {
+                             AddressValidator addressValidator, PaymentMethodValidator paymentMethodValidator,
+                             UserRepository userRepository, StripeClient stripeClient) {
         this.addressRepository = addressRepository;
         this.addressMapper = addressMapper;
         this.paymentMethodRepository = paymentMethodRepository;
         this.paymentMethodMapper = paymentMethodMapper;
         this.addressValidator = addressValidator;
         this.paymentMethodValidator = paymentMethodValidator;
+        this.userRepository = userRepository;
+        this.stripeClient = stripeClient;
     }
 
     public List<AddressDTO> getAllSavedAddressesForUser(UUID userID) {
@@ -153,24 +164,65 @@ public class SavedItemsService {
         return paymentMethodMapper.toDTO(paymentMethod);
     }
 
-    public void addPaymentMethod(UUID userID, PaymentMethodDTO paymentMethodDTO) {
+    @Transactional
+    public void addPaymentMethod(UUID userID, AddPaymentMethodRequest request, String idempotencyKey) throws StripeException {
 
-        paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
-
+        // 1. Check if exceed size limit
         List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getPaymentMethodsByUserID(userID);
 
-        // Cannot exceed limit
         if (paymentMethodsFromUserList.size() == MAX_NUMBER_OF_SAVED_ITEMS) {
             log.info("User {} has reached the maximum of {} saved payment methods", userID, MAX_NUMBER_OF_SAVED_ITEMS);
             throw new SavedItemLimitExceededException("User " + userID + " has reached the maximum of " + MAX_NUMBER_OF_SAVED_ITEMS + " saved payment methods");
         }
 
-        checkAndUpdateDefaultPaymentMethod(userID, paymentMethodsFromUserList, paymentMethodDTO);
+        // 2. Get Payment Method from Stripe, Stripe customer ID from database
+        RequestOptions options = RequestOptions.builder()
+                .setIdempotencyKey(idempotencyKey)
+                .build();
 
-        PaymentMethod newPaymentMethod = paymentMethodMapper.toEntity(paymentMethodDTO);
+        com.stripe.model.PaymentMethod stripePaymentMethod = stripeClient.v1().paymentMethods().retrieve(request.getStripePaymentMethodID(), options);
+
+        String stripeCustomerID = userRepository.getStripeCustomerID(userID)
+                .orElseThrow(() -> {
+                    log.error("User's Stripe customer ID not found for ID: {}", userID);
+                    return new StripeOperationException("User's Stripe customer ID not found");
+                });
+
+        // 3. Validate Payment Method
+        paymentMethodValidator.validatePaymentMethodForAdd(userID, stripeCustomerID, stripePaymentMethod);
+
+        // 4. Clear old default Payment Method settings (if needed)
+        if (Boolean.TRUE.equals(request.getIsDefault())) {
+            // Set all user's Payment Method(s) to not default
+            paymentMethodRepository.resetDefaultStatusForUser(userID);
+
+            CustomerUpdateParams customerParams = CustomerUpdateParams.builder()
+                    .setInvoiceSettings(
+                            CustomerUpdateParams.InvoiceSettings.builder()
+                                    .setDefaultPaymentMethod(request.getStripePaymentMethodID())
+                                    .build()
+                    )
+                    .build();
+
+            stripeClient.v1().customers().update(stripeCustomerID, customerParams);
+            log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", stripeCustomerID);
+        }
+
+        // 5. Save to database
+        PaymentMethod newPaymentMethod = new PaymentMethod();
+        newPaymentMethod.setCardType(stripePaymentMethod.getCard().getBrand());
+        newPaymentMethod.setCardLastFour(stripePaymentMethod.getCard().getLast4());
+        newPaymentMethod.setCardHolderName(stripePaymentMethod.getBillingDetails().getName());
+        newPaymentMethod.setExpirationMonth(String.valueOf(stripePaymentMethod.getCard().getExpMonth()));
+        newPaymentMethod.setExpirationYear(String.valueOf(stripePaymentMethod.getCard().getExpYear()));
         newPaymentMethod.setUserID(userID);
+        newPaymentMethod.setIsDefault(request.getIsDefault());
         newPaymentMethod.setIsActive(true);
+        newPaymentMethod.setStripeCustomerID(stripeCustomerID);
+        newPaymentMethod.setStripePaymentMethodID(stripePaymentMethod.getId());
+
         paymentMethodRepository.save(newPaymentMethod);
+        log.info("Payment method with Stripe ID {} is saved to database", stripePaymentMethod.getId());
     }
 
     @Transactional

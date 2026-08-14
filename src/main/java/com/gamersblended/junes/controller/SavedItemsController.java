@@ -3,6 +3,7 @@ package com.gamersblended.junes.controller;
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.SetAsDefaultRequest;
@@ -35,10 +36,12 @@ public class SavedItemsController {
 
     private final SavedItemsService savedItemsService;
     private final AccessTokenService accessTokenService;
+    private final StripeService stripeService;
 
-    public SavedItemsController(SavedItemsService savedItemsService, AccessTokenService accessTokenService) {
+    public SavedItemsController(SavedItemsService savedItemsService, AccessTokenService accessTokenService, StripeService stripeService) {
         this.savedItemsService = savedItemsService;
         this.accessTokenService = accessTokenService;
+        this.stripeService = stripeService;
     }
 
     @Operation(summary = "Get user's saved address(es)")
@@ -213,11 +216,11 @@ public class SavedItemsController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/payment-method")
-    public ResponseEntity<ResponseMessage> addPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody PaymentMethodDTO paymentMethodDTO) {
+    public ResponseEntity<ResponseMessage> addPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody AddPaymentMethodRequest addPaymentMethodRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) throws StripeException {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Adding a new payment method for userID: {}...", userID);
-        savedItemsService.addPaymentMethod(userID, paymentMethodDTO);
+        savedItemsService.addPaymentMethod(userID, addPaymentMethodRequest, idempotencyKey);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully added"));
     }
 

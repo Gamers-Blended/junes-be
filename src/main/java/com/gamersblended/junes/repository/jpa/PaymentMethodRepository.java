@@ -23,4 +23,8 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, UU
     @Modifying
     @Query(value = "UPDATE junes_rel.payment_methods SET is_default = false WHERE user_id = :userID AND is_default = true", nativeQuery = true)
     void unsetDefaultForUser(@Param("userID") UUID userID);
+
+    @Modifying
+    @Query(value = "UPDATE junes_rel.payment_methods SET is_default = false WHERE user_id = :userID", nativeQuery = true)
+    void resetDefaultStatusForUser(@Param("userID") UUID userID);
 }

@@ -40,6 +40,41 @@ public class PaymentMethodValidator {
         validatePaymentMethod(userID, paymentMethodDTO);
     }
 
+    public void validatePaymentMethodForAdd(UUID userID, String stripeCustomerID, com.stripe.model.PaymentMethod paymentMethod) {
+        // Payment Method belongs to Customer
+        if (null == paymentMethod.getCustomer() || !paymentMethod.getCustomer().equals(stripeCustomerID)) {
+            log.error("Error adding new payment method for user {}: User attempted to save PaymentMethod {} not owned by their Stripe customer",
+                    userID, paymentMethod.getId());
+            throw new InputValidationException("Payment method is not valid for this account");
+        }
+
+        if (null == paymentMethod.getCard()) {
+            log.error("Error adding new payment method for user {}: PaymentMethod {} has no card details (unexpected type)",
+                    userID, paymentMethod.getId());
+            throw new InputValidationException("Unsupported payment method type");
+        }
+
+        String cardHolderName = paymentMethod.getBillingDetails() != null
+                ? paymentMethod.getBillingDetails().getName()
+                : null;
+
+        // Cardholder Name
+        if (null == cardHolderName || cardHolderName.isBlank()) {
+            log.error("Error adding new payment method for user {}: card holder name is not given", userID);
+            throw new InputValidationException("Card holder name is not given");
+        }
+
+        if (cardHolderName.length() > CARD_HOLDER_NAME_MAX_LENGTH) {
+            log.error("Error adding new payment method for user {}: card holder name exceeds maximum length of {} characters", userID, CARD_HOLDER_NAME_MAX_LENGTH);
+            throw new InputValidationException("Card holder name exceeds maximum length of " + CARD_HOLDER_NAME_MAX_LENGTH + " characters");
+        }
+
+        if (!cardHolderName.matches("^[a-zA-Z\\s'-]+$")) {
+            log.error("Error adding new payment method for user {}: card holder name should contain only letters, spaces, hyphens and apostrophes", userID);
+            throw new InputValidationException("Card holder name should contain only letters, spaces, hyphens and apostrophes");
+        }
+    }
+
     public void validatePaymentMethod(UUID userID, PaymentMethodDTO paymentMethodDTO) {
         // Card Type
         if (null == paymentMethodDTO.getCardType() || paymentMethodDTO.getCardType().isBlank()) {
