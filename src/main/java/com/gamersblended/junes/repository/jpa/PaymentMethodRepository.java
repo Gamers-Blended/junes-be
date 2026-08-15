@@ -27,4 +27,7 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, UU
     @Modifying
     @Query(value = "UPDATE junes_rel.payment_methods SET is_default = false WHERE user_id = :userID", nativeQuery = true)
     void resetDefaultStatusForUser(@Param("userID") UUID userID);
+
+    @Query(value = "SELECT * FROM junes_rel.payment_methods WHERE user_id = :userID AND card_fingerprint = :cardFingerprint AND is_active = true", nativeQuery = true)
+    Optional<PaymentMethod> findByUserIDAndCardFingerprintAndIsActiveTrue(@Param("userID") UUID userID, @Param("cardFingerprint") String cardFingerprint);
 }

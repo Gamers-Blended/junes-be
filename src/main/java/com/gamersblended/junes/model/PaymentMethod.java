@@ -47,10 +47,13 @@ public class PaymentMethod {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @Column(name = "stripe_customer_id")
+    @Column(name = "card_fingerprint", nullable = false, length = 32)
+    private String cardFingerprint;
+
+    @Column(name = "stripe_customer_id", length = 100)
     private String stripeCustomerID;
 
-    @Column(name = "stripe_payment_method_id")
+    @Column(name = "stripe_payment_method_id", length = 100)
     private String stripePaymentMethodID;
 
     @Column(name = "created_on", nullable = false)

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
@@ -191,7 +192,24 @@ public class SavedItemsService {
         // 3. Validate Payment Method
         paymentMethodValidator.validatePaymentMethodForAdd(userID, stripeCustomerID, stripePaymentMethod);
 
-        // 4. Clear old default Payment Method settings (if needed)
+        // 4. Check if duplicate card for same user
+        String fingerprint = stripePaymentMethod.getCard().getFingerprint();
+
+        Optional<PaymentMethod> existing = paymentMethodRepository.findByUserIDAndCardFingerprintAndIsActiveTrue(userID, fingerprint);
+        if (existing.isPresent()) {
+            log.error("User {} attempted to add a duplicate card (fingerprint match with PM {})",
+                    userID, existing.get().getPaymentMethodID());
+
+            try {
+                stripePaymentMethod.detach();
+            } catch (StripeException ex) {
+                log.error("Failed to detach duplicate Payment Method {} from Stripe: {}", stripePaymentMethod.getId(), ex.getMessage());
+                // Reconciliation job will catch orphaned attach latter
+            }
+            throw new DuplicatePaymentMethodException("This card is already saved to your account");
+        }
+
+        // 5. Clear old default Payment Method settings (if needed)
         if (Boolean.TRUE.equals(request.getIsDefault())) {
             // Set all user's Payment Method(s) to not default
             paymentMethodRepository.resetDefaultStatusForUser(userID);
@@ -208,7 +226,7 @@ public class SavedItemsService {
             log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", stripeCustomerID);
         }
 
-        // 5. Save to database
+        // 6. Save to database
         PaymentMethod newPaymentMethod = new PaymentMethod();
         newPaymentMethod.setCardType(stripePaymentMethod.getCard().getBrand());
         newPaymentMethod.setCardLastFour(stripePaymentMethod.getCard().getLast4());
@@ -218,6 +236,7 @@ public class SavedItemsService {
         newPaymentMethod.setUserID(userID);
         newPaymentMethod.setIsDefault(request.getIsDefault());
         newPaymentMethod.setIsActive(true);
+        newPaymentMethod.setCardFingerprint(fingerprint);
         newPaymentMethod.setStripeCustomerID(stripeCustomerID);
         newPaymentMethod.setStripePaymentMethodID(stripePaymentMethod.getId());
 
