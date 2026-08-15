@@ -259,6 +259,26 @@ public class SavedItemsService {
         PaymentMethod currentPaymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, targetPaymentMethodID)
                 .orElseThrow(() -> new IllegalArgumentException("Target payment method not found in database record storage"));
 
+        // 2. If no changes, skip updates
+        if (currentPaymentMethod.getCardHolderName().trim().equals(editPaymentMethodRequest.getCardHolderName().trim())
+                && Integer.parseInt(currentPaymentMethod.getExpirationMonth()) == Integer.parseInt(editPaymentMethodRequest.getExpirationMonth())
+                && Integer.parseInt(currentPaymentMethod.getExpirationYear()) == Integer.parseInt(editPaymentMethodRequest.getExpirationYear())
+                && null != editPaymentMethodRequest.getBillingAddressID()
+                && currentPaymentMethod.getBillingAddressID().equals(editPaymentMethodRequest.getBillingAddressID())) {
+            // Case 1: billing address provided
+            log.info("No changes, skipping updating of Payment Method {}", targetPaymentMethodID);
+            return;
+
+        } else if (currentPaymentMethod.getCardHolderName().trim().equals(editPaymentMethodRequest.getCardHolderName().trim())
+                && Integer.parseInt(currentPaymentMethod.getExpirationMonth()) == Integer.parseInt(editPaymentMethodRequest.getExpirationMonth())
+                && Integer.parseInt(currentPaymentMethod.getExpirationYear()) == Integer.parseInt(editPaymentMethodRequest.getExpirationYear())
+                && null == editPaymentMethodRequest.getBillingAddressID()
+                && null == currentPaymentMethod.getBillingAddressID()) {
+            // Case 2: billing address not set and new address ID not provided
+            log.info("No changes, skipping updating of Payment Method {}", targetPaymentMethodID);
+            return;
+        }
+
         // 2. Update billing data on Stripe cloud
         PaymentMethodUpdateParams updateParams = PaymentMethodUpdateParams.builder()
                 .setBillingDetails(
@@ -278,6 +298,7 @@ public class SavedItemsService {
 
         stripeClient.v1().paymentMethods().update(currentPaymentMethod.getStripePaymentMethodID(), updateParams, updateOptions);
 
+        // 3. Save to database
         currentPaymentMethod.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
         currentPaymentMethod.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
         currentPaymentMethod.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
