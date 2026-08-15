@@ -19,6 +19,7 @@ import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.CustomerUpdateParams;
+import com.stripe.param.PaymentMethodUpdateParams;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -245,32 +246,42 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, EditPaymentMethodRequest editPaymentMethodRequest) {
+    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, EditPaymentMethodRequest editPaymentMethodRequest, String idempotencyKey) throws StripeException {
 
         if (null == targetPaymentMethodID) {
             log.error("Error editing payment method for user {}: payment method ID is not given", userID);
             throw new InputValidationException("Payment method ID is not given");
         }
 
-        List<PaymentMethod> paymentMethodsFromUserList = paymentMethodRepository.getPaymentMethodsByUserID(userID);
+        // 1. Validate new changes
+        paymentMethodValidator.validatePaymentMethodForEdit(userID, editPaymentMethodRequest);
 
-        PaymentMethod paymentMethodToUpdate = paymentMethodsFromUserList.stream()
-                .filter(paymentMethod -> paymentMethod.getPaymentMethodID().equals(targetPaymentMethodID))
-                .findFirst()
-                .orElseThrow(() -> {
-                    log.error("Payment method not found with ID: {} for user {}", targetPaymentMethodID, userID);
-                    return new SavedItemNotFoundException("Payment method not found with ID: " + targetPaymentMethodID);
-                });
+        PaymentMethod currentPaymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, targetPaymentMethodID)
+                .orElseThrow(() -> new IllegalArgumentException("Target payment method not found in database record storage"));
 
-        PaymentMethodDTO paymentMethodDTO = getPaymentMethodDTO(editPaymentMethodRequest, paymentMethodToUpdate);
+        // 2. Update billing data on Stripe cloud
+        PaymentMethodUpdateParams updateParams = PaymentMethodUpdateParams.builder()
+                .setBillingDetails(
+                        PaymentMethodUpdateParams.BillingDetails.builder()
+                                .setName(editPaymentMethodRequest.getCardHolderName())
+                                .build()
+                )
+                .setCard(PaymentMethodUpdateParams.Card.builder()
+                        .setExpMonth(Long.parseLong(editPaymentMethodRequest.getExpirationMonth()))
+                        .setExpYear(Long.parseLong(editPaymentMethodRequest.getExpirationYear()))
+                        .build())
+                .build();
 
-        paymentMethodValidator.validateAndSanitizePaymentMethod(userID, paymentMethodDTO);
+        RequestOptions updateOptions = RequestOptions.builder()
+                .setIdempotencyKey(idempotencyKey + "-stripe-pm-edit")
+                .build();
 
-        checkAndUpdateDefaultPaymentMethod(userID, paymentMethodsFromUserList, paymentMethodDTO);
+        stripeClient.v1().paymentMethods().update(currentPaymentMethod.getStripePaymentMethodID(), updateParams, updateOptions);
 
-        paymentMethodMapper.updateEntityFromDTO(paymentMethodDTO, paymentMethodToUpdate);
-
-        paymentMethodRepository.save(paymentMethodToUpdate);
+        currentPaymentMethod.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
+        currentPaymentMethod.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
+        currentPaymentMethod.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
+        paymentMethodRepository.save(currentPaymentMethod);
     }
 
     private static PaymentMethodDTO getPaymentMethodDTO(EditPaymentMethodRequest editPaymentMethodRequest, PaymentMethod paymentMethodToUpdate) {

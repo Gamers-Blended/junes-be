@@ -243,11 +243,11 @@ public class SavedItemsController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PutMapping("payment-method/{paymentMethodID}")
-    public ResponseEntity<ResponseMessage> editPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID, @RequestBody EditPaymentMethodRequest editPaymentMethodRequest) {
+    public ResponseEntity<ResponseMessage> editPaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID, @RequestBody EditPaymentMethodRequest editPaymentMethodRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) throws StripeException {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Editing payment method {} for userID: {}...", paymentMethodID, userID);
-        savedItemsService.editPaymentMethod(userID, paymentMethodID, editPaymentMethodRequest);
+        savedItemsService.editPaymentMethod(userID, paymentMethodID, editPaymentMethodRequest, idempotencyKey);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully edited"));
     }
 
