@@ -10,34 +10,20 @@ import org.springframework.stereotype.Component;
 import java.time.Year;
 import java.time.YearMonth;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ValidationConstants.CARD_HOLDER_NAME_MAX_LENGTH;
-import static com.gamersblended.junes.util.InputValidatorUtils.sanitizeString;
 
 @Slf4j
 @Component
 public class PaymentMethodValidator {
 
-    private static final Set<String> VALID_CARD_TYPES = Set.of("VISA", "MASTERCARD", "AMEX", "DISCOVER", "JCB", "DINERS_CLUB", "UNIONPAY");
-    private static final String INVALID_CARD_TYPE_ERROR_MESSAGE = "only these cards are accepted: VISA, MasterCard, American Express, Discover, Diner's Club, JCB and UnionPay";
     private static final int EXPIRATION_YEAR_UPPER_BOUND = 20;
 
     private final AddressRepository addressRepository;
 
     public PaymentMethodValidator(AddressRepository addressRepository) {
         this.addressRepository = addressRepository;
-    }
-
-    public void validateAndSanitizePaymentMethod(UUID userID, PaymentMethodDTO paymentMethodDTO) {
-        paymentMethodDTO.setCardType(sanitizeString(paymentMethodDTO.getCardType()));
-        paymentMethodDTO.setCardLastFour(sanitizeString(paymentMethodDTO.getCardLastFour()));
-        paymentMethodDTO.setCardHolderName(sanitizeString(paymentMethodDTO.getCardHolderName()));
-        paymentMethodDTO.setExpirationMonth(sanitizeString(paymentMethodDTO.getExpirationMonth()));
-        paymentMethodDTO.setExpirationYear(sanitizeString(paymentMethodDTO.getExpirationYear()));
-
-        validatePaymentMethod(userID, paymentMethodDTO);
     }
 
     public void validatePaymentMethodForAdd(UUID userID, String stripeCustomerID, com.stripe.model.PaymentMethod paymentMethod) {
