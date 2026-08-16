@@ -4,7 +4,6 @@ import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
 import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.model.PaymentMethod;
-import com.gamersblended.junes.repository.jpa.AddressRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -21,12 +20,6 @@ import static com.gamersblended.junes.constant.ValidationConstants.CARD_HOLDER_N
 public class PaymentMethodValidator {
 
     private static final int EXPIRATION_YEAR_UPPER_BOUND = 20;
-
-    private final AddressRepository addressRepository;
-
-    public PaymentMethodValidator(AddressRepository addressRepository) {
-        this.addressRepository = addressRepository;
-    }
 
     public void validatePaymentMethodForAdd(UUID userID, String stripeCustomerID, com.stripe.model.PaymentMethod paymentMethod) {
         // Payment Method belongs to Customer
@@ -93,11 +86,6 @@ public class PaymentMethodValidator {
             throw new InputValidationException("Expiration month: " + expirationMonth + " is in an invalid format");
         }
 
-//        // Pad single digit and update DTO
-//        if (expirationMonth.length() == 1) {
-//            expirationMonth = "0" + expirationMonth;
-//            paymentMethodDTO.setExpirationMonth(expirationMonth);
-//        }
         int month = Integer.parseInt(expirationMonth);
         if (month < 1 || month > 12) {
             log.error("Expiration month validation error: expiration month: {} must be between 01 and 12", expirationMonth);
@@ -119,7 +107,7 @@ public class PaymentMethodValidator {
         }
 
         int year = Integer.parseInt(expirationYear);
-        int currentYear = Year.now().getValue();
+        int currentYear = Year.now(ZoneId.of("Asia/Singapore")).getValue();
         int maxYear = currentYear + EXPIRATION_YEAR_UPPER_BOUND;
 
         if (year < currentYear) {

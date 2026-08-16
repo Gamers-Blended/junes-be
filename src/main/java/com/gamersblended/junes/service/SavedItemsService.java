@@ -262,24 +262,12 @@ public class SavedItemsService {
         // 2. If no changes, skip updates
         if (currentPaymentMethod.getCardHolderName().trim().equals(editPaymentMethodRequest.getCardHolderName().trim())
                 && Integer.parseInt(currentPaymentMethod.getExpirationMonth()) == Integer.parseInt(editPaymentMethodRequest.getExpirationMonth())
-                && Integer.parseInt(currentPaymentMethod.getExpirationYear()) == Integer.parseInt(editPaymentMethodRequest.getExpirationYear())
-                && null != editPaymentMethodRequest.getBillingAddressID()
-                && currentPaymentMethod.getBillingAddressID().equals(editPaymentMethodRequest.getBillingAddressID())) {
-            // Case 1: billing address provided
-            log.info("No changes, skipping updating of Payment Method {}", targetPaymentMethodID);
-            return;
-
-        } else if (currentPaymentMethod.getCardHolderName().trim().equals(editPaymentMethodRequest.getCardHolderName().trim())
-                && Integer.parseInt(currentPaymentMethod.getExpirationMonth()) == Integer.parseInt(editPaymentMethodRequest.getExpirationMonth())
-                && Integer.parseInt(currentPaymentMethod.getExpirationYear()) == Integer.parseInt(editPaymentMethodRequest.getExpirationYear())
-                && null == editPaymentMethodRequest.getBillingAddressID()
-                && null == currentPaymentMethod.getBillingAddressID()) {
-            // Case 2: billing address not set and new address ID not provided
+                && Integer.parseInt(currentPaymentMethod.getExpirationYear()) == Integer.parseInt(editPaymentMethodRequest.getExpirationYear())) {
             log.info("No changes, skipping updating of Payment Method {}", targetPaymentMethodID);
             return;
         }
 
-        // 2. Update billing data on Stripe cloud
+        // 3. Update billing data on Stripe cloud
         PaymentMethodUpdateParams updateParams = PaymentMethodUpdateParams.builder()
                 .setBillingDetails(
                         PaymentMethodUpdateParams.BillingDetails.builder()
@@ -292,33 +280,18 @@ public class SavedItemsService {
                         .build())
                 .build();
 
+        // 4. Update billing data on Stripe cloud
         RequestOptions updateOptions = RequestOptions.builder()
                 .setIdempotencyKey(idempotencyKey + "-stripe-pm-edit")
                 .build();
 
         stripeClient.v1().paymentMethods().update(currentPaymentMethod.getStripePaymentMethodID(), updateParams, updateOptions);
 
-        // 3. Save to database
+        // 5. Save to database
         currentPaymentMethod.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
         currentPaymentMethod.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
         currentPaymentMethod.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
         paymentMethodRepository.save(currentPaymentMethod);
-    }
-
-    private static PaymentMethodDTO getPaymentMethodDTO(EditPaymentMethodRequest editPaymentMethodRequest, PaymentMethod paymentMethodToUpdate) {
-        PaymentMethodDTO paymentMethodDTO = new PaymentMethodDTO();
-        // Static
-        paymentMethodDTO.setPaymentMethodID(paymentMethodToUpdate.getPaymentMethodID());
-        paymentMethodDTO.setCardType(paymentMethodToUpdate.getCardType());
-        paymentMethodDTO.setCardLastFour(paymentMethodToUpdate.getCardLastFour());
-        paymentMethodDTO.setIsDefault(paymentMethodToUpdate.getIsDefault()); // Separate API to set as default
-        // Possible changes
-        paymentMethodDTO.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
-        paymentMethodDTO.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
-        paymentMethodDTO.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
-        paymentMethodDTO.setBillingAddressID(editPaymentMethodRequest.getBillingAddressID());
-
-        return paymentMethodDTO;
     }
 
     @Transactional
