@@ -223,7 +223,11 @@ public class SavedItemsService {
                     )
                     .build();
 
-            stripeClient.v1().customers().update(stripeCustomerID, customerParams);
+            RequestOptions setDefaultOptions = RequestOptions.builder()
+                    .setIdempotencyKey(idempotencyKey + "-stripe-pm-add-set-default")
+                    .build();
+
+            stripeClient.v1().customers().update(stripeCustomerID, customerParams, setDefaultOptions);
             log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", stripeCustomerID);
         }
 
