@@ -212,9 +212,6 @@ public class SavedItemsService {
 
         // 5. Clear old default Payment Method settings (if needed)
         if (Boolean.TRUE.equals(request.getIsDefault())) {
-            // Set all user's Payment Method(s) to not default
-            paymentMethodRepository.resetDefaultStatusForUser(userID);
-
             CustomerUpdateParams customerParams = CustomerUpdateParams.builder()
                     .setInvoiceSettings(
                             CustomerUpdateParams.InvoiceSettings.builder()
@@ -229,6 +226,9 @@ public class SavedItemsService {
 
             stripeClient.v1().customers().update(stripeCustomerID, customerParams, setDefaultOptions);
             log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", stripeCustomerID);
+
+            // Unset current default Payment Method
+            paymentMethodRepository.unsetDefaultForUser(userID);
         }
 
         // 6. Save to database
