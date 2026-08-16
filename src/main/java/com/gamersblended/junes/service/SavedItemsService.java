@@ -371,16 +371,17 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void attachAddressToPaymentMethod(UUID userID, AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest) {
+    public void attachAddressToPaymentMethod(UUID userID, AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest, String idempotencyKey) throws StripeException {
         UUID addressID = addressToPaymentMethodRequest.getAddressID();
         UUID paymentMethodID = addressToPaymentMethodRequest.getPaymentMethodID();
 
+        // 1. Validation checks
         if (null == addressID) {
             log.error("Error attaching address to payment method for user {}: address ID is not given", userID);
             throw new InputValidationException("Address ID is not given");
         }
 
-        addressRepository.getAddressByUserIDAndID(userID, addressID)
+        Address address = addressRepository.getAddressByUserIDAndID(userID, addressID)
                 .orElseThrow(() -> {
                     log.error("Address with ID: {} not found for user: {}", addressID, userID);
                     return new SavedItemNotFoundException("Address not found");
@@ -397,11 +398,34 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Payment method not found");
                 });
 
+        // 2. Check if any changes in billing address
         if (null != paymentMethod.getBillingAddressID() && paymentMethod.getBillingAddressID().equals(addressID)) {
             log.info("Address: {} is already set for Payment method: {}", addressID, paymentMethod.getPaymentMethodID());
             return;
         }
 
+        // 3. Update billing data on Stripe cloud
+        PaymentMethodUpdateParams updateParams = PaymentMethodUpdateParams.builder()
+                .setBillingDetails(
+                        PaymentMethodUpdateParams.BillingDetails.builder()
+                                .setAddress(
+                                        PaymentMethodUpdateParams.BillingDetails.Address.builder()
+                                                .setLine1(address.getAddressLine())
+                                                .setPostalCode(address.getZipCode())
+                                                .setCountry(address.getCountry())
+                                                .build()
+                                )
+                                .build()
+                )
+                .build();
+
+        RequestOptions updateOptions = RequestOptions.builder()
+                .setIdempotencyKey(idempotencyKey + "-stripe-pm-edit-billing-address")
+                .build();
+
+        stripeClient.v1().paymentMethods().update(paymentMethod.getStripePaymentMethodID(), updateParams, updateOptions);
+
+        // 4. Save to database
         paymentMethod.setBillingAddressID(addressID);
         paymentMethodRepository.save(paymentMethod);
     }
