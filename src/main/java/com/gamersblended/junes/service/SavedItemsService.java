@@ -340,36 +340,6 @@ public class SavedItemsService {
         addressRepository.save(newDefaultAddress);
     }
 
-    private void checkAndUpdateDefaultPaymentMethod(UUID userID, List<PaymentMethod> paymentMethodList, PaymentMethodDTO paymentMethodDTO) {
-        PaymentMethod currentDefault = null;
-
-        for (PaymentMethod existing : paymentMethodList) {
-            // Check for duplicates
-            if (paymentMethodValidator.isDuplicate(paymentMethodDTO, existing)) {
-                log.error("Payment method already exists for user: {}", userID);
-                throw new DuplicatePaymentMethodException("Payment method already exists");
-            }
-
-            // Track current default Payment method
-            if (paymentMethodDTO.getIsDefault() && existing.getIsDefault()) {
-                currentDefault = existing;
-            }
-        }
-
-        // Set current default to false if needed
-        if (null != currentDefault) {
-            currentDefault.setIsDefault(false);
-            paymentMethodRepository.save(currentDefault);
-        }
-    }
-
-    private void updateCurrentDefaultPaymentMethod(UUID userID, PaymentMethod newDefaultPaymentMethod) {
-        paymentMethodRepository.unsetDefaultForUser(userID);
-
-        newDefaultPaymentMethod.setIsDefault(true);
-        paymentMethodRepository.save(newDefaultPaymentMethod);
-    }
-
     @Transactional
     public void attachAddressToPaymentMethod(UUID userID, AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest, String idempotencyKey) throws StripeException {
         UUID addressID = addressToPaymentMethodRequest.getAddressID();
@@ -398,7 +368,7 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Payment method not found");
                 });
 
-        // 2. Check if any changes in billing address
+        // 2. Skip if billing address is already the target one
         if (null != paymentMethod.getBillingAddressID() && paymentMethod.getBillingAddressID().equals(addressID)) {
             log.info("Address: {} is already set for Payment method: {}", addressID, paymentMethod.getPaymentMethodID());
             return;
@@ -431,40 +401,65 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void setAsDefault(UUID userID, String mode, UUID savedItemID) {
+    public void setAsDefault(UUID userID, String mode, UUID savedItemID, String idempotencyKey) throws StripeException {
+        // 1. Validation checks
         if (null == savedItemID) {
             log.error("Error setting default saved item for user {}: saved item ID is not given", userID);
             throw new InputValidationException("Saved item ID is not given");
         }
 
         if (ADDRESS.equals(mode)) {
+            // 2a. Check if Address exist for user
             Address addressToSetAsDefault = addressRepository.getAddressByUserIDAndID(userID, savedItemID)
                     .orElseThrow(() -> {
                         log.error("Address with ID: {} not found for user: {}", savedItemID, userID);
                         return new SavedItemNotFoundException("Address not found");
                     });
 
+            // 3a. Skip if already default
             if (Boolean.TRUE.equals(addressToSetAsDefault.getIsDefault())) {
                 log.info("Address with ID: {} already default for user: {}", savedItemID, userID);
                 return;
             }
 
+            // 4a. Save to database
             updateDefaultAddress(userID, addressToSetAsDefault);
         }
 
         if (PAYMENT_METHOD.equals(mode)) {
+            // 2b. Check if Payment Method exist for user
             PaymentMethod paymentMethodToSetAsDefault = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, savedItemID)
                     .orElseThrow(() -> {
                         log.error("Payment method not found with ID: {} for user {}", savedItemID, userID);
                         return new SavedItemNotFoundException("Payment method not found with ID: " + savedItemID);
                     });
 
+            // 3b. Skip if already default
             if (Boolean.TRUE.equals(paymentMethodToSetAsDefault.getIsDefault())) {
                 log.info("Payment method with ID: {} already default for user: {}", savedItemID, userID);
                 return;
             }
 
-            updateCurrentDefaultPaymentMethod(userID, paymentMethodToSetAsDefault);
+            // 4a. Update data on Stripe cloud
+            CustomerUpdateParams customerParams = CustomerUpdateParams.builder()
+                    .setInvoiceSettings(
+                            CustomerUpdateParams.InvoiceSettings.builder()
+                                    .setDefaultPaymentMethod(paymentMethodToSetAsDefault.getStripePaymentMethodID())
+                                    .build()
+                    )
+                    .build();
+
+            RequestOptions requestOptions = RequestOptions.builder()
+                    .setIdempotencyKey(idempotencyKey + "-stripe-pm-set-default")
+                    .build();
+
+            stripeClient.v1().customers().update(paymentMethodToSetAsDefault.getStripeCustomerID(), customerParams, requestOptions);
+            log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", paymentMethodToSetAsDefault.getStripeCustomerID());
+
+            // 4a. Save to database
+            paymentMethodRepository.unsetDefaultForUser(userID);
+            paymentMethodToSetAsDefault.setIsDefault(true);
+            paymentMethodRepository.save(paymentMethodToSetAsDefault);
         }
     }
 
