@@ -102,7 +102,10 @@ public class OrderFinalisationConsumer {
         orderHistoryCacheService.evict(transaction.getUserID());
         log.info("[OrderFinalisationConsumer] Order history cache evicted for userID = {} after payment success", transaction.getUserID());
 
-        processedEventRepository.save(new ProcessedEvent(event.getEventID(), LocalDateTime.now(ZoneId.of("Asia/Singapore"))));
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventID(event.getEventID());
+        processedEvent.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+        processedEventRepository.save(processedEvent);
 
         log.info("[OrderFinalisationConsumer] Order {} finalised as {}", event.getOrderNumber(),
                 TransactionStatus.PAYMENT_FAILED.getTransactionStatusValue());
@@ -128,7 +131,10 @@ public class OrderFinalisationConsumer {
         // Failed charge -> revert stock
         releaseInventory(transaction);
 
-        processedEventRepository.save(new ProcessedEvent(event.getEventID(), LocalDateTime.now(ZoneId.of("Asia/Singapore"))));
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventID(event.getEventID());
+        processedEvent.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+        processedEventRepository.save(processedEvent);
 
         log.error("[OrderFinalisationConsumer] Order {} finalised as {}: {}", event.getOrderNumber(),
                 TransactionStatus.PAYMENT_FAILED.getTransactionStatusValue(),

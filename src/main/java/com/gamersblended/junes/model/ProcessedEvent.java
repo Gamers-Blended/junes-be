@@ -4,15 +4,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "processed_events", schema = "junes_rel")
-@Data
-@NoArgsConstructor
+@Getter
+@Setter
 public class ProcessedEvent {
 
     @Id
@@ -22,8 +22,4 @@ public class ProcessedEvent {
     @Column(name = "processed_on", nullable = false)
     private LocalDateTime processedOn;
 
-    public ProcessedEvent(String eventID, LocalDateTime processedOn) {
-        this.eventID = eventID;
-        this.processedOn = processedOn;
-    }
 }

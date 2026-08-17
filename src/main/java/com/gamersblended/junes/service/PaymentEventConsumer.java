@@ -108,7 +108,10 @@ public class PaymentEventConsumer {
             publishPaymentFailed(event, result);
         }
 
-        processedEventRepository.save(new ProcessedEvent(event.getEventID(), LocalDateTime.now(ZoneId.of("Asia/Singapore"))));
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventID(event.getEventID());
+        processedEvent.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+        processedEventRepository.save(processedEvent);
 
         ack.acknowledge();
     }
