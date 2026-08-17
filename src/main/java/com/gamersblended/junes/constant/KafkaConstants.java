@@ -7,6 +7,7 @@ public class KafkaConstants {
 
     // Event types
     public static final String EMAIL_UPDATED = "EMAIL_UPDATED";
+    public static final String PAYMENT_METHOD_DETACHED = "PAYMENT_METHOD_DETACHED";
     public static final String INVENTORY_CHANGED = "INVENTORY_CHANGED";
     public static final String ORDER_CREATED = "ORDER_CREATED";
     public static final String ORDER_PLACED = "ORDER_PLACED";
@@ -15,4 +16,5 @@ public class KafkaConstants {
 
     // Topics
     public static final String STRIPE_SYNC_EVENTS = "stripe-sync-events";
+    public static final String STRIPE_DETACH_PM_EVENTS = "stripe-detach-payment-method-events";
 }

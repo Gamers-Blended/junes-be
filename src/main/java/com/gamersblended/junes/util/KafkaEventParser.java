@@ -19,6 +19,7 @@ public class KafkaEventParser {
     // eventType String -> BaseEvent subclasses to deserialise into
     private final Map<String, Class<? extends BaseEvent>> eventTypeRegistry = Map.of(
             KafkaConstants.EMAIL_UPDATED, StripeEmailUpdateEvent.class,
+            KafkaConstants.PAYMENT_METHOD_DETACHED, StripePaymentMethodDetachEvent.class,
             KafkaConstants.ORDER_CREATED, OrderCreatedEvent.class,
             KafkaConstants.PAYMENT_SUCCEEDED, PaymentSucceededEvent.class,
             KafkaConstants.PAYMENT_FAILED, PaymentFailedEvent.class
