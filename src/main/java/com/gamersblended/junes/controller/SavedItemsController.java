@@ -267,11 +267,11 @@ public class SavedItemsController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @DeleteMapping("payment-method/{paymentMethodID}")
-    public ResponseEntity<ResponseMessage> deletePaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID) {
+    public ResponseEntity<ResponseMessage> deletePaymentMethod(@RequestHeader("Authorization") String authHeader, @PathVariable UUID paymentMethodID, @RequestHeader("Idempotency-Key") String idempotencyKey) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Deleting payment method {} for userID: {}...", paymentMethodID, userID);
-        savedItemsService.deletePaymentMethod(userID, paymentMethodID);
+        savedItemsService.deletePaymentMethod(userID, paymentMethodID, idempotencyKey);
         return ResponseEntity.ok(new ResponseMessage("Payment method successfully deleted"));
     }
 

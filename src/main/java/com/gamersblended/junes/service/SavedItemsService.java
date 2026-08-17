@@ -1,7 +1,9 @@
 package com.gamersblended.junes.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.dto.event.StripePaymentMethodDetachEvent;
 import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
@@ -9,8 +11,10 @@ import com.gamersblended.junes.exception.*;
 import com.gamersblended.junes.mapper.AddressMapper;
 import com.gamersblended.junes.mapper.PaymentMethodMapper;
 import com.gamersblended.junes.model.Address;
+import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.model.PaymentMethod;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
+import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.util.AddressValidator;
@@ -25,11 +29,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
+import static com.gamersblended.junes.constant.KafkaConstants.PAYMENT_METHOD_DETACHED;
+import static com.gamersblended.junes.constant.KafkaConstants.STRIPE_DETACH_PM_EVENTS;
 
 @Slf4j
 @Service
@@ -37,12 +44,14 @@ public class SavedItemsService {
 
     private final AddressRepository addressRepository;
     private final PaymentMethodRepository paymentMethodRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final UserRepository userRepository;
     private final AddressMapper addressMapper;
     private final PaymentMethodMapper paymentMethodMapper;
     private final AddressValidator addressValidator;
     private final PaymentMethodValidator paymentMethodValidator;
     private final StripeClient stripeClient;
+    private final ObjectMapper objectMapper;
 
     private static final String ADDRESS = "address";
     private static final String PAYMENT_METHOD = "payment_method";
@@ -50,7 +59,8 @@ public class SavedItemsService {
     public SavedItemsService(AddressRepository addressRepository, AddressMapper addressMapper,
                              PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper,
                              AddressValidator addressValidator, PaymentMethodValidator paymentMethodValidator,
-                             UserRepository userRepository, StripeClient stripeClient) {
+                             UserRepository userRepository, OutboxEventRepository outboxEventRepository,
+                             ObjectMapper objectMapper, StripeClient stripeClient) {
         this.addressRepository = addressRepository;
         this.addressMapper = addressMapper;
         this.paymentMethodRepository = paymentMethodRepository;
@@ -58,6 +68,8 @@ public class SavedItemsService {
         this.addressValidator = addressValidator;
         this.paymentMethodValidator = paymentMethodValidator;
         this.userRepository = userRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
         this.stripeClient = stripeClient;
     }
 
@@ -299,7 +311,8 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void deletePaymentMethod(UUID userID, UUID targetPaymentMethodID) {
+    public void deletePaymentMethod(UUID userID, UUID targetPaymentMethodID, String idempotencyKey) {
+        // 1. Validation checks
         if (null == targetPaymentMethodID) {
             log.error("Error deleting payment method for user {}: payment method ID is not given", userID);
             throw new InputValidationException("Payment method ID is not given");
@@ -311,7 +324,46 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Payment method not found");
                 });
 
-        paymentMethodRepository.delete(paymentMethod);
+        // 2. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
+        if (outboxEventRepository.existsByAggregateIDAndEventTypeAndIdempotencyKey(
+                String.valueOf(userID), PAYMENT_METHOD_DETACHED, idempotencyKey)) {
+            log.info("Duplicate delete request for Payment Method {} (idempotencyKey = {}), skipping", targetPaymentMethodID, idempotencyKey);
+            return;
+        }
+
+        // 3. Soft-delete in database - disappears from UI immediately without depending on Stripe
+        paymentMethod.setIsActive(false);
+        paymentMethodRepository.save(paymentMethod);
+
+        // 4. Create Outbox Event - includes outbox event's own ID so consumer can dedupe via ProcessedEvent
+        UUID eventID = UUID.randomUUID();
+
+        StripePaymentMethodDetachEvent event = new StripePaymentMethodDetachEvent();
+        event.setEventID(eventID.toString());
+        event.setSchemaVersion(1);
+        event.setUserID(userID);
+        event.setStripePaymentMethodID(paymentMethod.getStripePaymentMethodID());
+        event.setPaymentMethodID(paymentMethod.getPaymentMethodID());
+
+        try {
+            OutboxEvent outboxEvent = new OutboxEvent();
+            outboxEvent.setAggregateID(String.valueOf(userID));
+            outboxEvent.setEventType(event.getEventType());
+            outboxEvent.setTopic(STRIPE_DETACH_PM_EVENTS);
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxEvent.setIdempotencyKey(idempotencyKey);
+            outboxEvent.setStatus("PENDING");
+            outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+            outboxEvent.setPublished(false);
+            outboxEvent.setRetryCount(0);
+            outboxEventRepository.save(outboxEvent);
+
+            log.info("Payment Method {} soft-deleted, detach event {} queued for userID {}", targetPaymentMethodID, eventID, userID);
+        } catch (Exception ex) {
+            log.error("[UserVerificationWriter] Failed to write outbox event for detach payment method {}", paymentMethod.getStripePaymentMethodID(), ex);
+            throw new RuntimeException("Failed to write outbox event: " + ex.getMessage(), ex);
+        }
+
     }
 
     private void checkAndUpdateDefaultAddress(UUID userID, List<Address> addressList, AddressDTO addressDTO) {
