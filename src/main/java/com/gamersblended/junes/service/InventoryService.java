@@ -1,6 +1,11 @@
 package com.gamersblended.junes.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gamersblended.junes.dto.event.InventoryChangedEvent;
+import com.gamersblended.junes.exception.OutboxEventCreationException;
+import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.model.Product;
+import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -10,18 +15,25 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
+import static com.gamersblended.junes.constant.KafkaConstants.INVENTORY_EVENTS;
 import static com.gamersblended.junes.constant.KafkaConstants.ORDER_PLACED;
+import static com.gamersblended.junes.constant.KafkaConstants.PENDING;
 
 @Slf4j
 @Service
 public class InventoryService {
 
     private final MongoTemplate mongoTemplate;
-    private final EventPublisher eventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
-    public InventoryService(MongoTemplate mongoTemplate, EventPublisher eventPublisher) {
+    public InventoryService(MongoTemplate mongoTemplate, OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper) {
         this.mongoTemplate = mongoTemplate;
-        this.eventPublisher = eventPublisher;
+        this.outboxEventRepository = outboxEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     public boolean reserveStock(String productID, int quantity) {
@@ -40,9 +52,9 @@ public class InventoryService {
         );
 
         if (result.getModifiedCount() > 0) {
-            // Successfully reserved, publish event
+            // Successfully reserved, write outbox event for relay to publish
             Product product = mongoTemplate.findById(new ObjectId(productID), Product.class);
-            eventPublisher.publishInventoryChanged(
+            writeOutboxEvent(
                     productID,
                     product.getStock() + quantity,
                     product.getStock(),
@@ -59,5 +71,31 @@ public class InventoryService {
         Query query = new Query(Criteria.where("_id").is(productID));
         Update update = new Update().inc("stock", quantity);
         mongoTemplate.updateFirst(query, update, Product.class);
+    }
+
+    private void writeOutboxEvent(String productID, Integer previousStock, Integer currentStock, String reason) {
+        InventoryChangedEvent event = new InventoryChangedEvent();
+        event.setProductID(productID);
+        event.setPreviousStock(previousStock);
+        event.setCurrentStock(currentStock);
+        event.setQuantityChanged(currentStock - previousStock);
+        event.setReason(reason);
+
+        try {
+            OutboxEvent outboxEvent = new OutboxEvent();
+            outboxEvent.setAggregateID(productID); // Kafka partition key
+            outboxEvent.setEventType(event.getEventType());
+            outboxEvent.setTopic(INVENTORY_EVENTS);
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxEvent.setStatus(PENDING);
+            outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+            outboxEvent.setPublished(false);
+            outboxEvent.setRetryCount(0);
+
+            outboxEventRepository.save(outboxEvent);
+        } catch (Exception ex) {
+            log.error("Failed to write outbox event for product {}", productID, ex);
+            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
+        }
     }
 }
