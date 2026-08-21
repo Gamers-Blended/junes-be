@@ -7,6 +7,7 @@ import com.gamersblended.junes.dto.event.OrderCreatedEvent;
 import com.gamersblended.junes.dto.event.PaymentFailedEvent;
 import com.gamersblended.junes.dto.event.PaymentSucceededEvent;
 import com.gamersblended.junes.dto.request.ChargeRequest;
+import com.gamersblended.junes.exception.OutboxEventCreationException;
 import com.gamersblended.junes.exception.PaymentGatewayException;
 import com.gamersblended.junes.exception.SavedItemNotFoundException;
 import com.gamersblended.junes.model.OutboxEvent;
@@ -26,13 +27,13 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.UUID;
+
+import static com.gamersblended.junes.constant.KafkaConstants.ORDER_EVENTS;
+import static com.gamersblended.junes.constant.KafkaConstants.PENDING;
 
 @Slf4j
 @Service
 public class PaymentEventConsumer {
-
-    private static final String ORDER_EVENTS_TOPIC = "order-events";
 
     private final KafkaEventParser kafkaEventParser;
     private final PaymentGatewayService paymentGatewayService;
@@ -56,7 +57,7 @@ public class PaymentEventConsumer {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = ORDER_EVENTS_TOPIC, groupId = "payment-worker")
+    @KafkaListener(topics = ORDER_EVENTS, groupId = "payment-event-consumer")
     @Transactional
     public void onOrderEvent(ConsumerRecord<String, String> orderEventRecord, Acknowledgment ack) {
         BaseEvent parsed = kafkaEventParser.parse(orderEventRecord.value());
@@ -68,9 +69,9 @@ public class PaymentEventConsumer {
             return;
         }
 
-        // Check before calling Stripe
+        // Consumer-side idempotency
         if (processedEventRepository.existsByEventID(event.getEventID())) {
-            log.info("[PaymentEventConsumer] Event {} already processed, skipping", event.getEventID());
+            log.info("[PaymentEventConsumer] Event {} already processed, skipping...", event.getEventID());
             ack.acknowledge();
             return;
         }
@@ -94,11 +95,11 @@ public class PaymentEventConsumer {
                             .stripeCustomerID(paymentMethod.getStripeCustomerID())
                             .stripePaymentMethodID(paymentMethod.getStripePaymentMethodID())
                             .amountInCents(toAmountInCents(event.getTotalAmount()))
-                            .currency("SGD")
+                            .currency(event.getCurrency())
                             .orderNumber(event.getOrderNumber())
                             .build());
         } catch (PaymentGatewayException ex) {
-            log.error("[PaymentEventConsumer] Stripe call failed for order {}", event.getOrderNumber(), ex);
+            log.error("[PaymentEventConsumer] Stripe payment failed for order {}", event.getOrderNumber(), ex);
             throw ex;
         }
 
@@ -127,6 +128,7 @@ public class PaymentEventConsumer {
         succeededEvent.setUserID(event.getUserID());
         succeededEvent.setAmountCharged(event.getTotalAmount());
         succeededEvent.setStripePaymentIntentID(result.getPaymentIntentID());
+        succeededEvent.setIdempotencyKey(event.getIdempotencyKey());
 
         writeOutboxEvent(event.getOrderNumber(), succeededEvent);
 
@@ -139,6 +141,7 @@ public class PaymentEventConsumer {
         failedEvent.setOrderNumber(event.getOrderNumber());
         failedEvent.setUserID(event.getUserID());
         failedEvent.setFailureReason(result.getFailureReason());
+        failedEvent.setIdempotencyKey(event.getIdempotencyKey());
 
         writeOutboxEvent(event.getOrderNumber(), failedEvent);
 
@@ -148,11 +151,12 @@ public class PaymentEventConsumer {
     private void writeOutboxEvent(String orderNumber, BaseEvent event) {
         try {
             OutboxEvent outboxEvent = new OutboxEvent();
-            outboxEvent.setId(UUID.randomUUID());
             outboxEvent.setAggregateID(orderNumber); // same partition key as OrderCreated for ordering
             outboxEvent.setEventType(event.getEventType());
-            outboxEvent.setTopic(ORDER_EVENTS_TOPIC);
+            outboxEvent.setTopic(ORDER_EVENTS);
             outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxEvent.setIdempotencyKey(event.getIdempotencyKey());
+            outboxEvent.setStatus(PENDING);
             outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
             outboxEvent.setPublished(false);
             outboxEvent.setRetryCount(0);
@@ -160,7 +164,7 @@ public class PaymentEventConsumer {
             outboxEventRepository.save(outboxEvent);
         } catch (Exception ex) {
             log.error("[PaymentEventConsumer] Failed to write outbox event for order {}", orderNumber, ex);
-            throw new RuntimeException("Failed to write outbox event: " + ex.getMessage(), ex);
+            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
         }
     }
 }
