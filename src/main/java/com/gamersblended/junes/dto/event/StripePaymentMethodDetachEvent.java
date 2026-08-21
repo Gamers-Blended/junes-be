@@ -1,12 +1,14 @@
 package com.gamersblended.junes.dto.event;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.KafkaConstants.PAYMENT_METHOD_DETACHED;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class StripePaymentMethodDetachEvent extends BaseEvent {
 
     private String eventID;

@@ -1,10 +1,12 @@
 package com.gamersblended.junes.dto.event;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import static com.gamersblended.junes.constant.KafkaConstants.INVENTORY_CHANGED;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class InventoryChangedEvent extends BaseEvent {
 
     private String productID;

@@ -12,4 +12,5 @@ public class BaseEvent {
     private String eventID = UUID.randomUUID().toString();
     private LocalDateTime timestamp = LocalDateTime.now(ZoneId.of("Asia/Singapore"));
     private String eventType;
+    private String idempotencyKey;
 }
