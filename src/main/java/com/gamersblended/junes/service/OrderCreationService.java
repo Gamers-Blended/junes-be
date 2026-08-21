@@ -144,6 +144,7 @@ public class OrderCreationService {
         event.setPaymentMethodID(placeOrderRequest.getPaymentMethodID());
         event.setTotalAmount(transaction.getTotalAmount());
         event.setCurrency(CURRENCY);
+        event.setIdempotencyKey(idempotencyKey);
 
         List<OrderItemDTO> orderItemList = consolidatedItemMap.entrySet().stream()
                 .map(entry -> {
