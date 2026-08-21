@@ -4,9 +4,9 @@
 CREATE TABLE outbox_events
 (
     id             UUID PRIMARY KEY,
-    aggregate_id   VARCHAR(100) NOT NULL, -- e.g. orderNumber, also used as Kafka partition key
-    event_type     VARCHAR(100) NOT NULL, -- e.g. 'OrderCreated', 'PaymentSucceeded'
-    topic          VARCHAR(100) NOT NULL DEFAULT 'order-events',
+    aggregate_id   VARCHAR(100) NOT NULL,
+    event_type     VARCHAR(100) NOT NULL,
+    topic          VARCHAR(100) NOT NULL,
     payload        JSONB        NOT NULL,
     status         VARCHAR(100) NOT NULL,
     created_on     TIMESTAMP    NOT NULL DEFAULT now(),
