@@ -3,6 +3,7 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.dto.PaymentResult;
 import com.gamersblended.junes.dto.request.ChargeRequest;
 import com.gamersblended.junes.exception.PaymentGatewayException;
+import com.stripe.StripeClient;
 import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -14,6 +15,12 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class StripePaymentGatewayService implements PaymentGatewayService {
+
+    private final StripeClient stripeClient;
+
+    public StripePaymentGatewayService(StripeClient stripeClient) {
+        this.stripeClient = stripeClient;
+    }
 
     @Override
     public PaymentResult charge(String idempotencyKey, ChargeRequest request) {
@@ -32,7 +39,7 @@ public class StripePaymentGatewayService implements PaymentGatewayService {
                 .build();
 
         try {
-            PaymentIntent intent = PaymentIntent.create(params, options);
+            PaymentIntent intent = stripeClient.v1().paymentIntents().create(params, options);
             return PaymentResult.builder()
                     .success("succeeded".equals(intent.getStatus()))
                     .paymentIntentID(intent.getId())
