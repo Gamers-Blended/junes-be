@@ -28,11 +28,11 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
+import static com.gamersblended.junes.constant.KafkaConstants.ORDER_EVENTS;
+
 @Slf4j
 @Service
 public class OrderFinalisationConsumer {
-
-    private static final String ORDER_EVENTS_TOPIC = "order-events";
 
     private final KafkaEventParser kafkaEventParser;
     private final TransactionRepository transactionRepository;
@@ -68,7 +68,7 @@ public class OrderFinalisationConsumer {
         this.orderHistoryCacheService = orderHistoryCacheService;
     }
 
-    @KafkaListener(topics = ORDER_EVENTS_TOPIC, groupId = "order-finalisation")
+    @KafkaListener(topics = ORDER_EVENTS, groupId = "order-finalisation-consumer")
     @Transactional
     public void onOrderEvent(ConsumerRecord<String, String> orderEvent, Acknowledgment ack) {
         BaseEvent parsedEvent = kafkaEventParser.parse(orderEvent.value());
@@ -83,6 +83,7 @@ public class OrderFinalisationConsumer {
     }
 
     private void handlePaymentSucceeded(PaymentSucceededEvent event) {
+        // Consumer-side idempotency
         if (processedEventRepository.existsByEventID(event.getEventID())) {
             log.info("[OrderFinalisationConsumer] Event {} already processed, skipping...", event.getEventID());
             return;
@@ -108,10 +109,11 @@ public class OrderFinalisationConsumer {
         processedEventRepository.save(processedEvent);
 
         log.info("[OrderFinalisationConsumer] Order {} finalised as {}", event.getOrderNumber(),
-                TransactionStatus.PAYMENT_FAILED.getTransactionStatusValue());
+                TransactionStatus.AWAITING_SHIPMENT.getTransactionStatusValue());
     }
 
     private void handlePaymentFailed(PaymentFailedEvent event) {
+        // Consumer-side idempotency
         if (processedEventRepository.existsByEventID(event.getEventID())) {
             log.info("[OrderFinalisationConsumer] Event {} already processed, skipping...", event.getEventID());
             return;
