@@ -48,11 +48,11 @@ public class OrderController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))}),
     })
     @PostMapping("/place")
-    public ResponseEntity<ResponseMessage> orderPlace(@RequestHeader("Authorization") String authHeader, @RequestBody PlaceOrderRequest placeOrderRequest) {
+    public ResponseEntity<ResponseMessage> orderPlace(@RequestHeader("Authorization") String authHeader, @RequestBody PlaceOrderRequest placeOrderRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Placing order for userID: {}", userID);
-        String orderNumber = orderService.placeOrder(userID, placeOrderRequest);
+        String orderNumber = orderService.placeOrder(userID, placeOrderRequest, idempotencyKey);
         return ResponseEntity.ok(new ResponseMessage(orderNumber));
     }
 }

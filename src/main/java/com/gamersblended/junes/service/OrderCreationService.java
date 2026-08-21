@@ -5,7 +5,7 @@ import com.gamersblended.junes.constant.TransactionStatus;
 import com.gamersblended.junes.dto.OrderItemDTO;
 import com.gamersblended.junes.dto.event.OrderCreatedEvent;
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
-import com.gamersblended.junes.exception.CreateOrderException;
+import com.gamersblended.junes.exception.OutboxEventCreationException;
 import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.model.Product;
@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.gamersblended.junes.constant.KafkaConstants.ORDER_EVENTS;
+import static com.gamersblended.junes.constant.KafkaConstants.PENDING;
+
 @Slf4j
 @Service
 public class OrderCreationService {
@@ -37,7 +40,7 @@ public class OrderCreationService {
 
     private static final SnowflakeIDGenerator idGenerator = new SnowflakeIDGenerator(1);
     private static final String ORDER_ID_PREFIX = "J";
-    private static final String ORDER_EVENTS_TOPIC = "order-events";
+    private static final String CURRENCY = "sgd";
 
     public OrderCreationService(TransactionRepository transactionRepository,
                                 OutboxEventRepository outboxEventRepository,
@@ -55,10 +58,11 @@ public class OrderCreationService {
     @Transactional
     public Transaction createPendingOrder(UUID userID, PlaceOrderRequest placeOrderRequest,
                                           Map<String, Integer> consolidatedItemMap,
-                                          Map<String, Product> productMap) {
+                                          Map<String, Product> productMap,
+                                          String idempotencyKey) {
         Transaction transaction = createTransaction(userID, placeOrderRequest, consolidatedItemMap, productMap);
 
-        writeOutboxEvent(transaction, placeOrderRequest, consolidatedItemMap);
+        writeOutboxEvent(transaction, placeOrderRequest, consolidatedItemMap, idempotencyKey);
 
         log.info("[OrderCreationService] Created pending order {} for userID = {}", transaction.getOrderNumber(), userID);
 
@@ -131,7 +135,7 @@ public class OrderCreationService {
     }
 
     private void writeOutboxEvent(Transaction transaction, PlaceOrderRequest placeOrderRequest,
-                                  Map<String, Integer> consolidatedItemMap) {
+                                  Map<String, Integer> consolidatedItemMap, String idempotencyKey) {
 
         OrderCreatedEvent event = new OrderCreatedEvent();
         event.setTransactionID(transaction.getTransactionID());
@@ -139,6 +143,7 @@ public class OrderCreationService {
         event.setUserID(transaction.getUserID());
         event.setPaymentMethodID(placeOrderRequest.getPaymentMethodID());
         event.setTotalAmount(transaction.getTotalAmount());
+        event.setCurrency(CURRENCY);
 
         List<OrderItemDTO> orderItemList = consolidatedItemMap.entrySet().stream()
                 .map(entry -> {
@@ -151,21 +156,23 @@ public class OrderCreationService {
         event.setItemList(orderItemList);
 
         try {
-            OutboxEvent outbox = new OutboxEvent();
-            outbox.setAggregateID(transaction.getOrderNumber()); // Kafka partition key
-            outbox.setEventType(event.getEventType()); // "ORDER_PLACED" from BaseEvent
-            outbox.setTopic(ORDER_EVENTS_TOPIC);
-            outbox.setPayload(objectMapper.writeValueAsString(event));
-            outbox.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
-            outbox.setPublished(false);
-            outbox.setRetryCount(0);
+            OutboxEvent outboxEvent = new OutboxEvent();
+            outboxEvent.setAggregateID(transaction.getOrderNumber()); // Kafka partition key
+            outboxEvent.setEventType(event.getEventType()); // "ORDER_PLACED" from BaseEvent
+            outboxEvent.setTopic(ORDER_EVENTS);
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxEvent.setIdempotencyKey(idempotencyKey);
+            outboxEvent.setStatus(PENDING);
+            outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+            outboxEvent.setPublished(false);
+            outboxEvent.setRetryCount(0);
 
             // Same @Transactional as transactionRepository.save()
             // Either commit together with order, or not at all
-            outboxEventRepository.save(outbox);
+            outboxEventRepository.save(outboxEvent);
         } catch (Exception ex) {
             log.error("Failed to write outbox event for order {}", transaction.getOrderNumber(), ex);
-            throw new CreateOrderException("Failed to write outbox event: " + ex.getMessage());
+            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
         }
     }
 }

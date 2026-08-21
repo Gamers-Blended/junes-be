@@ -2,6 +2,7 @@ package com.gamersblended.junes.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.event.StripeEmailUpdateEvent;
+import com.gamersblended.junes.exception.OutboxEventCreationException;
 import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
@@ -64,7 +65,7 @@ public class UserVerificationWriter {
             outboxEventRepository.save(outboxEvent);
         } catch (Exception ex) {
             log.error("[UserVerificationWriter] Failed to write outbox event for updated email {}", newEmail, ex);
-            throw new RuntimeException("Failed to write outbox event: " + ex.getMessage(), ex);
+            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
         }
     }
 }

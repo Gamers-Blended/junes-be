@@ -151,7 +151,7 @@ public class SavedItemsService {
                     return new SavedItemNotFoundException("Address not found");
                 });
 
-        address.setDeletedOn(LocalDateTime.now());
+        address.setDeletedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
         addressRepository.save(address);
     }
 
@@ -360,7 +360,7 @@ public class SavedItemsService {
             log.info("Payment Method {} soft-deleted, detach event {} queued for userID {}", targetPaymentMethodID, eventID, userID);
         } catch (Exception ex) {
             log.error("[SavedItemsService] Failed to write outbox event for detach payment method {}", paymentMethod.getStripePaymentMethodID(), ex);
-            throw new RuntimeException("Failed to write outbox event: " + ex.getMessage(), ex);
+            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
         }
 
     }

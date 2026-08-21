@@ -20,4 +20,5 @@ public class KafkaConstants {
     // Topics
     public static final String STRIPE_SYNC_EVENTS = "stripe-sync-events";
     public static final String STRIPE_DETACH_PM_EVENTS = "stripe-detach-payment-method-events";
+    public static final String ORDER_EVENTS = "order-events";
 }
