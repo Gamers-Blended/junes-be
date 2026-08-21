@@ -35,8 +35,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.MAX_NUMBER_OF_SAVED_ITEMS;
-import static com.gamersblended.junes.constant.KafkaConstants.PAYMENT_METHOD_DETACHED;
-import static com.gamersblended.junes.constant.KafkaConstants.STRIPE_DETACH_PM_EVENTS;
+import static com.gamersblended.junes.constant.KafkaConstants.*;
 
 @Slf4j
 @Service
@@ -325,8 +324,8 @@ public class SavedItemsService {
                 });
 
         // 2. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
-        if (outboxEventRepository.existsByAggregateIDAndEventTypeAndIdempotencyKey(
-                String.valueOf(userID), PAYMENT_METHOD_DETACHED, idempotencyKey)) {
+        if (Boolean.TRUE.equals(outboxEventRepository.existsByAggregateIDAndEventTypeAndIdempotencyKey(
+                String.valueOf(userID), PAYMENT_METHOD_DETACHED, idempotencyKey))) {
             log.info("Duplicate delete request for Payment Method {} (idempotencyKey = {}), skipping", targetPaymentMethodID, idempotencyKey);
             return;
         }
@@ -352,7 +351,7 @@ public class SavedItemsService {
             outboxEvent.setTopic(STRIPE_DETACH_PM_EVENTS);
             outboxEvent.setPayload(objectMapper.writeValueAsString(event));
             outboxEvent.setIdempotencyKey(idempotencyKey);
-            outboxEvent.setStatus("PENDING");
+            outboxEvent.setStatus(PENDING);
             outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
             outboxEvent.setPublished(false);
             outboxEvent.setRetryCount(0);
@@ -360,7 +359,7 @@ public class SavedItemsService {
 
             log.info("Payment Method {} soft-deleted, detach event {} queued for userID {}", targetPaymentMethodID, eventID, userID);
         } catch (Exception ex) {
-            log.error("[UserVerificationWriter] Failed to write outbox event for detach payment method {}", paymentMethod.getStripePaymentMethodID(), ex);
+            log.error("[SavedItemsService] Failed to write outbox event for detach payment method {}", paymentMethod.getStripePaymentMethodID(), ex);
             throw new RuntimeException("Failed to write outbox event: " + ex.getMessage(), ex);
         }
 

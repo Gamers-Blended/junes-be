@@ -5,6 +5,9 @@ public class KafkaConstants {
     private KafkaConstants() {
     }
 
+    // Outbox statuses
+    public static final String PENDING = "PENDING";
+
     // Event types
     public static final String EMAIL_UPDATED = "EMAIL_UPDATED";
     public static final String PAYMENT_METHOD_DETACHED = "PAYMENT_METHOD_DETACHED";
