@@ -315,7 +315,7 @@ public class SavedItemsController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("set-default")
-    public ResponseEntity<ResponseMessage> setAsDefault(@RequestHeader("Authorization") String authHeader, @RequestBody SetAsDefaultRequest setAsDefaultRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) throws StripeException {
+    public ResponseEntity<ResponseMessage> setAsDefault(@RequestHeader("Authorization") String authHeader, @RequestBody SetAsDefaultRequest setAsDefaultRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Setting {} with ID: {} as default for userID: {}...", setAsDefaultRequest.getMode(), setAsDefaultRequest.getSavedItemID(), userID);

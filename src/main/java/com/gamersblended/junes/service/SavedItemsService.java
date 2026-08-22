@@ -7,6 +7,7 @@ import com.gamersblended.junes.dto.event.BaseEvent;
 import com.gamersblended.junes.dto.event.StripePaymentMethodAddressAttachedEvent;
 import com.gamersblended.junes.dto.event.StripePaymentMethodDetachEvent;
 import com.gamersblended.junes.dto.event.StripePaymentMethodEditEvent;
+import com.gamersblended.junes.dto.event.StripePaymentMethodSetDefaultEvent;
 import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
@@ -439,7 +440,7 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void setAsDefault(UUID userID, String mode, UUID savedItemID, String idempotencyKey) throws StripeException {
+    public void setAsDefault(UUID userID, String mode, UUID savedItemID, String idempotencyKey) {
         // 1. Validation checks
         if (null == savedItemID) {
             log.error("Error setting default saved item for user {}: saved item ID is not given", userID);
@@ -478,26 +479,27 @@ public class SavedItemsService {
                 return;
             }
 
-            // 4a. Update data on Stripe cloud
-            CustomerUpdateParams customerParams = CustomerUpdateParams.builder()
-                    .setInvoiceSettings(
-                            CustomerUpdateParams.InvoiceSettings.builder()
-                                    .setDefaultPaymentMethod(paymentMethodToSetAsDefault.getStripePaymentMethodID())
-                                    .build()
-                    )
-                    .build();
+            // 4b. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
+            if (isDuplicateSubmission(userID, PAYMENT_METHOD_SET_DEFAULT, idempotencyKey)) {
+                log.info("Duplicate set-default request for Payment Method {} (idempotencyKey = {}), skipping", savedItemID, idempotencyKey);
+                return;
+            }
 
-            RequestOptions requestOptions = RequestOptions.builder()
-                    .setIdempotencyKey(idempotencyKey + "-stripe-pm-set-default")
-                    .build();
-
-            stripeClient.v1().customers().update(paymentMethodToSetAsDefault.getStripeCustomerID(), customerParams, requestOptions);
-            log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", paymentMethodToSetAsDefault.getStripeCustomerID());
-
-            // 4a. Save to database
+            // 5b. Save to database immediately - UI reflects the change without depending on Stripe
             paymentMethodRepository.unsetDefaultForUser(userID);
             paymentMethodToSetAsDefault.setIsDefault(true);
             paymentMethodRepository.save(paymentMethodToSetAsDefault);
+
+            // 6b. Queue Stripe sync via outbox
+            StripePaymentMethodSetDefaultEvent event = new StripePaymentMethodSetDefaultEvent();
+            event.setEventID(UUID.randomUUID().toString());
+            event.setSchemaVersion(1);
+            event.setUserID(userID);
+            event.setStripeCustomerID(paymentMethodToSetAsDefault.getStripeCustomerID());
+            event.setStripePaymentMethodID(paymentMethodToSetAsDefault.getStripePaymentMethodID());
+
+            writeOutboxEvent(userID, PAYMENT_METHOD_SET_DEFAULT, STRIPE_PM_SYNC_EVENTS, event, idempotencyKey);
+            log.info("Payment method {} set as default in database, Stripe sync event {} queued for userID {}", savedItemID, event.getEventID(), userID);
         }
     }
 
