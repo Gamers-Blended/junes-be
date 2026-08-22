@@ -3,7 +3,9 @@ package com.gamersblended.junes.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
+import com.gamersblended.junes.dto.event.BaseEvent;
 import com.gamersblended.junes.dto.event.StripePaymentMethodDetachEvent;
+import com.gamersblended.junes.dto.event.StripePaymentMethodEditEvent;
 import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
@@ -261,7 +263,7 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, EditPaymentMethodRequest editPaymentMethodRequest, String idempotencyKey) throws StripeException {
+    public void editPaymentMethod(UUID userID, UUID targetPaymentMethodID, EditPaymentMethodRequest editPaymentMethodRequest, String idempotencyKey) {
 
         if (null == targetPaymentMethodID) {
             log.error("Error editing payment method for user {}: payment method ID is not given", userID);
@@ -282,31 +284,31 @@ public class SavedItemsService {
             return;
         }
 
-        // 3. Update billing data on Stripe cloud
-        PaymentMethodUpdateParams updateParams = PaymentMethodUpdateParams.builder()
-                .setBillingDetails(
-                        PaymentMethodUpdateParams.BillingDetails.builder()
-                                .setName(editPaymentMethodRequest.getCardHolderName())
-                                .build()
-                )
-                .setCard(PaymentMethodUpdateParams.Card.builder()
-                        .setExpMonth(Long.parseLong(editPaymentMethodRequest.getExpirationMonth()))
-                        .setExpYear(Long.parseLong(editPaymentMethodRequest.getExpirationYear()))
-                        .build())
-                .build();
+        // 3. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
+        if (isDuplicateSubmission(userID, PAYMENT_METHOD_EDITED, idempotencyKey)) {
+            log.info("Duplicate edit request for Payment Method {} (idempotencyKey = {}), skipping", targetPaymentMethodID, idempotencyKey);
+            return;
+        }
 
-        // 4. Update billing data on Stripe cloud
-        RequestOptions updateOptions = RequestOptions.builder()
-                .setIdempotencyKey(idempotencyKey + "-stripe-pm-edit")
-                .build();
-
-        stripeClient.v1().paymentMethods().update(currentPaymentMethod.getStripePaymentMethodID(), updateParams, updateOptions);
-
-        // 5. Save to database
+        // 4. Save to database immediately - UI reflects the change without depending on Stripe
         currentPaymentMethod.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
         currentPaymentMethod.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
         currentPaymentMethod.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
         paymentMethodRepository.save(currentPaymentMethod);
+
+        // 5. Queue Stripe sync via outbox
+        StripePaymentMethodEditEvent event = new StripePaymentMethodEditEvent();
+        event.setEventID(UUID.randomUUID().toString());
+        event.setSchemaVersion(1);
+        event.setUserID(userID);
+        event.setPaymentMethodID(currentPaymentMethod.getPaymentMethodID());
+        event.setStripePaymentMethodID(currentPaymentMethod.getStripePaymentMethodID());
+        event.setCardHolderName(editPaymentMethodRequest.getCardHolderName());
+        event.setExpirationMonth(editPaymentMethodRequest.getExpirationMonth());
+        event.setExpirationYear(editPaymentMethodRequest.getExpirationYear());
+
+        writeOutboxEvent(userID, PAYMENT_METHOD_EDITED, STRIPE_PM_SYNC_EVENTS, event, idempotencyKey);
+        log.info("Payment method {} edited in database, Stripe sync event {} queued for userID {}", targetPaymentMethodID, event.getEventID(), userID);
     }
 
     @Transactional
@@ -324,8 +326,7 @@ public class SavedItemsService {
                 });
 
         // 2. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
-        if (Boolean.TRUE.equals(outboxEventRepository.existsByAggregateIDAndEventTypeAndIdempotencyKey(
-                String.valueOf(userID), PAYMENT_METHOD_DETACHED, idempotencyKey))) {
+        if (isDuplicateSubmission(userID, PAYMENT_METHOD_DETACHED, idempotencyKey)) {
             log.info("Duplicate delete request for Payment Method {} (idempotencyKey = {}), skipping", targetPaymentMethodID, idempotencyKey);
             return;
         }
@@ -335,34 +336,15 @@ public class SavedItemsService {
         paymentMethodRepository.save(paymentMethod);
 
         // 4. Create Outbox Event - includes outbox event's own ID so consumer can dedupe via ProcessedEvent
-        UUID eventID = UUID.randomUUID();
-
         StripePaymentMethodDetachEvent event = new StripePaymentMethodDetachEvent();
-        event.setEventID(eventID.toString());
+        event.setEventID(UUID.randomUUID().toString());
         event.setSchemaVersion(1);
         event.setUserID(userID);
         event.setStripePaymentMethodID(paymentMethod.getStripePaymentMethodID());
         event.setPaymentMethodID(paymentMethod.getPaymentMethodID());
 
-        try {
-            OutboxEvent outboxEvent = new OutboxEvent();
-            outboxEvent.setAggregateID(String.valueOf(userID));
-            outboxEvent.setEventType(event.getEventType());
-            outboxEvent.setTopic(STRIPE_DETACH_PM_EVENTS);
-            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
-            outboxEvent.setIdempotencyKey(idempotencyKey);
-            outboxEvent.setStatus(PENDING);
-            outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
-            outboxEvent.setPublished(false);
-            outboxEvent.setRetryCount(0);
-            outboxEventRepository.save(outboxEvent);
-
-            log.info("Payment Method {} soft-deleted, detach event {} queued for userID {}", targetPaymentMethodID, eventID, userID);
-        } catch (Exception ex) {
-            log.error("[SavedItemsService] Failed to write outbox event for detach payment method {}", paymentMethod.getStripePaymentMethodID(), ex);
-            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
-        }
-
+        writeOutboxEvent(userID, PAYMENT_METHOD_DETACHED, STRIPE_DETACH_PM_EVENTS, event, idempotencyKey);
+        log.info("Payment Method {} soft-deleted, detach event {} queued for userID {}", targetPaymentMethodID, event.getEventID(), userID);
     }
 
     private void checkAndUpdateDefaultAddress(UUID userID, List<Address> addressList, AddressDTO addressDTO) {
@@ -515,6 +497,30 @@ public class SavedItemsService {
             paymentMethodRepository.unsetDefaultForUser(userID);
             paymentMethodToSetAsDefault.setIsDefault(true);
             paymentMethodRepository.save(paymentMethodToSetAsDefault);
+        }
+    }
+
+    private boolean isDuplicateSubmission(UUID userID, String eventType, String idempotencyKey) {
+        return Boolean.TRUE.equals(outboxEventRepository.existsByAggregateIDAndEventTypeAndIdempotencyKey(
+                String.valueOf(userID), eventType, idempotencyKey));
+    }
+
+    private void writeOutboxEvent(UUID userID, String eventType, String topic, BaseEvent event, String idempotencyKey) {
+        try {
+            OutboxEvent outboxEvent = new OutboxEvent();
+            outboxEvent.setAggregateID(String.valueOf(userID));
+            outboxEvent.setEventType(eventType);
+            outboxEvent.setTopic(topic);
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxEvent.setIdempotencyKey(idempotencyKey);
+            outboxEvent.setStatus(PENDING);
+            outboxEvent.setCreatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+            outboxEvent.setPublished(false);
+            outboxEvent.setRetryCount(0);
+            outboxEventRepository.save(outboxEvent);
+        } catch (Exception ex) {
+            log.error("[SavedItemsService] Failed to write outbox event {} for userID {}", eventType, userID, ex);
+            throw new OutboxEventCreationException("Failed to write outbox event: " + ex.getMessage());
         }
     }
 
