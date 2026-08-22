@@ -3,12 +3,14 @@ package com.gamersblended.junes.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.event.InventoryChangedEvent;
 import com.gamersblended.junes.exception.OutboxEventCreationException;
+import com.gamersblended.junes.exception.ProductNotFoundException;
 import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -18,10 +20,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import static com.gamersblended.junes.constant.KafkaConstants.INVENTORY_EVENTS;
-import static com.gamersblended.junes.constant.KafkaConstants.ORDER_PLACED;
-import static com.gamersblended.junes.constant.KafkaConstants.PENDING;
-import static com.gamersblended.junes.constant.KafkaConstants.STOCK_RELEASED;
+import static com.gamersblended.junes.constant.KafkaConstants.*;
 
 @Slf4j
 @Service
@@ -72,18 +71,24 @@ public class InventoryService {
         Query query = new Query(Criteria.where("_id").is(new ObjectId(productID)));
         Update update = new Update().inc("stock", quantity);
 
-        UpdateResult result = mongoTemplate.updateFirst(query, update, Product.class);
+        Product product = mongoTemplate.findAndModify(
+                query,
+                update,
+                FindAndModifyOptions.options().returnNew(true),
+                Product.class
+        );
 
-        if (result.getModifiedCount() > 0) {
-            // Successfully restored, write outbox event for relay to publish
-            Product product = mongoTemplate.findById(new ObjectId(productID), Product.class);
-            writeOutboxEvent(
-                    productID,
-                    product.getStock() - quantity,
-                    product.getStock(),
-                    STOCK_RELEASED
-            );
+        if (null == product) {
+            throw new ProductNotFoundException("Product not found: " + productID);
         }
+
+        // Successfully restored, write outbox event for relay to publish
+        writeOutboxEvent(
+                productID,
+                product.getStock() - quantity,
+                product.getStock(),
+                STOCK_RELEASED
+        );
     }
 
     private void writeOutboxEvent(String productID, Integer previousStock, Integer currentStock, String reason) {
