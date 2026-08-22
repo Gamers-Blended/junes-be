@@ -48,7 +48,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     void markFailedPermanently(@Param("id") UUID id, @Param("publishedOn") LocalDateTime publishedOn);
 
     /**
-     * Called whenever delete Payment Method API is called
+     * Called by any Saved Items outbox-writing flow (add/edit/delete Payment Method, attach address, set default)
      * Idempotency guard against duplicate client submissions
      */
     @Query(value = "SELECT EXISTS(SELECT 1 FROM junes_rel.outbox_events WHERE aggregate_id = :aggregateID AND event_type = :eventType AND idempotency_key = :idempotencyKey) AS event_exists", nativeQuery = true)
