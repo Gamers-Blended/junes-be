@@ -2,6 +2,7 @@ package com.gamersblended.junes.util;
 
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
+import com.gamersblended.junes.service.order.OrderExpiryService;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,10 +14,12 @@ public class HouseKeepTasks {
 
     private final PasswordResetService passwordResetService;
     private final EmailVerificationTokenService emailVerificationTokenService;
+    private final OrderExpiryService orderExpiryService;
 
-    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService) {
+    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
+        this.orderExpiryService = orderExpiryService;
     }
 
     @Scheduled(cron = "${housekeeping.token-cleanup.cron: 0 0 */12 * * *}")
@@ -31,5 +34,12 @@ public class HouseKeepTasks {
     public void scheduledHouseKeepUnverifiedEmails() {
         log.info("Starting scheduled house keeping for unverified emails...");
         emailVerificationTokenService.cleanupUnverifiedEmails();
+    }
+
+    @Scheduled(cron = "${housekeeping.reservation-expiry.cron: 0 */5 * * * *}")
+    @SchedulerLock(name = "ReservationExpiryTask", lockAtMostFor = "${housekeeping.reservation-expiry.lock-at-most}", lockAtLeastFor = "${housekeeping.reservation-expiry.lock-at-least}")
+    public void scheduledReleaseExpiredReservations() {
+        log.info("Starting scheduled house keeping for expired inventory reservations...");
+        orderExpiryService.releaseExpiredReservations();
     }
 }
