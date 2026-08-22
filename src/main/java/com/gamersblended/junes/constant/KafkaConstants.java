@@ -14,6 +14,7 @@ public class KafkaConstants {
     public static final String INVENTORY_CHANGED = "INVENTORY_CHANGED";
     public static final String ORDER_CREATED = "ORDER_CREATED";
     public static final String ORDER_PLACED = "ORDER_PLACED";
+    public static final String STOCK_RELEASED = "STOCK_RELEASED";
     public static final String PAYMENT_SUCCEEDED = "PAYMENT_SUCCEEDED";
     public static final String PAYMENT_FAILED = "PAYMENT_FAILED";
 

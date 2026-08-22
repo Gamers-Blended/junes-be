@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import static com.gamersblended.junes.constant.KafkaConstants.INVENTORY_EVENTS;
 import static com.gamersblended.junes.constant.KafkaConstants.ORDER_PLACED;
 import static com.gamersblended.junes.constant.KafkaConstants.PENDING;
+import static com.gamersblended.junes.constant.KafkaConstants.STOCK_RELEASED;
 
 @Slf4j
 @Service
@@ -68,9 +69,21 @@ public class InventoryService {
     }
 
     public void restoreStock(String productID, int quantity) {
-        Query query = new Query(Criteria.where("_id").is(productID));
+        Query query = new Query(Criteria.where("_id").is(new ObjectId(productID)));
         Update update = new Update().inc("stock", quantity);
-        mongoTemplate.updateFirst(query, update, Product.class);
+
+        UpdateResult result = mongoTemplate.updateFirst(query, update, Product.class);
+
+        if (result.getModifiedCount() > 0) {
+            // Successfully restored, write outbox event for relay to publish
+            Product product = mongoTemplate.findById(new ObjectId(productID), Product.class);
+            writeOutboxEvent(
+                    productID,
+                    product.getStock() - quantity,
+                    product.getStock(),
+                    STOCK_RELEASED
+            );
+        }
     }
 
     private void writeOutboxEvent(String productID, Integer previousStock, Integer currentStock, String reason) {
