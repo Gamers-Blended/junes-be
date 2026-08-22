@@ -291,7 +291,7 @@ public class SavedItemsController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("attach")
-    public ResponseEntity<ResponseMessage> attachAddressToPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) throws StripeException {
+    public ResponseEntity<ResponseMessage> attachAddressToPaymentMethod(@RequestHeader("Authorization") String authHeader, @RequestBody AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest, @RequestHeader("Idempotency-Key") String idempotencyKey) {
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
 
         log.info("Attaching address: {} to payment method: {} for userID: {}...", addressToPaymentMethodRequest.getAddressID(), addressToPaymentMethodRequest.getPaymentMethodID(), userID);

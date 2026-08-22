@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
 import com.gamersblended.junes.dto.event.BaseEvent;
+import com.gamersblended.junes.dto.event.StripePaymentMethodAddressAttachedEvent;
 import com.gamersblended.junes.dto.event.StripePaymentMethodDetachEvent;
 import com.gamersblended.junes.dto.event.StripePaymentMethodEditEvent;
 import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
@@ -378,7 +379,7 @@ public class SavedItemsService {
     }
 
     @Transactional
-    public void attachAddressToPaymentMethod(UUID userID, AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest, String idempotencyKey) throws StripeException {
+    public void attachAddressToPaymentMethod(UUID userID, AttachAddressToPaymentMethodRequest addressToPaymentMethodRequest, String idempotencyKey) {
         UUID addressID = addressToPaymentMethodRequest.getAddressID();
         UUID paymentMethodID = addressToPaymentMethodRequest.getPaymentMethodID();
 
@@ -411,30 +412,30 @@ public class SavedItemsService {
             return;
         }
 
-        // 3. Update billing data on Stripe cloud
-        PaymentMethodUpdateParams updateParams = PaymentMethodUpdateParams.builder()
-                .setBillingDetails(
-                        PaymentMethodUpdateParams.BillingDetails.builder()
-                                .setAddress(
-                                        PaymentMethodUpdateParams.BillingDetails.Address.builder()
-                                                .setLine1(address.getAddressLine())
-                                                .setPostalCode(address.getZipCode())
-                                                .setCountry(address.getCountry())
-                                                .build()
-                                )
-                                .build()
-                )
-                .build();
+        // 3. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
+        if (isDuplicateSubmission(userID, PAYMENT_METHOD_ADDRESS_ATTACHED, idempotencyKey)) {
+            log.info("Duplicate attach-address request for Payment Method {} (idempotencyKey = {}), skipping", paymentMethodID, idempotencyKey);
+            return;
+        }
 
-        RequestOptions updateOptions = RequestOptions.builder()
-                .setIdempotencyKey(idempotencyKey + "-stripe-pm-edit-billing-address")
-                .build();
-
-        stripeClient.v1().paymentMethods().update(paymentMethod.getStripePaymentMethodID(), updateParams, updateOptions);
-
-        // 4. Save to database
+        // 4. Save to database immediately - UI reflects the change without depending on Stripe
         paymentMethod.setBillingAddressID(addressID);
         paymentMethodRepository.save(paymentMethod);
+
+        // 5. Queue Stripe sync via outbox
+        StripePaymentMethodAddressAttachedEvent event = new StripePaymentMethodAddressAttachedEvent();
+        event.setEventID(UUID.randomUUID().toString());
+        event.setSchemaVersion(1);
+        event.setUserID(userID);
+        event.setPaymentMethodID(paymentMethod.getPaymentMethodID());
+        event.setStripePaymentMethodID(paymentMethod.getStripePaymentMethodID());
+        event.setAddressLine(address.getAddressLine());
+        event.setZipCode(address.getZipCode());
+        event.setCountry(address.getCountry());
+
+        writeOutboxEvent(userID, PAYMENT_METHOD_ADDRESS_ATTACHED, STRIPE_PM_SYNC_EVENTS, event, idempotencyKey);
+        log.info("Address {} attached to Payment method {} in database, Stripe sync event {} queued for userID {}",
+                addressID, paymentMethodID, event.getEventID(), userID);
     }
 
     @Transactional
