@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,7 +73,7 @@ public class RedisCartRepository {
                 .cartID(UUID.randomUUID())
                 .userID(userID)
                 .sessionID(sessionID)
-                .createdOn(LocalDateTime.now())
+                .createdOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")))
                 .version(0)
                 .build();
 
@@ -104,7 +105,7 @@ public class RedisCartRepository {
 
     public void saveCart(Cart cart) {
         String key = buildKey(cart.getUserID(), cart.getSessionID());
-        cart.setUpdatedOn(LocalDateTime.now());
+        cart.setUpdatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
 
         try {
             String cartJson = objectMapper.writeValueAsString(cart);
@@ -122,7 +123,7 @@ public class RedisCartRepository {
         int oldVersion = cart.getVersion();
 
         // Increment version locally for update attempt
-        cart.setUpdatedOn(LocalDateTime.now());
+        cart.setUpdatedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
         cart.setVersion(oldVersion + 1);
 
         try {
@@ -221,11 +222,7 @@ public class RedisCartRepository {
 
             for (CartItem item : cart.getItemList()) {
                 if (item.getProductID().equals(productID)) {
-                    if (quantity <= 0) {
-                        cart.getItemList().remove(item);
-                    } else {
-                        item.setQuantity(quantity);
-                    }
+                    item.setQuantity(quantity);
                     break;
                 }
             }
