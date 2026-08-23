@@ -36,9 +36,9 @@ public class SecurityConfig {
 //                        .requestMatchers("/junes/api/v1/cart/**").hasAnyRole("READER", "ADMIN") // Read-only
                                 .requestMatchers("/junes/api/v1/cart/**").permitAll()
                                 .requestMatchers("/actuator/health").permitAll() // Health check
+                                .requestMatchers("/junes/api/v1/housekeep/**").hasRole("ADMIN")
                                 .requestMatchers("/junes/api/v1/**").permitAll() // TODO temp
                                 .requestMatchers("/junes/api/v1/auth/**").permitAll()
-                                .requestMatchers("/junes/api/v1/housekeep/**").hasRole("ADMIN")
                                 .anyRequest().authenticated() // All other requests require authentication
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
