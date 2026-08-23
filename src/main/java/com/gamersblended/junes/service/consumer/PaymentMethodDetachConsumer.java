@@ -76,7 +76,12 @@ public class PaymentMethodDetachConsumer {
         processed.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
         processedEventRepository.save(processed);
 
-        paymentMethodRepository.deleteById(event.getPaymentMethodID());
+        // No local row for a rejected duplicate-card attach (see SavedItemsService#addPaymentMethod) - only Stripe-side cleanup needed
+        if (null != event.getPaymentMethodID()) {
+            paymentMethodRepository.deleteById(event.getPaymentMethodID());
+        }
+
+        ack.acknowledge();
     }
 }
 
