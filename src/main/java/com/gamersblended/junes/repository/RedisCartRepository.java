@@ -100,7 +100,7 @@ public class RedisCartRepository {
 
     public boolean deleteCart(UUID userID, UUID sessionID) {
         String key = buildKey(userID, sessionID);
-        return redisTemplate.delete(key);
+        return Boolean.TRUE.equals(redisTemplate.delete(key));
     }
 
     public void saveCart(Cart cart) {
