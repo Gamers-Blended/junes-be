@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RestController
 @RequestMapping("junes/api/v1/order")
-@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
+@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES, perUser = true)
 public class OrderController {
 
     private final OrderService orderService;

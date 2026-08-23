@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RestController
 @RequestMapping("junes/api/v1/shipping")
-@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
+@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES, perUser = true)
 public class ShippingController {
 
     private final ShippingService shippingService;

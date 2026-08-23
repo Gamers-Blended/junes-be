@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RestController
 @RequestMapping("/junes/api/v1/auth")
-@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES)
+@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES, perUser = true)
 public class AuthController {
 
     private final AuthService authService;
