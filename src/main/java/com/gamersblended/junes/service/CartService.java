@@ -51,7 +51,9 @@ public class CartService {
     }
 
     public void addItemToCart(UUID userID, UUID sessionID, CartItemDTO cartItemDTO) {
-        validateForCartItems(userID, sessionID, cartItemDTO.getQuantity(), cartItemDTO.getProductID());
+        Product product = validateForCartItems(userID, sessionID, cartItemDTO.getQuantity(), cartItemDTO.getProductID());
+        // Always price from the catalog, never trust client-supplied price
+        cartItemDTO.setPrice(product.getPrice());
 
         boolean success = redisCartRepository.addItem(userID, sessionID, cartItemDTO);
 
@@ -223,7 +225,7 @@ public class CartService {
         return true;
     }
 
-    public void validateForCartItems(UUID userID, UUID sessionID, Integer quantity, String productID) {
+    public Product validateForCartItems(UUID userID, UUID sessionID, Integer quantity, String productID) {
         if (userID == null && sessionID == null) {
             throw new MissingIdentifierException("User ID or Session ID required");
         }
@@ -232,7 +234,7 @@ public class CartService {
             throw new InvalidQuantityException("Error in updating quantity due to invalid quantity value: " + quantity);
         }
 
-        productRepository.findById(new ObjectId(productID))
+        return productRepository.findById(new ObjectId(productID))
                 .orElseThrow(() -> {
                     log.error("Product ID not found: {}", productID);
                     return new ProductNotFoundException("Product not found");
