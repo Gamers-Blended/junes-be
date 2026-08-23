@@ -7,6 +7,7 @@ public class KafkaConstants {
 
     // Outbox statuses
     public static final String PENDING = "PENDING";
+    public static final String FAILED_PERMANENTLY = "FAILED_PERMANENTLY";
 
     // Dead-letter statuses
     public static final String UNRESOLVED = "UNRESOLVED";

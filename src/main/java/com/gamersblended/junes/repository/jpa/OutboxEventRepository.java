@@ -53,4 +53,9 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
      */
     @Query(value = "SELECT EXISTS(SELECT 1 FROM junes_rel.outbox_events WHERE aggregate_id = :aggregateID AND event_type = :eventType AND idempotency_key = :idempotencyKey) AS event_exists", nativeQuery = true)
     Boolean existsByAggregateIDAndEventTypeAndIdempotencyKey(@Param("aggregateID") String aggregateID, @Param("eventType") String eventType, @Param("idempotencyKey") String idempotencyKey);
+
+    /**
+     * Reconciliation visibility - events the relay gave up publishing to Kafka after MAX_RETRY_COUNT attempts
+     */
+    List<OutboxEvent> findByStatus(String status);
 }
