@@ -44,6 +44,7 @@ public class OrderFinalisationConsumer {
     private final TransactionService transactionService;
     private final EmailProducerService emailProducerService;
     private final OrderHistoryCacheService orderHistoryCacheService;
+    private final CartService cartService;
 
     public OrderFinalisationConsumer(
             KafkaEventParser kafkaEventParser,
@@ -55,7 +56,8 @@ public class OrderFinalisationConsumer {
             AddressMapper addressMapper,
             TransactionService transactionService,
             EmailProducerService emailProducerService,
-            OrderHistoryCacheService orderHistoryCacheService) {
+            OrderHistoryCacheService orderHistoryCacheService,
+            CartService cartService) {
         this.kafkaEventParser = kafkaEventParser;
         this.transactionRepository = transactionRepository;
         this.processedEventRepository = processedEventRepository;
@@ -66,6 +68,7 @@ public class OrderFinalisationConsumer {
         this.transactionService = transactionService;
         this.emailProducerService = emailProducerService;
         this.orderHistoryCacheService = orderHistoryCacheService;
+        this.cartService = cartService;
     }
 
     @KafkaListener(topics = ORDER_EVENTS, groupId = "order-finalisation-consumer")
@@ -102,6 +105,8 @@ public class OrderFinalisationConsumer {
 
         orderHistoryCacheService.evict(transaction.getUserID());
         log.info("[OrderFinalisationConsumer] Order history cache evicted for userID = {} after payment success", transaction.getUserID());
+
+        clearCart(transaction);
 
         ProcessedEvent processedEvent = new ProcessedEvent();
         processedEvent.setEventID(event.getEventID());
@@ -141,6 +146,18 @@ public class OrderFinalisationConsumer {
         log.error("[OrderFinalisationConsumer] Order {} finalised as {}: {}", event.getOrderNumber(),
                 TransactionStatus.PAYMENT_FAILED.getTransactionStatusValue(),
                 event.getFailureReason());
+    }
+
+    private void clearCart(Transaction transaction) {
+        boolean deleted = cartService.deleteCart(transaction.getUserID(), null);
+
+        if (deleted) {
+            log.info("[OrderFinalisationConsumer] Cleared cart for orderNumber = {}, userID = {}",
+                    transaction.getOrderNumber(), transaction.getUserID());
+        } else {
+            log.warn("[OrderFinalisationConsumer] Cart not found or already cleared for orderNumber = {}, userID = {}",
+                    transaction.getOrderNumber(), transaction.getUserID());
+        }
     }
 
     private void releaseInventory(Transaction transaction) {
