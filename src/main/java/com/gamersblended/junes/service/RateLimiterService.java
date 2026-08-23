@@ -40,7 +40,7 @@ public class RateLimiterService {
             Duration duration = convertToDuration(rateLimit.duration(), rateLimit.timeUnit());
             Bandwidth bandwidth = Bandwidth.builder()
                     .capacity(rateLimit.requests())
-                    .refillIntervally(rateLimit.requests(), duration)
+                    .refillGreedy(rateLimit.requests(), duration)
                     .build();
             return BucketConfiguration.builder()
                     .addLimit(bandwidth)

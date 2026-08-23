@@ -114,6 +114,14 @@ public class RateLimitAspect {
                 keyBuilder.append(":user:").append(userID);
                 return keyBuilder.toString();
             }
+
+            // Not logged in - fall back to guest session
+            // so different guests behind the same IP/NAT don't share a bucket
+            String sessionID = getSessionIdentifier(request);
+            if (null != sessionID) {
+                keyBuilder.append(":session:").append(sessionID);
+                return keyBuilder.toString();
+            }
         }
 
         // Default to IP address
@@ -206,6 +214,11 @@ public class RateLimitAspect {
             }
         }
         return null;
+    }
+
+    private String getSessionIdentifier(HttpServletRequest request) {
+        String sessionID = request.getHeader("X-Session-Id");
+        return (null != sessionID && !sessionID.isEmpty()) ? sessionID : null;
     }
 
     private String getClientIpAddress(HttpServletRequest request) {
