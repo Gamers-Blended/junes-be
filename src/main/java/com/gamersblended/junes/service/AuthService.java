@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.UUID;
 
 import static com.gamersblended.junes.constant.TokenPurpose.SIGNUP_EMAIL;
 import static com.gamersblended.junes.util.PasswordValidator.validatePassword;
@@ -41,6 +42,7 @@ public class AuthService {
     private final EmailVerificationTokenService emailTokenService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final AccessTokenService accessTokenService;
+    private final CartService cartService;
     public static final String VERIFY_EMAIL_ROUTE = "/verify?token=";
 
     public AuthService(
@@ -49,7 +51,8 @@ public class AuthService {
             EmailValidatorService emailValidator,
             EmailVerificationTokenService emailTokenService,
             EmailVerificationTokenRepository emailVerificationTokenRepository,
-            AccessTokenService accessTokenService) {
+            AccessTokenService accessTokenService,
+            CartService cartService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailProducerService = emailProducerService;
@@ -57,6 +60,7 @@ public class AuthService {
         this.emailTokenService = emailTokenService;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.accessTokenService = accessTokenService;
+        this.cartService = cartService;
     }
 
     @Transactional
@@ -147,7 +151,7 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResponse login(LoginRequest loginRequest) {
+    public LoginResponse login(LoginRequest loginRequest, UUID sessionID) {
         String email = loginRequest.getEmail();
         User user = userRepository.getUserByEmail(email)
                 .orElseThrow(() -> {
@@ -174,6 +178,16 @@ public class AuthService {
         userRepository.save(user);
 
         String token = accessTokenService.generateAccessToken(user, email);
+
+        if (null != sessionID) {
+            try {
+                cartService.mergeGuestCartIntoUserCart(user.getUserID(), sessionID);
+            } catch (Exception ex) {
+                // Cart merge is best-effort - don't fail login over it
+                log.error("Failed to merge guest cart (sessionID = {}) into userID = {}'s cart",
+                        sessionID, user.getUserID(), ex);
+            }
+        }
 
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setToken(token);

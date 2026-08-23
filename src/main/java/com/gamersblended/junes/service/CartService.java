@@ -100,6 +100,37 @@ public class CartService {
         return redisCartRepository.deleteCart(userID, sessionID);
     }
 
+    /**
+     * Merges a guest (session-keyed) cart into a just-authenticated user's cart, called on login.
+     * The guest cart is deleted upfront so a partial failure below can't cause it to be
+     * re-merged (and quantities double-counted) on a later login with the same session.
+     */
+    public void mergeGuestCartIntoUserCart(UUID userID, UUID sessionID) {
+        if (null == sessionID) {
+            return;
+        }
+
+        Optional<Cart> guestCartOptional = redisCartRepository.getCart(null, sessionID);
+        if (guestCartOptional.isEmpty() || guestCartOptional.get().getItemList().isEmpty()) {
+            return;
+        }
+
+        List<CartItem> guestItemList = guestCartOptional.get().getItemList();
+        redisCartRepository.deleteCart(null, sessionID);
+
+        for (CartItem item : guestItemList) {
+            try {
+                CartItemDTO cartItemDTO = new CartItemDTO(item.getProductID(), item.getPrice(), item.getQuantity(), item.getCreatedOn());
+                addItemToCart(userID, null, cartItemDTO);
+            } catch (ProductNotFoundException ex) {
+                log.warn("Skipping merge of productID = {} into userID = {}'s cart: product no longer exists",
+                        item.getProductID(), userID);
+            }
+        }
+
+        log.info("Merged guest cart (sessionID = {}) into userID = {}'s cart", sessionID, userID);
+    }
+
     @Async
     @Transactional
     public void asyncPersistToDatabase(UUID userID, UUID sessionID) {

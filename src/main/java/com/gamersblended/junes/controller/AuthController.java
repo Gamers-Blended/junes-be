@@ -24,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -184,9 +185,10 @@ public class AuthController {
                             schema = @Schema(implementation = ErrorResponseDTO.class))})
     })
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest,
+                                                @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID) {
         log.info("Triggering login for user with email: {}...", loginRequest.getEmail());
-        return ResponseEntity.ok(authService.login(loginRequest));
+        return ResponseEntity.ok(authService.login(loginRequest, sessionID));
     }
 
     @Operation(summary = "Logout user")
