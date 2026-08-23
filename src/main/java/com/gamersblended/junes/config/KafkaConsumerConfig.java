@@ -2,6 +2,7 @@ package com.gamersblended.junes.config;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,7 +42,7 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String>
-    kafkaListenerContainerFactory(KafkaTemplate<String, Object> kafkaTemplate) {
+    kafkaListenerContainerFactory(@Qualifier("outboxKafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(3); // 3 consumer threads
@@ -51,6 +52,8 @@ public class KafkaConsumerConfig {
 
         // Retry failed record 3 times with 1s gap
         // Then publish to dead letter path
+        // Must reuse the String-valued outbox template here, not the JsonSerializer-backed default one -
+        // listeners consume raw pre-serialised JSON strings, and republishing a String through JsonSerializer double-encodes it
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate);
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3L));
         factory.setCommonErrorHandler(errorHandler);
