@@ -26,8 +26,6 @@ import com.gamersblended.junes.util.PaymentMethodValidator;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.net.RequestOptions;
-import com.stripe.param.CustomerUpdateParams;
-import com.stripe.param.PaymentMethodUpdateParams;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -181,7 +179,7 @@ public class SavedItemsService {
         return paymentMethodMapper.toDTO(paymentMethod);
     }
 
-    @Transactional
+    @Transactional(dontRollbackOn = DuplicatePaymentMethodException.class)
     public void addPaymentMethod(UUID userID, AddPaymentMethodRequest request, String idempotencyKey) throws StripeException {
 
         // 1. Check if exceed size limit
@@ -227,21 +225,6 @@ public class SavedItemsService {
 
         // 5. Clear old default Payment Method settings (if needed)
         if (Boolean.TRUE.equals(request.getIsDefault())) {
-            CustomerUpdateParams customerParams = CustomerUpdateParams.builder()
-                    .setInvoiceSettings(
-                            CustomerUpdateParams.InvoiceSettings.builder()
-                                    .setDefaultPaymentMethod(request.getStripePaymentMethodID())
-                                    .build()
-                    )
-                    .build();
-
-            RequestOptions setDefaultOptions = RequestOptions.builder()
-                    .setIdempotencyKey(idempotencyKey + "-stripe-pm-add-set-default")
-                    .build();
-
-            stripeClient.v1().customers().update(stripeCustomerID, customerParams, setDefaultOptions);
-            log.info("Stripe customer profile default payment method updated for Stripe customer ID: {}", stripeCustomerID);
-
             // Unset current default Payment Method
             paymentMethodRepository.unsetDefaultForUser(userID);
         }
@@ -262,6 +245,19 @@ public class SavedItemsService {
 
         paymentMethodRepository.save(newPaymentMethod);
         log.info("Payment method with Stripe ID {} is saved to database", stripePaymentMethod.getId());
+
+        // 7. Queue Stripe sync for the default-on-add case
+        if (Boolean.TRUE.equals(request.getIsDefault())) {
+            StripePaymentMethodSetDefaultEvent setDefaultEvent = new StripePaymentMethodSetDefaultEvent();
+            setDefaultEvent.setEventID(UUID.randomUUID().toString());
+            setDefaultEvent.setSchemaVersion(1);
+            setDefaultEvent.setUserID(userID);
+            setDefaultEvent.setStripeCustomerID(stripeCustomerID);
+            setDefaultEvent.setStripePaymentMethodID(stripePaymentMethod.getId());
+
+            writeOutboxEvent(userID, PAYMENT_METHOD_SET_DEFAULT, STRIPE_PM_SYNC_EVENTS, setDefaultEvent, idempotencyKey + "-add-set-default");
+            log.info("Default Payment Method sync event {} queued for userID {}", setDefaultEvent.getEventID(), userID);
+        }
     }
 
     @Transactional
