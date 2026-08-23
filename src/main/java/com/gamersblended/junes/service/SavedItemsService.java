@@ -214,11 +214,18 @@ public class SavedItemsService {
             log.error("User {} attempted to add a duplicate card (fingerprint match with PM {})",
                     userID, existing.get().getPaymentMethodID());
 
-            try {
-                stripePaymentMethod.detach();
-            } catch (StripeException ex) {
-                log.error("Failed to detach duplicate Payment Method {} from Stripe: {}", stripePaymentMethod.getId(), ex.getMessage());
-                // Reconciliation job will catch orphaned attach latter
+            String orphanDetachIdempotencyKey = idempotencyKey + "-orphan-detach";
+            if (!isDuplicateSubmission(userID, PAYMENT_METHOD_DETACHED, orphanDetachIdempotencyKey)) {
+                // No local row for a rejected duplicate - orphaned Stripe attach is cleaned up async by PaymentMethodDetachConsumer
+                StripePaymentMethodDetachEvent detachEvent = new StripePaymentMethodDetachEvent();
+                detachEvent.setEventID(UUID.randomUUID().toString());
+                detachEvent.setSchemaVersion(1);
+                detachEvent.setUserID(userID);
+                detachEvent.setStripePaymentMethodID(stripePaymentMethod.getId());
+                detachEvent.setPaymentMethodID(null);
+
+                writeOutboxEvent(userID, PAYMENT_METHOD_DETACHED, STRIPE_DETACH_PM_EVENTS, detachEvent, orphanDetachIdempotencyKey);
+                log.info("Orphaned Stripe Payment Method {} queued for detach, event {}", stripePaymentMethod.getId(), detachEvent.getEventID());
             }
             throw new DuplicatePaymentMethodException("This card is already saved to your account");
         }
