@@ -1,3 +1,12 @@
-\echo '--- STARTING DATABASE INITIALIZATION ---'
+\echo '--- STARTING DATABASE INITIALISATION ---'
 
 CREATE SCHEMA IF NOT EXISTS junes_rel;
+
+CREATE TABLE IF NOT EXISTS shedlock
+(
+    name       VARCHAR(64)  NOT NULL,
+    lock_until TIMESTAMP    NOT NULL,
+    locked_at  TIMESTAMP    NOT NULL,
+    locked_by  VARCHAR(255) NOT NULL,
+    PRIMARY KEY (name)
+);
