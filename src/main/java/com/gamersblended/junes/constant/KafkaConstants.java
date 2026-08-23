@@ -30,4 +30,7 @@ public class KafkaConstants {
     public static final String STRIPE_PM_SYNC_EVENTS = "stripe-payment-method-sync-events";
     public static final String ORDER_EVENTS = "order-events";
     public static final String INVENTORY_EVENTS = "inventory-events";
+
+    // Suffix Spring Kafka's DeadLetterPublishingRecoverer appends to a topic's name for its dead-letter topic
+    public static final String DLT_SUFFIX = ".DLT";
 }
