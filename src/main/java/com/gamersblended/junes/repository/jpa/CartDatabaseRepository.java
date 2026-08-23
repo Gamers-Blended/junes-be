@@ -25,16 +25,8 @@ public interface CartDatabaseRepository extends JpaRepository<Cart, UUID> {
     @Query(value = "SELECT * FROM junes_rel.carts WHERE updated_on < :cutoffDate", nativeQuery = true)
     List<Cart> findInactiveCarts(@Param("cutoffDate") LocalDateTime cutoffDate);
 
-    @Query(value = """
-            SELECT c.* FROM junes_rel.carts c 
-            WHERE c.updated_on < :cutoffDate
-            AND EXISTS (SELECT 1 FROM junes_rel.cart_items ci WHERE ci.cart_id = c.cart_id)
-            ORDER BY c.updated_on ASC
-            """, nativeQuery = true)
-    List<Cart> findAbandonedCarts(@Param("cutoffDate") LocalDateTime cutoffDate);
-
     @Modifying
-    @Query(value = "DELETE FROM junes_rel.carts WHERE updated_on <: cutoffDate", nativeQuery = true)
+    @Query(value = "DELETE FROM junes_rel.carts WHERE updated_on < :cutoffDate", nativeQuery = true)
     int deleteInactiveCarts(@Param("cutoffDate") LocalDateTime cutoffDate);
 
 }

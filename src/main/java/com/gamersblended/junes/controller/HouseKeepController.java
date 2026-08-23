@@ -2,6 +2,7 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.dto.response.ResponseMessage;
+import com.gamersblended.junes.service.CartService;
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,10 +23,12 @@ public class HouseKeepController {
 
     private final PasswordResetService passwordResetService;
     private final EmailVerificationTokenService emailVerificationTokenService;
+    private final CartService cartService;
 
-    public HouseKeepController(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService) {
+    public HouseKeepController(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, CartService cartService) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
+        this.cartService = cartService;
     }
 
     @Operation(summary = "Manually trigger housekeeping of expired tokens")
@@ -60,5 +63,22 @@ public class HouseKeepController {
         log.info("Starting house keeping for unverified emails...");
         emailVerificationTokenService.cleanupUnverifiedEmails();
         return ResponseEntity.ok(new ResponseMessage("Unverified emails cleared"));
+    }
+
+    @Operation(summary = "Manually trigger housekeeping of inactive carts")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Inactive carts cleared",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in deleting inactive carts",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    @PostMapping("/carts")
+    public ResponseEntity<ResponseMessage> houseKeepInactiveCarts() {
+
+        log.info("Starting house keeping for inactive carts...");
+        cartService.cleanupInactiveCarts();
+        return ResponseEntity.ok(new ResponseMessage("Inactive carts cleared"));
     }
 }

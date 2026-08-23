@@ -22,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class CartService {
 
     private static final String UNKNOWN_PRODUCT = "Unknown product";
+    private static final int CART_CLEANUP_GRACE_PERIOD_MONTHS = 2;
     private final RedisCartRepository redisCartRepository;
     private final CartDatabaseRepository cartDatabaseRepository; // For async persistence
     private final ProductRepository productRepository;
@@ -148,6 +150,13 @@ public class CartService {
             cartDatabaseRepository.save(dbCart);
 
         });
+    }
+
+    @Transactional
+    public void cleanupInactiveCarts() {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusMonths(CART_CLEANUP_GRACE_PERIOD_MONTHS);
+        int deletedCount = cartDatabaseRepository.deleteInactiveCarts(cutoffDate);
+        log.info("Cleaned up {} inactive cart(s) not updated since {}", deletedCount, cutoffDate);
     }
 
     public Page<ProductInCartDTO> getCartProducts(UUID userID, UUID sessionID, Pageable pageable) {

@@ -1,5 +1,6 @@
 package com.gamersblended.junes.util;
 
+import com.gamersblended.junes.service.CartService;
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.service.order.OrderExpiryService;
@@ -15,11 +16,13 @@ public class HouseKeepTasks {
     private final PasswordResetService passwordResetService;
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final OrderExpiryService orderExpiryService;
+    private final CartService cartService;
 
-    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService) {
+    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, CartService cartService) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
         this.orderExpiryService = orderExpiryService;
+        this.cartService = cartService;
     }
 
     @Scheduled(cron = "${housekeeping.token-cleanup.cron: 0 0 */12 * * *}")
@@ -41,5 +44,12 @@ public class HouseKeepTasks {
     public void scheduledReleaseExpiredReservations() {
         log.info("Starting scheduled house keeping for expired inventory reservations...");
         orderExpiryService.releaseExpiredReservations();
+    }
+
+    @Scheduled(cron = "${housekeeping.cart-cleanup.cron: 0 0 2 * * *}")
+    @SchedulerLock(name = "CartCleanupTask", lockAtMostFor = "${housekeeping.cart-cleanup.lock-at-most}", lockAtLeastFor = "${housekeeping.cart-cleanup.lock-at-least}")
+    public void scheduledHouseKeepInactiveCarts() {
+        log.info("Starting scheduled house keeping for inactive carts...");
+        cartService.cleanupInactiveCarts();
     }
 }
