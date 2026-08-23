@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.exception.CartSerialisationException;
+import com.gamersblended.junes.exception.CartUpdateConflictException;
 import com.gamersblended.junes.exception.RedisDataException;
 import com.gamersblended.junes.mapper.CartProductMapper;
 import com.gamersblended.junes.model.Cart;
@@ -170,7 +171,7 @@ public class RedisCartRepository {
             log.info("Retry {}/{} for adding item to cart", i + 1, maxRetries);
         }
 
-        return false;
+        throw new CartUpdateConflictException("Failed to add item to cart after " + maxRetries + " retries due to concurrent modification");
     }
 
     public boolean removeItem(UUID userID, UUID sessionID, String productID) {
@@ -193,7 +194,7 @@ public class RedisCartRepository {
             log.info("Retry {}/{} for removing item from cart", i + 1, maxRetries);
         }
 
-        return false;
+        throw new CartUpdateConflictException("Failed to remove item from cart after " + maxRetries + " retries due to concurrent modification");
     }
 
     public void updateOrAddItem(Cart cart, CartItem newItem) {
@@ -236,7 +237,7 @@ public class RedisCartRepository {
             log.info("Retry {}/{} for updating item quantity", i + 1, maxRetries);
         }
 
-        return false;
+        throw new CartUpdateConflictException("Failed to update item quantity after " + maxRetries + " retries due to concurrent modification");
     }
 
     public boolean clearCart(UUID userID, UUID sessionID) {
@@ -259,7 +260,7 @@ public class RedisCartRepository {
             log.info("Retry {}/{} for clearing cart", i + 1, maxRetries);
         }
 
-        return false;
+        throw new CartUpdateConflictException("Failed to clear cart after " + maxRetries + " retries due to concurrent modification");
     }
 
     private String buildKey(UUID userID, UUID sessionID) {

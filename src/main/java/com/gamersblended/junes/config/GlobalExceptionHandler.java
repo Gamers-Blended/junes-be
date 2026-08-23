@@ -167,6 +167,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
+    @ExceptionHandler(CartUpdateConflictException.class)
+    public ResponseEntity<Object> handleCartUpdateConflictException(CartUpdateConflictException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
+    }
+
     @ExceptionHandler(RecommendationServerException.class)
     public ResponseEntity<Object> handleRecommendationServerException(
             RecommendationServerException ex, WebRequest request) {
