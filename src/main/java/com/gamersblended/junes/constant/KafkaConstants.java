@@ -8,6 +8,9 @@ public class KafkaConstants {
     // Outbox statuses
     public static final String PENDING = "PENDING";
 
+    // Dead-letter statuses
+    public static final String UNRESOLVED = "UNRESOLVED";
+
     // Event types
     public static final String EMAIL_UPDATED = "EMAIL_UPDATED";
     public static final String PAYMENT_METHOD_DETACHED = "PAYMENT_METHOD_DETACHED";
