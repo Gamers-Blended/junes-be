@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS junes_rel.carts
 (
     cart_id    UUID PRIMARY KEY,
     user_id    UUID      NOT NULL,
-    session_id UUID      NOT NULL,
     created_on TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_on TIMESTAMP,
     version    INTEGER   NOT NULL DEFAULT 0,
@@ -14,4 +13,4 @@ CREATE TABLE IF NOT EXISTS junes_rel.carts
     CONSTRAINT uk_carts_user_id UNIQUE (user_id)
 );
 
-CREATE INDEX idx_carts_updated_on ON carts (updated_on);
+CREATE INDEX idx_carts_updated_on ON junes_rel.carts (updated_on);

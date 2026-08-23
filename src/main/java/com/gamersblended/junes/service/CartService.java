@@ -124,7 +124,6 @@ public class CartService {
                     .orElse(new Cart());
 
             dbCart.setUserID(userID);
-            dbCart.setSessionID(sessionID);
 
             Map<String, CartItem> existingItems = dbCart.getItemList().stream()
                     .collect(Collectors.toMap(CartItem::getProductID, Function.identity()));

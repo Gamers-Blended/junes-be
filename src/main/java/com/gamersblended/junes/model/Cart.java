@@ -29,7 +29,9 @@ public class Cart {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userID;
 
-    @Column(name = "session_id", nullable = false)
+    // Not persisted to the carts table: only relevant to guest (session-keyed) carts in Redis,
+    // which are never synced to Postgres (see CartService#asyncPersistToDatabase)
+    @Transient
     private UUID sessionID;
 
     @Column(name = "created_on", nullable = false, updatable = false)
