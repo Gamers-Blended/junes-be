@@ -43,6 +43,7 @@ public class AuthService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final AccessTokenService accessTokenService;
     private final CartService cartService;
+    private final WishlistService wishlistService;
     public static final String VERIFY_EMAIL_ROUTE = "/verify?token=";
 
     public AuthService(
@@ -52,7 +53,8 @@ public class AuthService {
             EmailVerificationTokenService emailTokenService,
             EmailVerificationTokenRepository emailVerificationTokenRepository,
             AccessTokenService accessTokenService,
-            CartService cartService) {
+            CartService cartService,
+            WishlistService wishlistService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailProducerService = emailProducerService;
@@ -61,6 +63,7 @@ public class AuthService {
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.accessTokenService = accessTokenService;
         this.cartService = cartService;
+        this.wishlistService = wishlistService;
     }
 
     @Transactional
@@ -185,6 +188,14 @@ public class AuthService {
             } catch (Exception ex) {
                 // Cart merge is best-effort - don't fail login over it
                 log.error("Failed to merge guest cart (sessionID = {}) into userID = {}'s cart",
+                        sessionID, user.getUserID(), ex);
+            }
+
+            try {
+                wishlistService.mergeGuestWishlistIntoUserWishlist(user.getUserID(), sessionID);
+            } catch (Exception ex) {
+                // Wishlist merge is best-effort - don't fail login over it
+                log.error("Failed to merge guest wishlist (sessionID = {}) into userID = {}'s wishlist",
                         sessionID, user.getUserID(), ex);
             }
         }

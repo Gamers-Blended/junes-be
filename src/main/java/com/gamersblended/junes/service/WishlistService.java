@@ -214,4 +214,35 @@ public class WishlistService {
         log.info("Cleaned up {} inactive wishlist(s) not updated since {}", deletedCount, cutoffDate);
     }
 
+    /**
+     * Merges a guest (session-keyed) wishlist into a just-authenticated user's wishlist, called on login.
+     * The guest wishlist is deleted upfront so a partial failure below can't cause it to be
+     * re-merged on a later login with the same session.
+     */
+    public void mergeGuestWishlistIntoUserWishlist(UUID userID, UUID sessionID) {
+        if (null == sessionID) {
+            return;
+        }
+
+        Optional<Wishlist> guestWishlistOptional = redisWishlistRepository.getWishlist(null, sessionID);
+        if (guestWishlistOptional.isEmpty() || guestWishlistOptional.get().getItemList().isEmpty()) {
+            return;
+        }
+
+        List<WishlistItem> guestItemList = guestWishlistOptional.get().getItemList();
+        redisWishlistRepository.deleteWishlist(null, sessionID);
+
+        for (WishlistItem item : guestItemList) {
+            try {
+                WishlistItemDTO wishlistItemDTO = new WishlistItemDTO(item.getProductID(), item.getCreatedOn());
+                addItemToWishlist(userID, null, wishlistItemDTO);
+            } catch (ProductNotFoundException ex) {
+                log.warn("Skipping merge of productID = {} into userID = {}'s wishlist: product no longer exists",
+                        item.getProductID(), userID);
+            }
+        }
+
+        log.info("Merged guest wishlist (sessionID = {}) into userID = {}'s wishlist", sessionID, userID);
+    }
+
 }

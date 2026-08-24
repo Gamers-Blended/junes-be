@@ -47,22 +47,22 @@ public class RedisWishlistRepository {
                     local newWishlistJson = ARGV[1]
                     local expectedVersion = tonumber(ARGV[2])
                     local ttl = tonumber(ARGV[3])
-
+                    
                     local currentWishlistJson = redis.call('GET', key)
-
+                    
                     if currentWishlistJson == false then
                       -- Wishlist doesn't exist, create new
                       redis.call('SET', key, newWishlistJson, 'EX', ttl)
                       return 1
                     end
-
+                    
                     local currentWishlist = cjson.decode(currentWishlistJson)
-
+                    
                     if currentWishlist.version ~= expectedVersion then
                       -- Version mismatch, concurrent modification
                       return 0
                     end
-
+                    
                     -- Update wishlist
                     redis.call('SET', key, newWishlistJson, 'EX', ttl)
                     return 1
