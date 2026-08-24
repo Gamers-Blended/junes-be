@@ -2,6 +2,7 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.ProductInWishlistDTO;
+import com.gamersblended.junes.dto.WishlistItemDTO;
 import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.service.AccessTokenService;
 import com.gamersblended.junes.service.WishlistService;
@@ -14,10 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -56,5 +54,39 @@ public class WishlistController {
 
         UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
         return ResponseEntity.ok(wishlistService.getWishlistProducts(userID, sessionID, pageable));
+    }
+
+    @Operation(summary = "Add product to user's wishlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Product added to user's wishlist",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "404", description = "Product ID not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "409", description = "Wishlist was modified concurrently, retry the request",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Corrupt wishlist data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise wishlist",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Error persisting wishlist to database",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    @PostMapping("/add")
+    public ResponseEntity<String> addToWishlist(@RequestHeader(value = "Authorization", required = false) String authHeader,
+                                                @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, @RequestBody WishlistItemDTO wishlistItemDTO) {
+        log.info("Calling add to wishlist API");
+
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        wishlistService.addItemToWishlist(userID, sessionID, wishlistItemDTO);
+        return ResponseEntity.ok("Product added to wishlist");
     }
 }
