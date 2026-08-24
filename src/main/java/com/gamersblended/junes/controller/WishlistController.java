@@ -1,0 +1,60 @@
+package com.gamersblended.junes.controller;
+
+import com.gamersblended.junes.annotation.RateLimit;
+import com.gamersblended.junes.dto.ProductInWishlistDTO;
+import com.gamersblended.junes.dto.response.ErrorResponseDTO;
+import com.gamersblended.junes.service.AccessTokenService;
+import com.gamersblended.junes.service.WishlistService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
+@RestController
+@RequestMapping("junes/api/v1/wishlist")
+@RateLimit(requests = 10, duration = 1, timeUnit = TimeUnit.MINUTES, perUser = true)
+public class WishlistController {
+
+    private final WishlistService wishlistService;
+    private final AccessTokenService accessTokenService;
+
+    public WishlistController(WishlistService wishlistService, AccessTokenService accessTokenService) {
+        this.wishlistService = wishlistService;
+        this.accessTokenService = accessTokenService;
+    }
+
+    @Operation(summary = "Get products in user's wishlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Paged list of products in wishlist"),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Corrupt wishlist data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise wishlist",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    @GetMapping("/products")
+    public ResponseEntity<Page<ProductInWishlistDTO>> getWishlistProducts(@RequestHeader(value = "Authorization", required = false) String authHeader,
+                                                                          @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, Pageable pageable) {
+        log.info("Calling get wishlist product(s) API, page {}", pageable.getPageNumber());
+
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        return ResponseEntity.ok(wishlistService.getWishlistProducts(userID, sessionID, pageable));
+    }
+}
