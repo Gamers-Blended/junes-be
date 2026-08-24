@@ -15,6 +15,7 @@ import com.gamersblended.junes.repository.mongodb.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -36,11 +37,13 @@ public class CartService {
     private final RedisCartRepository redisCartRepository;
     private final CartDatabaseRepository cartDatabaseRepository; // For async persistence
     private final ProductRepository productRepository;
+    private final CartService self;
 
-    public CartService(RedisCartRepository redisCartRepository, CartDatabaseRepository cartDatabaseRepository, ProductRepository productRepository) {
+    public CartService(RedisCartRepository redisCartRepository, CartDatabaseRepository cartDatabaseRepository, ProductRepository productRepository, @Lazy CartService self) {
         this.redisCartRepository = redisCartRepository;
         this.cartDatabaseRepository = cartDatabaseRepository;
         this.productRepository = productRepository;
+        this.self = self;
     }
 
     public Cart getOrCreateCart(UUID userID, UUID sessionID) {
@@ -60,7 +63,7 @@ public class CartService {
         boolean success = redisCartRepository.addItem(userID, sessionID, cartItemDTO);
 
         if (success) {
-            asyncPersistToDatabase(userID, sessionID);
+            self.asyncPersistToDatabase(userID, sessionID);
         }
     }
 
@@ -70,7 +73,7 @@ public class CartService {
         boolean success = redisCartRepository.removeItem(userID, sessionID, productID);
 
         if (success) {
-            asyncPersistToDatabase(userID, sessionID);
+            self.asyncPersistToDatabase(userID, sessionID);
         }
     }
 
@@ -80,7 +83,7 @@ public class CartService {
         boolean success = redisCartRepository.updateItemQuantity(userID, sessionID, productID, quantity);
 
         if (success) {
-            asyncPersistToDatabase(userID, sessionID);
+            self.asyncPersistToDatabase(userID, sessionID);
         }
     }
 
@@ -92,7 +95,7 @@ public class CartService {
         boolean success = redisCartRepository.clearCart(userID, sessionID);
 
         if (success) {
-            asyncPersistToDatabase(userID, sessionID);
+            self.asyncPersistToDatabase(userID, sessionID);
         }
     }
 
