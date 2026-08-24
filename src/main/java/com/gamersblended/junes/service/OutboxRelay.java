@@ -3,6 +3,7 @@ package com.gamersblended.junes.service;
 import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,6 +32,7 @@ public class OutboxRelay {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    @SchedulerLock(name = "RelayOutboxTask", lockAtMostFor = "${relay.outbox-task.lock-at-most}", lockAtLeastFor = "${relay.outbox-task.lock-at-least}")
     @Scheduled(fixedDelay = 500)
     public void relayOutboxEvents() {
         List<OutboxEvent> pendingEvents = outboxEventRepository.findTop100PendingEvents();
