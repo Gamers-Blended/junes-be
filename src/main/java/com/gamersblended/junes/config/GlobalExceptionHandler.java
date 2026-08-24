@@ -172,6 +172,16 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
     }
 
+    @ExceptionHandler(WishlistSerialisationException.class)
+    public ResponseEntity<Object> handleWishlistSerialisationException(WishlistSerialisationException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
+    @ExceptionHandler(WishlistUpdateConflictException.class)
+    public ResponseEntity<Object> handleWishlistUpdateConflictException(WishlistUpdateConflictException ex, WebRequest request) {
+        return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, request);
+    }
+
     @ExceptionHandler(RecommendationServerException.class)
     public ResponseEntity<Object> handleRecommendationServerException(
             RecommendationServerException ex, WebRequest request) {
