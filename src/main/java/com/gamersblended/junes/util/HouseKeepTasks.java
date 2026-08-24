@@ -3,6 +3,7 @@ package com.gamersblended.junes.util;
 import com.gamersblended.junes.service.CartService;
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
+import com.gamersblended.junes.service.WishlistService;
 import com.gamersblended.junes.service.order.OrderExpiryService;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -17,12 +18,14 @@ public class HouseKeepTasks {
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final OrderExpiryService orderExpiryService;
     private final CartService cartService;
+    private final WishlistService wishlistService;
 
-    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, CartService cartService) {
+    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, CartService cartService, WishlistService wishlistService) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
         this.orderExpiryService = orderExpiryService;
         this.cartService = cartService;
+        this.wishlistService = wishlistService;
     }
 
     @Scheduled(cron = "${housekeeping.token-cleanup.cron: 0 0 */12 * * *}")
@@ -51,5 +54,12 @@ public class HouseKeepTasks {
     public void scheduledHouseKeepInactiveCarts() {
         log.info("Starting scheduled house keeping for inactive carts...");
         cartService.cleanupInactiveCarts();
+    }
+
+    @Scheduled(cron = "${housekeeping.wishlist-cleanup.cron: 0 0 3 * * *}")
+    @SchedulerLock(name = "WishlistCleanupTask", lockAtMostFor = "${housekeeping.wishlist-cleanup.lock-at-most}", lockAtLeastFor = "${housekeeping.wishlist-cleanup.lock-at-least}")
+    public void scheduledHouseKeepInactiveWishlists() {
+        log.info("Starting scheduled house keeping for inactive wishlists...");
+        wishlistService.cleanupInactiveWishlists();
     }
 }

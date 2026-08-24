@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -31,6 +33,9 @@ import java.util.stream.Collectors;
 public class WishlistService {
 
     private static final String UNKNOWN_PRODUCT = "Unknown product";
+    // Wishlist entries are deliberate "save for later" choices, not abandoned in-progress carts,
+    // so they get a much longer cleanup grace period than carts (2 months)
+    private static final int WISHLIST_CLEANUP_GRACE_PERIOD_MONTHS = 12;
     private final RedisWishlistRepository redisWishlistRepository;
     private final ProductRepository productRepository;
     private final WishlistDatabaseRepository wishlistDatabaseRepository;
@@ -130,7 +135,7 @@ public class WishlistService {
     }
 
     public void clearWishlist(UUID userID, UUID sessionID) {
-        if (userID == null && sessionID == null) {
+        if (null == userID && null == sessionID) {
             throw new MissingIdentifierException("User ID or Session ID required");
         }
 
@@ -200,6 +205,13 @@ public class WishlistService {
             wishlistDatabaseRepository.save(dbWishlist);
 
         });
+    }
+
+    @Transactional
+    public void cleanupInactiveWishlists() {
+        LocalDateTime cutoffDate = LocalDateTime.now(ZoneId.of("Asia/Singapore")).minusMonths(WISHLIST_CLEANUP_GRACE_PERIOD_MONTHS);
+        int deletedCount = wishlistDatabaseRepository.deleteInactiveWishlists(cutoffDate);
+        log.info("Cleaned up {} inactive wishlist(s) not updated since {}", deletedCount, cutoffDate);
     }
 
 }
