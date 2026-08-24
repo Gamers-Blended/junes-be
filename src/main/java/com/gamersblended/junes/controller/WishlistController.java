@@ -89,4 +89,32 @@ public class WishlistController {
         wishlistService.addItemToWishlist(userID, sessionID, wishlistItemDTO);
         return ResponseEntity.ok("Product added to wishlist");
     }
+
+    @Operation(summary = "Remove product from user's wishlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Product removed from wishlist",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "409", description = "Wishlist was modified concurrently, retry the request",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Corrupt wishlist data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise wishlist",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    @DeleteMapping("/remove/{productID}")
+    public ResponseEntity<String> removeFromWishlist(@RequestHeader(value = "Authorization", required = false) String authHeader,
+                                                     @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID, @PathVariable String productID) {
+        log.info("Calling remove from wishlist API");
+
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        wishlistService.removeItemFromWishlist(userID, sessionID, productID);
+        return ResponseEntity.ok("Product removed from wishlist");
+    }
 }

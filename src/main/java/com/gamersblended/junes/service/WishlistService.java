@@ -119,6 +119,16 @@ public class WishlistService {
         }
     }
 
+    public void removeItemFromWishlist(UUID userID, UUID sessionID, String productID) {
+        validateForWishlistItems(userID, sessionID, productID);
+
+        boolean success = redisWishlistRepository.removeItem(userID, sessionID, productID);
+
+        if (success) {
+            self.asyncPersistToDatabase(userID, sessionID);
+        }
+    }
+
     public void validateForWishlistItems(UUID userID, UUID sessionID, String productID) {
         if (null == userID && null == sessionID) {
             throw new MissingIdentifierException("User ID or Session ID required");
@@ -179,4 +189,5 @@ public class WishlistService {
 
         });
     }
+
 }
