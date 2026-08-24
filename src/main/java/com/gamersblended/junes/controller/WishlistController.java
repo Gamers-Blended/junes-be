@@ -117,4 +117,34 @@ public class WishlistController {
         wishlistService.removeItemFromWishlist(userID, sessionID, productID);
         return ResponseEntity.ok("Product removed from wishlist");
     }
+
+    @Operation(summary = "Clear user's wishlist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Wishlist cleared successfully",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = String.class))}),
+            @ApiResponse(responseCode = "400", description = "User ID or Session ID required",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "409", description = "Wishlist was modified concurrently, retry the request",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Corrupt wishlist data",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Failed to serialise wishlist",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    @DeleteMapping("/items")
+    public ResponseEntity<String> clearWishlist(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestHeader(value = "X-Session-Id", required = false) UUID sessionID
+    ) {
+        log.info("Calling clear wishlist API");
+
+        UUID userID = accessTokenService.extractUserIDFromToken(authHeader);
+        wishlistService.clearWishlist(userID, sessionID);
+        return ResponseEntity.ok("Wishlist cleared successfully");
+    }
 }
