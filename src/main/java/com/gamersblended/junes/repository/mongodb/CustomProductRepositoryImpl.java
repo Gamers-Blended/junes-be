@@ -5,6 +5,7 @@ import com.gamersblended.junes.model.Product;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -26,6 +27,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     private static final int MAX_STRING_LENGTH = 100;
     private static final int MAX_LIST_SIZE = 20;
     private static final int PAGE_SIZE_LIMIT = 100;
+    private static final int MAX_SEARCH_LIMIT = 25;
     private static final String IN_STOCK = "in_stock";
     private static final String OUT_OF_STOCK = "out_of_stock";
     private static final String PREORDER = "preorder";
@@ -187,6 +189,31 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     /**
+     * For typeahead/instant search API
+     * Matches products whose name starts with the given search term
+     * (case-insensitive, anchored prefix match so MongoDB can use an index on "name")
+     * Capped to a small result set sized for a dropdown
+     *
+     * @param searchTerm free-text search term typed by the user
+     * @param limit      max number of results to return
+     * @return top matching products, ordered by name
+     */
+    @Override
+    public List<Product> searchProducts(String searchTerm, int limit) {
+        validateSearchInputs(searchTerm, limit);
+
+        String trimmedTerm = searchTerm.trim();
+        log.info("Searching products by name prefix: {}, limit: {}", trimmedTerm, limit);
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("name").regex("^" + Pattern.quote(trimmedTerm), "i"));
+        query.with(Sort.by(Sort.Direction.ASC, "name"));
+        query.limit(limit);
+
+        return mongoTemplate.find(query, Product.class);
+    }
+
+    /**
      * Create a Criteria for filtering release date to be in the same month and year
      *
      * @param releaseDate target month and year of release date
@@ -256,6 +283,25 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             for (String currentStartingLetter : startingLetters) {
                 validateStartingLetter(currentStartingLetter);
             }
+        }
+    }
+
+    /**
+     * Checks that a search term is provided and within limits, and that the result limit
+     * is within the bound allowed for a typeahead dropdown
+     *
+     * @param searchTerm free-text search term
+     * @param limit      max number of results requested
+     */
+    private void validateSearchInputs(String searchTerm, int limit) {
+        if (null == searchTerm || searchTerm.trim().isEmpty()) {
+            throw new IllegalArgumentException("Search term cannot be null or empty");
+        }
+        validateStringLength("searchTerm", searchTerm);
+        validateStringContent("searchTerm", searchTerm);
+
+        if (limit <= 0 || limit > MAX_SEARCH_LIMIT) {
+            throw new IllegalArgumentException("limit must be between 1 and " + MAX_SEARCH_LIMIT + ", given value: " + limit);
         }
     }
 

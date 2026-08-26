@@ -24,4 +24,6 @@ public interface CustomProductRepository {
             List<YearMonth> releaseDates,
             String currentDate,
             Pageable pageable);
+
+    List<Product> searchProducts(String searchTerm, int limit);
 }

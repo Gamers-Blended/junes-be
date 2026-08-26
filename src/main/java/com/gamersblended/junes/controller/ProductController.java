@@ -78,6 +78,27 @@ public class ProductController {
                 pageable));
     }
 
+    @Operation(summary = "Search products by name for typeahead/instant search")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved top matching products.",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProductSliderItemDTO.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid or missing search term.",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+            @ApiResponse(responseCode = "500", description = "Internal server or database error occurred while searching products.",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))}),
+    })
+    @RateLimit(requests = 60, duration = 1, timeUnit = TimeUnit.MINUTES)
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductSliderItemDTO>> searchProducts(
+            @RequestParam String q,
+            @RequestParam(required = false) Integer limit) {
+        log.info("Calling product search API for query: {}, limit: {}", q, limit);
+        return ResponseEntity.ok(productService.searchProducts(q, limit));
+    }
+
     @Operation(summary = "Get product details by slug")
     @ApiResponses(value = {
             @ApiResponse(

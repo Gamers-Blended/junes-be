@@ -34,6 +34,7 @@ public class ProductService {
 
     private static final int MAX_BROWSING_CACHE_SIZE = 30;
     private static final int PAGE_SIZE = 5;
+    private static final int DEFAULT_SEARCH_LIMIT = 10;
     private static final String UNITS_SOLD = "units_sold";
     private final ProductRepository productRepository;
     private final ProductRecommendationRequestBuilder productRecommendationRequestBuilder;
@@ -224,6 +225,29 @@ public class ProductService {
         } catch (Exception ex) {
             log.error("Database or system exception in getProductListings for platform = {}: {}", platform, ex.getMessage());
             throw new ProductFetchException("Could not retrieve product listings for " + platform + " due to an internal error.");
+        }
+    }
+
+    /**
+     * For typeahead/instant search API
+     *
+     * @param query search term typed by the user
+     * @param limit max number of results to return (defaults to {@value DEFAULT_SEARCH_LIMIT} when not given)
+     * @return top matching products sized for a dropdown
+     */
+    public List<ProductSliderItemDTO> searchProducts(String query, Integer limit) {
+        try {
+            int effectiveLimit = (null == limit) ? DEFAULT_SEARCH_LIMIT : limit;
+            log.info("Searching products for query: {}, limit: {}", query, effectiveLimit);
+
+            List<Product> products = productRepository.searchProducts(query, effectiveLimit);
+            return products.stream().map(productMapper::toSliderItemDTO).toList();
+        } catch (IllegalArgumentException ex) {
+            log.error("Validation failed in searchProducts for query = {}: {}", query, ex.getMessage());
+            throw new InvalidProductQueryException(ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Database or system exception in searchProducts for query = {}: {}", query, ex.getMessage());
+            throw new ProductFetchException("Could not search products due to an internal error.");
         }
     }
 
