@@ -22,6 +22,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     List<Transaction> findByStatusAndOrderDateBefore(String status, LocalDateTime cutoff);
 
+    List<Transaction> findByStatus(String status);
+
     @Query(value = """
             SELECT DISTINCT ON (ti.product_id)
                 ti.product_id as productID,

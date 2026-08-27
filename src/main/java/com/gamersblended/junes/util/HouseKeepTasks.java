@@ -5,6 +5,7 @@ import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.service.WishlistService;
 import com.gamersblended.junes.service.order.OrderExpiryService;
+import com.gamersblended.junes.service.order.OrderShipmentService;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,13 +18,15 @@ public class HouseKeepTasks {
     private final PasswordResetService passwordResetService;
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final OrderExpiryService orderExpiryService;
+    private final OrderShipmentService orderShipmentService;
     private final CartService cartService;
     private final WishlistService wishlistService;
 
-    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, CartService cartService, WishlistService wishlistService) {
+    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, OrderShipmentService orderShipmentService, CartService cartService, WishlistService wishlistService) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
         this.orderExpiryService = orderExpiryService;
+        this.orderShipmentService = orderShipmentService;
         this.cartService = cartService;
         this.wishlistService = wishlistService;
     }
@@ -47,6 +50,13 @@ public class HouseKeepTasks {
     public void scheduledReleaseExpiredReservations() {
         log.info("Starting scheduled house keeping for expired inventory reservations...");
         orderExpiryService.releaseExpiredReservations();
+    }
+
+    @Scheduled(cron = "${housekeeping.shipment-simulation.cron: 0 0 1 * * *}")
+    @SchedulerLock(name = "ShipmentSimulationTask", lockAtMostFor = "${housekeeping.shipment-simulation.lock-at-most}", lockAtLeastFor = "${housekeeping.shipment-simulation.lock-at-least}")
+    public void scheduledSimulateShipment() {
+        log.info("Starting scheduled house keeping for simulating order shipment...");
+        orderShipmentService.simulateShipment();
     }
 
     @Scheduled(cron = "${housekeeping.cart-cleanup.cron: 0 0 2 * * *}")

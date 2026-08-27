@@ -6,6 +6,7 @@ import com.gamersblended.junes.service.CartService;
 import com.gamersblended.junes.service.EmailVerificationTokenService;
 import com.gamersblended.junes.service.PasswordResetService;
 import com.gamersblended.junes.service.WishlistService;
+import com.gamersblended.junes.service.order.OrderShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,12 +27,14 @@ public class HouseKeepController {
     private final EmailVerificationTokenService emailVerificationTokenService;
     private final CartService cartService;
     private final WishlistService wishlistService;
+    private final OrderShipmentService orderShipmentService;
 
-    public HouseKeepController(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, CartService cartService, WishlistService wishlistService) {
+    public HouseKeepController(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, CartService cartService, WishlistService wishlistService, OrderShipmentService orderShipmentService) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
         this.cartService = cartService;
         this.wishlistService = wishlistService;
+        this.orderShipmentService = orderShipmentService;
     }
 
     @Operation(summary = "Manually trigger housekeeping of expired tokens")
@@ -100,5 +103,22 @@ public class HouseKeepController {
         log.info("Starting house keeping for inactive wishlists...");
         wishlistService.cleanupInactiveWishlists();
         return ResponseEntity.ok(new ResponseMessage("Inactive wishlists cleared"));
+    }
+
+    @Operation(summary = "Manually trigger simulated shipment of Awaiting Shipment orders")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Awaiting-shipment orders transitioned to Shipped",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseMessage.class))}),
+            @ApiResponse(responseCode = "500", description = "Error in simulating order shipment",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDTO.class))})
+    })
+    @PostMapping("/shipments")
+    public ResponseEntity<ResponseMessage> houseKeepSimulateShipment() {
+
+        log.info("Starting house keeping for order shipment simulation...");
+        orderShipmentService.simulateShipment();
+        return ResponseEntity.ok(new ResponseMessage("Awaiting-shipment orders transitioned to Shipped"));
     }
 }
