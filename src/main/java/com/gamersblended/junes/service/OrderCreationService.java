@@ -81,7 +81,6 @@ public class OrderCreationService {
         transaction.setTotalAmount(totalAmount);
         transaction.setShippingCost(placeOrderRequest.getShippingCost());
         transaction.setShippingWeight(shippingWeight);
-        transaction.setTrackingNumber("123");
         transaction.setShippingAddressID(placeOrderRequest.getAddressDTO().getAddressID());
         transaction.setUserID(userID);
 
