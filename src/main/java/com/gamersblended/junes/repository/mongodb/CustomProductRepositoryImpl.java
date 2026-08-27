@@ -1,6 +1,7 @@
 package com.gamersblended.junes.repository.mongodb;
 
 import com.gamersblended.junes.constant.PlatformEnums;
+import com.gamersblended.junes.exception.InvalidProductQueryException;
 import com.gamersblended.junes.model.Product;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -238,12 +239,12 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
         // Pageable validation
         if (null == pageable) {
-            throw new IllegalArgumentException("Pageable cannot be null");
+            throw new InvalidProductQueryException("Pageable cannot be null");
         }
 
         // Page size limits
         if (pageable.getPageSize() > PAGE_SIZE_LIMIT) {
-            throw new IllegalArgumentException("Page size cannot exceed " + PAGE_SIZE_LIMIT + ", given page size: " + pageable.getPageSize());
+            throw new InvalidProductQueryException("Page size cannot exceed " + PAGE_SIZE_LIMIT + ", given page size: " + pageable.getPageSize());
         }
 
         // Optional string validations - only validate if provided
@@ -295,13 +296,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private void validateSearchInputs(String searchTerm, int limit) {
         if (null == searchTerm || searchTerm.trim().isEmpty()) {
-            throw new IllegalArgumentException("Search term cannot be null or empty");
+            throw new InvalidProductQueryException("Search term cannot be null or empty");
         }
         validateStringLength("searchTerm", searchTerm);
         validateStringContent("searchTerm", searchTerm);
 
         if (limit <= 0 || limit > MAX_SEARCH_LIMIT) {
-            throw new IllegalArgumentException("limit must be between 1 and " + MAX_SEARCH_LIMIT + ", given value: " + limit);
+            throw new InvalidProductQueryException("limit must be between 1 and " + MAX_SEARCH_LIMIT + ", given value: " + limit);
         }
     }
 
@@ -312,10 +313,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private void validatePlatform(String platform) {
         if (null == platform || platform.trim().isEmpty()) {
-            throw new IllegalArgumentException("Platform cannot be null or empty");
+            throw new InvalidProductQueryException("Platform cannot be null or empty");
         }
         if (!PlatformEnums.isValidPlatformValue(platform)) {
-            throw new IllegalArgumentException("Platform is not valid! Platform: " + platform);
+            throw new InvalidProductQueryException("Platform is not valid! Platform: " + platform);
         }
     }
 
@@ -327,7 +328,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private void validateStringLength(String fieldName, String value) {
         if (null != value && value.length() > MAX_STRING_LENGTH) {
-            throw new IllegalArgumentException(fieldName + " cannot exceed " + MAX_STRING_LENGTH + " characters");
+            throw new InvalidProductQueryException(fieldName + " cannot exceed " + MAX_STRING_LENGTH + " characters");
         }
     }
 
@@ -339,7 +340,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private void validateStringContent(String fieldName, String value) {
         if (value != null && !SAFE_STRING_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException(fieldName + " contains invalid characters, given value: " + value);
+            throw new InvalidProductQueryException(fieldName + " contains invalid characters, given value: " + value);
         }
     }
 
@@ -350,7 +351,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private void validateStartingLetter(String value) {
         if (!value.trim().isEmpty() && value.trim().length() != 1) {
-            throw new IllegalArgumentException("Starting letter must be exactly one character, given starting letter: " + value);
+            throw new InvalidProductQueryException("Starting letter must be exactly one character, given starting letter: " + value);
         }
     }
 
@@ -363,13 +364,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     private void validatePrice(String fieldName, BigDecimal price) {
         if (null != price) {
             if (price.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException(fieldName + " cannot be negative, given value: " + price);
+                throw new InvalidProductQueryException(fieldName + " cannot be negative, given value: " + price);
             }
             if (price.compareTo(new BigDecimal("999999.99")) > 0) {
-                throw new IllegalArgumentException(fieldName + " cannot exceed 999999.99, given value: " + price);
+                throw new InvalidProductQueryException(fieldName + " cannot exceed 999999.99, given value: " + price);
             }
             if (price.scale() > 2) {
-                throw new IllegalArgumentException(fieldName + " cannot have more than 2 decimal places, given value: " + price);
+                throw new InvalidProductQueryException(fieldName + " cannot have more than 2 decimal places, given value: " + price);
             }
         }
     }
@@ -383,7 +384,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     private void validateMinMaxPrices(BigDecimal minPrice, BigDecimal maxPrice) {
         if (null != minPrice && null != maxPrice && minPrice.compareTo(maxPrice) > 0) {
             log.error("minPrice of {} cannot be greater than maxPrice of {}", minPrice, maxPrice);
-            throw new IllegalArgumentException("minPrice of " + minPrice + " cannot be greater than maxPrice of " + maxPrice);
+            throw new InvalidProductQueryException("minPrice of " + minPrice + " cannot be greater than maxPrice of " + maxPrice);
         }
     }
 
@@ -396,12 +397,12 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
      */
     private void validateStringList(String fieldName, List<String> list) {
         if (list.size() > MAX_LIST_SIZE) {
-            throw new IllegalArgumentException(fieldName + " list cannot exceed " + MAX_LIST_SIZE + " items");
+            throw new InvalidProductQueryException(fieldName + " list cannot exceed " + MAX_LIST_SIZE + " items");
         }
 
         for (String item : list) {
             if (null == item) {
-                throw new IllegalArgumentException(fieldName + " list cannot contain null values");
+                throw new InvalidProductQueryException(fieldName + " list cannot contain null values");
             }
             validateStringLength(fieldName + " item", item);
             validateStringContent(fieldName + " item", item);

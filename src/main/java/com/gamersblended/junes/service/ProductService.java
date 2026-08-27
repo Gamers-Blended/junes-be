@@ -219,7 +219,10 @@ public class ProductService {
                     releaseYearMonthList, currentDate, pageable);
 
             return productsPage.map(productMapper::toSliderItemDTO);
-        } catch (IllegalArgumentException | DateTimeParseException ex) {
+        } catch (InvalidProductQueryException ex) {
+            log.error("Validation failed in getProductListings for platform = {}: {}", platform, ex.getMessage());
+            throw ex;
+        } catch (DateTimeParseException ex) {
             log.error("Validation failed in getProductListings for platform = {}: {}", platform, ex.getMessage());
             throw new InvalidProductQueryException(ex.getMessage());
         } catch (Exception ex) {
@@ -242,9 +245,9 @@ public class ProductService {
 
             List<Product> products = productRepository.searchProducts(query, effectiveLimit);
             return products.stream().map(productMapper::toSliderItemDTO).toList();
-        } catch (IllegalArgumentException ex) {
+        } catch (InvalidProductQueryException ex) {
             log.error("Validation failed in searchProducts for query = {}: {}", query, ex.getMessage());
-            throw new InvalidProductQueryException(ex.getMessage());
+            throw ex;
         } catch (Exception ex) {
             log.error("Database or system exception in searchProducts for query = {}: {}", query, ex.getMessage());
             throw new ProductFetchException("Could not search products due to an internal error.");
