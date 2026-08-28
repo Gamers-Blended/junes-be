@@ -10,4 +10,5 @@ public class EmailTemplateConstants {
     public static final String PASSWORD_CHANGED = "password_changed";
     public static final String WELCOME = "welcome";
     public static final String ORDER_CONFIRMED = "order_confirmed";
+    public static final String ORDER_SHIPPED = "order_shipped";
 }

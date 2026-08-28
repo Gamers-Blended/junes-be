@@ -54,6 +54,7 @@ public class EmailProducerService {
     private final GeoLocationService geoLocationService;
     private final EmailValueFormatter emailValueFormatter;
     public static final String ORDER_DETAILS_STATIC_SEGMENT = "/order/";
+    public static final String APP_URL = "appUrl";
 
     public EmailProducerService(RabbitTemplate rabbitTemplate, TemplateEngine templateEngine,
                                 GeoLocationService geoLocationService, EmailValueFormatter emailValueFormatter) {
@@ -114,7 +115,7 @@ public class EmailProducerService {
 
         try {
             Map<String, Object> variables = getCommonVariableMap();
-            variables.put("appUrl", appUrl);
+            variables.put(APP_URL, appUrl);
 
             String htmlContent = processTemplate(WELCOME, variables);
 
@@ -164,6 +165,62 @@ public class EmailProducerService {
     public void sendOrderConfirmedEmail(String toEmail, Transaction transaction, Map<String, Product> productMap, AddressDTO addressDTO) {
         log.info("Queuing for order confirmed email for: {}", toEmail);
 
+        List<TransactionItemEmailDTO> itemList = buildItemEmailList(transaction, productMap);
+
+        String orderDetailsUrl = appUrl + ORDER_DETAILS_STATIC_SEGMENT + transaction.getOrderNumber();
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("orderNumber", transaction.getOrderNumber());
+            variables.put("transactionID", transaction.getTransactionID());
+            variables.put("itemList", itemList);
+            variables.put("address", addressDTO);
+            variables.put("shippingCost", transaction.getShippingCost());
+            variables.put("totalAmount", transaction.getTotalAmount());
+            variables.put(APP_URL, appUrl);
+            variables.put("orderDetailsUrl", orderDetailsUrl);
+
+            String htmlContent = processTemplate(ORDER_CONFIRMED, variables);
+
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Order#" + transaction.getOrderNumber() + " Confirmed!");
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
+            log.info("Order confirmed email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing order confirmed email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue order confirmed email");
+        }
+    }
+
+    public void sendOrderShippedEmail(String toEmail, Transaction transaction, Map<String, Product> productMap, AddressDTO addressDTO) {
+        log.info("Queuing for order shipped email for: {}", toEmail);
+
+        List<TransactionItemEmailDTO> itemList = buildItemEmailList(transaction, productMap);
+
+        String orderDetailsUrl = appUrl + ORDER_DETAILS_STATIC_SEGMENT + transaction.getOrderNumber();
+        try {
+            Map<String, Object> variables = getCommonVariableMap();
+            variables.put("orderNumber", transaction.getOrderNumber());
+            variables.put("transactionID", transaction.getTransactionID());
+            variables.put("itemList", itemList);
+            variables.put("address", addressDTO);
+            variables.put("trackingNumber", transaction.getTrackingNumber());
+            variables.put("shippedDate", transaction.getShippedDate());
+            variables.put(APP_URL, appUrl);
+            variables.put("orderDetailsUrl", orderDetailsUrl);
+
+            String htmlContent = processTemplate(ORDER_SHIPPED, variables);
+
+            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Order#" + transaction.getOrderNumber() + " Shipped!");
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
+            log.info("Order shipped email queued successfully for: {}", toEmail);
+        } catch (Exception ex) {
+            log.error("Exception in queuing order shipped email for {}: ", toEmail, ex);
+            throw new QueueEmailException("Failed to queue order shipped email");
+        }
+    }
+
+    private List<TransactionItemEmailDTO> buildItemEmailList(Transaction transaction, Map<String, Product> productMap) {
         List<TransactionItemEmailDTO> itemList = new ArrayList<>();
         for (TransactionItem currentItem : transaction.getItems()) {
             TransactionItemEmailDTO emailItem = new TransactionItemEmailDTO();
@@ -182,28 +239,7 @@ public class EmailProducerService {
             itemList.add(emailItem);
         }
 
-        String orderDetailsUrl = appUrl + ORDER_DETAILS_STATIC_SEGMENT + transaction.getOrderNumber();
-        try {
-            Map<String, Object> variables = getCommonVariableMap();
-            variables.put("orderNumber", transaction.getOrderNumber());
-            variables.put("transactionID", transaction.getTransactionID());
-            variables.put("itemList", itemList);
-            variables.put("address", addressDTO);
-            variables.put("shippingCost", transaction.getShippingCost());
-            variables.put("totalAmount", transaction.getTotalAmount());
-            variables.put("appUrl", appUrl);
-            variables.put("orderDetailsUrl", orderDetailsUrl);
-
-            String htmlContent = processTemplate(ORDER_CONFIRMED, variables);
-
-            EmailRequestDTO emailRequestDTO = getEmailRequest(htmlContent, toEmail, "Order#" + transaction.getOrderNumber() + " Confirmed!");
-
-            rabbitTemplate.convertAndSend(exchange, routingKey, emailRequestDTO);
-            log.info("Order confirmed email queued successfully for: {}", toEmail);
-        } catch (Exception ex) {
-            log.error("Exception in queuing order confirmed email for {}: ", toEmail, ex);
-            throw new QueueEmailException("Failed to queue order confirmed email");
-        }
+        return itemList;
     }
 
     private Map<String, Object> getCommonVariableMap() {
@@ -226,6 +262,7 @@ public class EmailProducerService {
             case PASSWORD_CHANGED -> templateEngine.process("email/password-changed", context);
             case WELCOME -> templateEngine.process("email/welcome", context);
             case ORDER_CONFIRMED -> templateEngine.process("email/order-confirmed", context);
+            case ORDER_SHIPPED -> templateEngine.process("email/order-shipped", context);
             default -> {
                 log.error("Invalid email template: {}", type);
                 throw new InvalidTemplateException("Invalid email template: " + type);
