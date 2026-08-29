@@ -23,6 +23,9 @@ pipeline {
         RABBITMQ_DEFAULT_USER    = credentials('RABBITMQ_DEFAULT_USER')
         RABBITMQ_DEFAULT_PASS    = credentials('RABBITMQ_DEFAULT_PASS')
         KAFKA_CLUSTER_ID         = credentials('KAFKA_CLUSTER_ID')
+        ELASTIC_PASSWORD         = credentials('ELASTIC_PASSWORD')
+        KIBANA_SYSTEM_PASSWORD   = credentials('KIBANA_SYSTEM_PASSWORD')
+        LOGSTASH_WRITER_PASSWORD = credentials('LOGSTASH_WRITER_PASSWORD')
 
         // For application.properties
         MAILGUN_API_KEY_2       = credentials('MAILGUN_API_KEY_2')

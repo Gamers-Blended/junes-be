@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d junes"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d junes" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -125,6 +125,114 @@ services:
         aliases:
           - kafka
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 40s
+    networks:
+      app-network:
+        aliases:
+          - elasticsearch
+    # not published to the host — only reachable from containers on app-network
+
+  es-setup:
+    image: curlimages/curl:8.10.1
+    container_name: es-setup
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD}
+      LOGSTASH_WRITER_PASSWORD: ${LOGSTASH_WRITER_PASSWORD}
+    volumes:
+      - ./elk/es-setup/setup-es.sh:/setup-es.sh:ro
+    entrypoint: [ "sh", "/setup-es.sh" ]
+    restart: "no"
+    networks:
+      - app-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.3
+    container_name: logstash
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+      LOGSTASH_ES_USER: logstash_writer
+      LOGSTASH_ES_PASSWORD: ${LOGSTASH_WRITER_PASSWORD}
+    volumes:
+      - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      es-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s -f http://localhost:9600 >/dev/null || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 40s
+    networks:
+      app-network:
+        aliases:
+          - logstash
+    # not published to the host — junes-app reaches it via the app-network alias
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD}
+    ports:
+      - "127.0.0.1:5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      es-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q '\"level\":\"available\"'" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - app-network
+    # bound to 127.0.0.1 — reach it from an admin box via an SSH tunnel, not directly over the internet
+
+  kibana-setup:
+    image: curlimages/curl:8.10.1
+    container_name: kibana-setup
+    depends_on:
+      kibana:
+        condition: service_healthy
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    volumes:
+      - ./elk/kibana-setup/setup-kibana.sh:/setup-kibana.sh:ro
+    entrypoint: [ "sh", "/setup-kibana.sh" ]
+    restart: "no"
+    networks:
+      - app-network
+
   junes-app:
     build:
       context: .
@@ -153,7 +261,7 @@ services:
     volumes:
       - ${PROD_CONFIG}:/config/application.properties:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -171,6 +279,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      logstash:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -181,6 +291,7 @@ volumes:
   redis-data:
   rabbitmq_data:
   kafka-data:
+  es-data:
 
 networks:
   app-network:

@@ -38,9 +38,28 @@
             </encoder>
         </appender>
 
+        <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeContext>false</includeContext>
+                <includeMdcKeyName>correlationId</includeMdcKeyName>
+                <fieldNames>
+                    <timestamp>@timestamp</timestamp>
+                    <level>level</level>
+                    <logger>logger_name</logger>
+                    <message>message</message>
+                    <thread>thread_name</thread>
+                </fieldNames>
+                <lineSeparator>UNIX</lineSeparator>
+            </encoder>
+            <reconnectionDelay>5000</reconnectionDelay>
+            <includeCallerData>false</includeCallerData>
+        </appender>
+
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
+            <appender-ref ref="LOGSTASH"/>
         </root>
     </springProfile>
 

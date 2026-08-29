@@ -3,9 +3,16 @@ set -eu
 
 KIBANA_URL="http://kibana:5601"
 
+# In production ELASTIC_PASSWORD is set and Kibana security is enabled
+# Locally it's unset and Kibana has no auth, so AUTH_OPTS stays empty
+AUTH_OPTS=""
+if [ -n "${ELASTIC_PASSWORD:-}" ]; then
+  AUTH_OPTS="-u elastic:${ELASTIC_PASSWORD}"
+fi
+
 create_or_ignore() {
   desc="$1"; method="$2"; url="$3"; body="$4"
-  http_code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X "$method" "$url" \
+  http_code=$(curl -s -o /tmp/resp.json -w "%{http_code}" $AUTH_OPTS -X "$method" "$url" \
     -H "kbn-xsrf: true" -H "Content-Type: application/json" -d "$body")
   if [ "$http_code" = "200" ] || [ "$http_code" = "409" ]; then
     echo "OK ($http_code): $desc"
