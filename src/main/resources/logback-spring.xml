@@ -2,6 +2,8 @@
 <configuration>
 
     <springProperty scope="context" name="LOG_FILE" source="logging.file.name" defaultValue="logs/junes-be.log"/>
+    <springProperty scope="context" name="LOGSTASH_HOST" source="logging.logstash.host" defaultValue="localhost"/>
+    <springProperty scope="context" name="LOGSTASH_PORT" source="logging.logstash.port" defaultValue="5044"/>
 
     <springProfile name="production">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -58,8 +60,27 @@
             </encoder>
         </appender>
 
+        <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeContext>false</includeContext>
+                <includeMdcKeyName>correlationId</includeMdcKeyName>
+                <fieldNames>
+                    <timestamp>@timestamp</timestamp>
+                    <level>level</level>
+                    <logger>logger_name</logger>
+                    <message>message</message>
+                    <thread>thread_name</thread>
+                </fieldNames>
+                <lineSeparator>UNIX</lineSeparator>
+            </encoder>
+            <reconnectionDelay>5000</reconnectionDelay>
+            <includeCallerData>false</includeCallerData>
+        </appender>
+
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="LOGSTASH"/>
         </root>
     </springProfile>
 
