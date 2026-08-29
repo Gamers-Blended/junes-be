@@ -12,6 +12,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.net.RequestOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 import static com.gamersblended.junes.constant.KafkaConstants.STRIPE_DETACH_PM_EVENTS;
+import static com.gamersblended.junes.constant.LoggingConstants.MDC_CORRELATION_ID_KEY;
 
 @Slf4j
 @Service
@@ -44,44 +46,46 @@ public class PaymentMethodDetachConsumer {
     public void onStripeDetachPaymentMethodRequested(ConsumerRecord<String, String> stripeEventRecord, Acknowledgment ack) {
         BaseEvent parsed = kafkaEventParser.parse(stripeEventRecord.value());
 
-        if (!(parsed instanceof StripePaymentMethodDetachEvent event)) {
+        try (MDC.MDCCloseable ignored = MDC.putCloseable(MDC_CORRELATION_ID_KEY, parsed.getCorrelationId())) {
+            if (!(parsed instanceof StripePaymentMethodDetachEvent event)) {
+                ack.acknowledge();
+                return;
+            }
+
+            // Consumer-side idempotency
+            // Kafka gives at-least-once delivery so same event can arrive more than once
+            if (processedEventRepository.existsByEventID(event.getEventID())) {
+                log.info("[StripeService] Event {} already processed, skipping", event.getEventID());
+                ack.acknowledge();
+                return;
+            }
+
+            log.info("Processing Stripe detach Payment Event event {} for userID: {}", event.getEventID(), event.getUserID());
+
+            RequestOptions detachOptions = RequestOptions.builder()
+                    .setIdempotencyKey(event.getEventID())
+                    .build();
+
+            try {
+                stripeClient.v1().paymentMethods().detach(event.getStripePaymentMethodID(), detachOptions);
+                log.info("[StripeService] Detached Payment Method {} from Stripe for userID {}", event.getStripePaymentMethodID(), event.getUserID());
+            } catch (StripeException ex) {
+                log.error("[StripeService] Stripe detach failed for Payment Method {}: {}", event.getStripePaymentMethodID(), ex.getMessage(), ex);
+                throw new StripeOperationException("Stripe detach failed for Payment Method " + event.getStripePaymentMethodID());
+            }
+
+            ProcessedEvent processed = new ProcessedEvent();
+            processed.setEventID(event.getEventID());
+            processed.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+            processedEventRepository.save(processed);
+
+            // No local row for a rejected duplicate-card attach (see SavedItemsService#addPaymentMethod) - only Stripe-side cleanup needed
+            if (null != event.getPaymentMethodID()) {
+                paymentMethodRepository.deleteById(event.getPaymentMethodID());
+            }
+
             ack.acknowledge();
-            return;
         }
-
-        // Consumer-side idempotency
-        // Kafka gives at-least-once delivery so same event can arrive more than once
-        if (processedEventRepository.existsByEventID(event.getEventID())) {
-            log.info("[StripeService] Event {} already processed, skipping", event.getEventID());
-            ack.acknowledge();
-            return;
-        }
-
-        log.info("Processing Stripe detach Payment Event event {} for userID: {}", event.getEventID(), event.getUserID());
-
-        RequestOptions detachOptions = RequestOptions.builder()
-                .setIdempotencyKey(event.getEventID())
-                .build();
-
-        try {
-            stripeClient.v1().paymentMethods().detach(event.getStripePaymentMethodID(), detachOptions);
-            log.info("[StripeService] Detached Payment Method {} from Stripe for userID {}", event.getStripePaymentMethodID(), event.getUserID());
-        } catch (StripeException ex) {
-            log.error("[StripeService] Stripe detach failed for Payment Method {}: {}", event.getStripePaymentMethodID(), ex.getMessage(), ex);
-            throw new StripeOperationException("Stripe detach failed for Payment Method " + event.getStripePaymentMethodID());
-        }
-
-        ProcessedEvent processed = new ProcessedEvent();
-        processed.setEventID(event.getEventID());
-        processed.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
-        processedEventRepository.save(processed);
-
-        // No local row for a rejected duplicate-card attach (see SavedItemsService#addPaymentMethod) - only Stripe-side cleanup needed
-        if (null != event.getPaymentMethodID()) {
-            paymentMethodRepository.deleteById(event.getPaymentMethodID());
-        }
-
-        ack.acknowledge();
     }
 }
 

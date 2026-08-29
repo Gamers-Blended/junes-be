@@ -19,6 +19,7 @@ import com.gamersblended.junes.util.KafkaEventParser;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.gamersblended.junes.constant.KafkaConstants.ORDER_EVENTS;
+import static com.gamersblended.junes.constant.LoggingConstants.MDC_CORRELATION_ID_KEY;
 
 @Slf4j
 @Service
@@ -76,13 +78,15 @@ public class OrderFinalisationConsumer {
     public void onOrderEvent(ConsumerRecord<String, String> orderEvent, Acknowledgment ack) {
         BaseEvent parsedEvent = kafkaEventParser.parse(orderEvent.value());
 
-        if (parsedEvent instanceof PaymentSucceededEvent succeededEvent) {
-            handlePaymentSucceeded(succeededEvent);
-        } else if (parsedEvent instanceof PaymentFailedEvent failedEvent) {
-            handlePaymentFailed(failedEvent);
-        }
+        try (MDC.MDCCloseable ignored = MDC.putCloseable(MDC_CORRELATION_ID_KEY, parsedEvent.getCorrelationId())) {
+            if (parsedEvent instanceof PaymentSucceededEvent succeededEvent) {
+                handlePaymentSucceeded(succeededEvent);
+            } else if (parsedEvent instanceof PaymentFailedEvent failedEvent) {
+                handlePaymentFailed(failedEvent);
+            }
 
-        ack.acknowledge();
+            ack.acknowledge();
+        }
     }
 
     private void handlePaymentSucceeded(PaymentSucceededEvent event) {

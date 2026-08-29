@@ -20,6 +20,7 @@ import com.gamersblended.junes.util.KafkaEventParser;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ import java.time.ZoneId;
 
 import static com.gamersblended.junes.constant.KafkaConstants.ORDER_EVENTS;
 import static com.gamersblended.junes.constant.KafkaConstants.PENDING;
+import static com.gamersblended.junes.constant.LoggingConstants.MDC_CORRELATION_ID_KEY;
 
 @Slf4j
 @Service
@@ -62,59 +64,61 @@ public class PaymentEventConsumer {
     public void onOrderEvent(ConsumerRecord<String, String> orderEventRecord, Acknowledgment ack) {
         BaseEvent parsed = kafkaEventParser.parse(orderEventRecord.value());
 
-        // Worker only reacts to OrderCreated
-        // OrderFinalisationConsumer reacts to the other event types
-        if (!(parsed instanceof OrderCreatedEvent event)) {
+        try (MDC.MDCCloseable ignored = MDC.putCloseable(MDC_CORRELATION_ID_KEY, parsed.getCorrelationId())) {
+            // Worker only reacts to OrderCreated
+            // OrderFinalisationConsumer reacts to the other event types
+            if (!(parsed instanceof OrderCreatedEvent event)) {
+                ack.acknowledge();
+                return;
+            }
+
+            // Consumer-side idempotency
+            if (processedEventRepository.existsByEventID(event.getEventID())) {
+                log.info("[PaymentEventConsumer] Event {} already processed, skipping...", event.getEventID());
+                ack.acknowledge();
+                return;
+            }
+
+            // Check payment method matches userID and paymentMethodID (cannot charge card belonging to another user)
+            PaymentMethod paymentMethod = paymentMethodRepository
+                    .getPaymentMethodByUserIDAndID(event.getUserID(), event.getPaymentMethodID())
+                    .orElseThrow(() -> new SavedItemNotFoundException("Payment method not found: " + event.getPaymentMethodID()));
+
+            if (null == paymentMethod.getStripeCustomerID() || null == paymentMethod.getStripePaymentMethodID()) {
+                throw new SavedItemNotFoundException(
+                        "Payment method " + event.getPaymentMethodID() + " has no linked Stripe references"
+                );
+            }
+
+            PaymentResult result;
+            try {
+                result = paymentGatewayService.charge(
+                        "order-charge-" + event.getOrderNumber(), // Stripe idempotency key
+                        ChargeRequest.builder()
+                                .stripeCustomerID(paymentMethod.getStripeCustomerID())
+                                .stripePaymentMethodID(paymentMethod.getStripePaymentMethodID())
+                                .amountInCents(toAmountInCents(event.getTotalAmount()))
+                                .currency(event.getCurrency())
+                                .orderNumber(event.getOrderNumber())
+                                .build());
+            } catch (PaymentGatewayException ex) {
+                log.error("[PaymentEventConsumer] Stripe payment failed for order {}", event.getOrderNumber(), ex);
+                throw ex;
+            }
+
+            if (result.isSuccess()) {
+                publishPaymentSucceeded(event, result);
+            } else {
+                publishPaymentFailed(event, result);
+            }
+
+            ProcessedEvent processedEvent = new ProcessedEvent();
+            processedEvent.setEventID(event.getEventID());
+            processedEvent.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+            processedEventRepository.save(processedEvent);
+
             ack.acknowledge();
-            return;
         }
-
-        // Consumer-side idempotency
-        if (processedEventRepository.existsByEventID(event.getEventID())) {
-            log.info("[PaymentEventConsumer] Event {} already processed, skipping...", event.getEventID());
-            ack.acknowledge();
-            return;
-        }
-
-        // Check payment method matches userID and paymentMethodID (cannot charge card belonging to another user)
-        PaymentMethod paymentMethod = paymentMethodRepository
-                .getPaymentMethodByUserIDAndID(event.getUserID(), event.getPaymentMethodID())
-                .orElseThrow(() -> new SavedItemNotFoundException("Payment method not found: " + event.getPaymentMethodID()));
-
-        if (null == paymentMethod.getStripeCustomerID() || null == paymentMethod.getStripePaymentMethodID()) {
-            throw new SavedItemNotFoundException(
-                    "Payment method " + event.getPaymentMethodID() + " has no linked Stripe references"
-            );
-        }
-
-        PaymentResult result;
-        try {
-            result = paymentGatewayService.charge(
-                    "order-charge-" + event.getOrderNumber(), // Stripe idempotency key
-                    ChargeRequest.builder()
-                            .stripeCustomerID(paymentMethod.getStripeCustomerID())
-                            .stripePaymentMethodID(paymentMethod.getStripePaymentMethodID())
-                            .amountInCents(toAmountInCents(event.getTotalAmount()))
-                            .currency(event.getCurrency())
-                            .orderNumber(event.getOrderNumber())
-                            .build());
-        } catch (PaymentGatewayException ex) {
-            log.error("[PaymentEventConsumer] Stripe payment failed for order {}", event.getOrderNumber(), ex);
-            throw ex;
-        }
-
-        if (result.isSuccess()) {
-            publishPaymentSucceeded(event, result);
-        } else {
-            publishPaymentFailed(event, result);
-        }
-
-        ProcessedEvent processedEvent = new ProcessedEvent();
-        processedEvent.setEventID(event.getEventID());
-        processedEvent.setProcessedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
-        processedEventRepository.save(processedEvent);
-
-        ack.acknowledge();
     }
 
     private long toAmountInCents(BigDecimal amount) {
