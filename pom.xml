@@ -42,6 +42,7 @@
         <resilience4j-spring-boot3.version>2.4.0</resilience4j-spring-boot3.version>
         <resilience4j-reactor.version>2.4.0</resilience4j-reactor.version>
         <stripe.version>33.1.0</stripe.version>
+        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
     </properties>
     <dependencies>
         <dependency>
@@ -250,6 +251,12 @@
             <artifactId>stripe-java</artifactId>
             <version>${stripe.version}</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash-logback-encoder.version}</version>
         </dependency>
 
     </dependencies>
