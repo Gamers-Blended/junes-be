@@ -39,7 +39,9 @@ public class SecurityConfig {
 //                        .requestMatchers("/junes/api/v1/cart/**").hasAnyRole("READER", "ADMIN") // Read-only
                                 .requestMatchers("/junes/api/v1/cart/**").permitAll()
                                 .requestMatchers("/junes/api/v1/wishlist/**").permitAll()
-                                .requestMatchers("/actuator/health").permitAll() // Health check
+                                // /actuator/** is served on separate management port (see management.server.port in application*.properties)
+                                // Never reaches this filter chain — kept off the main JWT-secured API surface deliberately
+                                // Isolated via Docker network rather than app-level auth
                                 .requestMatchers("/junes/api/v1/housekeep/**").hasRole("ADMIN")
                                 .requestMatchers("/junes/api/v1/**").permitAll() // TODO temp
                                 .requestMatchers("/junes/api/v1/auth/**").permitAll()
