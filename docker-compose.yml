@@ -217,6 +217,28 @@ services:
     networks:
       - app-network
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    # App runs on host, Prometheus reaches it via host gateway
+    # host.docker.internal only resolves natively on Docker Desktop
+    # Plain Linux Docker Engine needs extra_hosts entry for the same name
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:9090/-/ready >/dev/null 2>&1 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
   mongodb_data:
@@ -225,6 +247,7 @@ volumes:
   rabbitmq_data:
   kafka-data:
   es-data:
+  prometheus-data:
 
 networks:
   app-network:
