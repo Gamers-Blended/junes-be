@@ -48,6 +48,15 @@ App logs are shipped automatically to Logstash (`localhost:5044`) once the stack
 
 If Elasticsearch fails to start with a `vm.max_map_count` error, run on the host (Linux only): `sudo sysctl -w vm.max_map_count=262144`.
 
+## Prometheus & Grafana
+```
+localhost:9090   # Prometheus
+localhost:3000   # Grafana
+```
+Prometheus scrapes the app's `/actuator/prometheus` endpoint on `localhost:9404` every 15s — **the app must be running locally** (`./mvnw spring-boot:run` or your IDE run configuration) for Prometheus to have any data, since the local `docker-compose.yml` does not run the app itself. Check **Status > Targets** in the Prometheus UI to confirm the `junes-app` job is `UP`.
+
+Open Grafana and log in with `admin` / `admin` (local dev only). The Prometheus data source and the three dashboards (**API Latency & Error Rate**, **JVM Health**, **Kafka Consumer Lag**) under the **Junes** folder are provisioned automatically on startup — no manual setup, and it survives `docker compose down` + `up` since everything lives under `monitoring/` in the repo.
+
 ## Jenkins UI
 ```
 localhost:8090/jenkins
