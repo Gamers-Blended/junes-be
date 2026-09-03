@@ -1,0 +1,33 @@
+groups:
+  - name: junes-app.rules
+    rules:
+      - alert: HighErrorRate
+        # 5xx responses as a share of total requests, over a 5m rolling window
+        expr: >
+          sum(rate(http_server_requests_seconds_count{job="junes-app",status=~"5.."}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count{job="junes-app"}[5m]))
+          > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate on junes-app"
+          description: >
+            5xx error rate has been above 5% for more than 2 minutes
+            (current value: {{ $value | humanizePercentage }}).
+
+      - alert: HighP95Latency
+        # p95 request latency, over a 5m rolling window
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="junes-app"}[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on junes-app"
+          description: >
+            p95 request latency has been above 1s for more than 5 minutes
+            (current value: {{ $value | humanizeDuration }}).

@@ -1,0 +1,10 @@
+route:
+  receiver: "default"
+  group_by: [ "alertname" ]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+
+receivers:
+  # No external webhook/Slack/email target — a fired alert is visible in Alertmanager UI
+  - name: "default"
