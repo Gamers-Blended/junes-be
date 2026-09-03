@@ -84,7 +84,7 @@ pipeline {
 
         stage('Start Dependencies') {
             steps {
-                sh "docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka elasticsearch es-setup logstash kibana kibana-setup prometheus grafana"
+                sh "docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka elasticsearch es-setup logstash kibana kibana-setup prometheus grafana alertmanager"
             }
         }
 
