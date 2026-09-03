@@ -260,6 +260,47 @@ services:
     networks:
       - app-network
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:9090/-/ready >/dev/null 2>&1 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - app-network
+    # Not published to host — only Grafana (same network) reads from it
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:3000/api/health | grep -q '\"database\": \"ok\"'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app-network
+    # Bound to 127.0.0.1 — reach it from an admin box via SSH tunnel, not directly over the internet
+
   junes-app:
     build:
       context: .
@@ -321,6 +362,8 @@ volumes:
   rabbitmq_data:
   kafka-data:
   es-data:
+  prometheus-data:
+  grafana-data:
 
 networks:
   app-network:

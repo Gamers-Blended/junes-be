@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "junes-app"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      # junes-app and prometheus share app-network in docker-compose.app.yml,
+      # so it's reachable by service name (no host.docker.internal here)
+      - targets: [ "junes-app:9404" ]
+        labels:
+          application: "junes-be"
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: [ "localhost:9090" ]

@@ -26,6 +26,8 @@ pipeline {
         ELASTIC_PASSWORD         = credentials('ELASTIC_PASSWORD')
         KIBANA_SYSTEM_PASSWORD   = credentials('KIBANA_SYSTEM_PASSWORD')
         LOGSTASH_WRITER_PASSWORD = credentials('LOGSTASH_WRITER_PASSWORD')
+        GRAFANA_ADMIN_USER       = credentials('GRAFANA_ADMIN_USER')
+        GRAFANA_ADMIN_PASSWORD   = credentials('GRAFANA_ADMIN_PASSWORD')
 
         // For application.properties
         MAILGUN_API_KEY_2       = credentials('MAILGUN_API_KEY_2')
@@ -82,7 +84,7 @@ pipeline {
 
         stage('Start Dependencies') {
             steps {
-                sh "docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka"
+                sh "docker compose -p ${COMPOSE_PROJECT} -f ${env.COMPOSE_FILE} up -d postgres mongodb redis rabbitmq kafka elasticsearch es-setup logstash kibana kibana-setup prometheus grafana"
             }
         }
 
