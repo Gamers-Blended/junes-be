@@ -43,6 +43,17 @@
         <resilience4j-reactor.version>2.4.0</resilience4j-reactor.version>
         <stripe.version>33.1.0</stripe.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
+
+        <!-- Security patch overrides on top of the spring-boot-starter-parent 3.3.13 BOM -->
+        <tomcat.version>10.1.59</tomcat.version>
+        <jackson-bom.version>2.18.10</jackson-bom.version>
+        <netty.version>4.1.137.Final</netty.version>
+        <thymeleaf.version>3.1.5.RELEASE</thymeleaf.version>
+        <postgresql.version>42.7.13</postgresql.version>
+        <rabbit-amqp-client.version>5.35.0</rabbit-amqp-client.version>
+        <logback.version>1.5.38</logback.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
+        <kafka.version>3.9.2</kafka.version>
     </properties>
     <dependencies>
         <dependency>
@@ -60,10 +71,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -144,12 +151,6 @@
             <groupId>commons-validator</groupId>
             <artifactId>commons-validator</artifactId>
             <version>1.10.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.83</version>
         </dependency>
 
         <dependency>
