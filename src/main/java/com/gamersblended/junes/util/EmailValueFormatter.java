@@ -47,6 +47,8 @@ public class EmailValueFormatter {
             case STD -> "Standard";
             case SE -> "Special";
             case CE -> "Collector's";
+            case DLX_E -> "Deluxe";
+            case GE -> "Gold";
             default -> throw new IllegalStateException("Unexpected edition value: " + editionValue.toLowerCase());
         };
     }

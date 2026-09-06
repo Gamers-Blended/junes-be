@@ -21,5 +21,7 @@ public class ProductMetadataConstants {
     public static final String STD = "std";
     public static final String SE = "se";
     public static final String CE = "ce";
+    public static final String DLX_E = "dlx_e";
+    public static final String GE = "ge";
 
 }
