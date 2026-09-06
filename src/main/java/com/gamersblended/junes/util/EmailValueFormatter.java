@@ -37,6 +37,7 @@ public class EmailValueFormatter {
             case ASIA -> "Asia";
             case US -> "United States";
             case EUR -> "Europe";
+            case JP -> "Japan";
             default -> throw new IllegalStateException("Unexpected region value: " + regionValue.toLowerCase());
         };
     }

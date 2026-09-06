@@ -2,7 +2,8 @@ package com.gamersblended.junes.constant;
 
 public class ProductMetadataConstants {
 
-    private ProductMetadataConstants() {}
+    private ProductMetadataConstants() {
+    }
 
     public static final String PLAYSTATION_4 = "ps4";
     public static final String PLAYSTATION_5 = "ps5";
@@ -15,6 +16,7 @@ public class ProductMetadataConstants {
     public static final String ASIA = "asia";
     public static final String US = "us";
     public static final String EUR = "eur";
+    public static final String JP = "jp";
 
     public static final String STD = "std";
     public static final String CE = "ce";
