@@ -13,10 +13,10 @@ public class EmailValueFormatter {
     private String imageUrlPrefix;
 
     public String appendUrlPrefix(String productImageUrl) {
-        if (null != productImageUrl) {
-            return imageUrlPrefix + productImageUrl;
+        if (null == productImageUrl) {
+            return null;
         }
-        return productImageUrl;
+        return imageUrlPrefix + productImageUrl;
     }
 
     public String formatPlatformName(String platformValue) {
