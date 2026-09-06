@@ -32,3 +32,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Load-test result output - generated, not source ###
+load-testing/results/*.json
