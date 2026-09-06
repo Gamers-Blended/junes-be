@@ -45,6 +45,7 @@ public class EmailValueFormatter {
     public String formatEditionName(String editionValue) {
         return switch (editionValue.toLowerCase()) {
             case STD -> "Standard";
+            case SE -> "Special";
             case CE -> "Collector's";
             default -> throw new IllegalStateException("Unexpected edition value: " + editionValue.toLowerCase());
         };

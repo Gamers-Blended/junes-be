@@ -19,6 +19,7 @@ public class ProductMetadataConstants {
     public static final String JP = "jp";
 
     public static final String STD = "std";
+    public static final String SE = "se";
     public static final String CE = "ce";
 
 }
