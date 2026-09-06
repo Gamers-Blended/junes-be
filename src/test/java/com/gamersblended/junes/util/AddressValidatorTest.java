@@ -212,7 +212,9 @@ class AddressValidatorTest {
 
     @Test
     void validateCountry_rejectsCountryExceedingMaxLength() {
-        assertThatThrownBy(() -> validator.validateCountry("A".repeat(51), userID))
+        String tooLongCountry = "A".repeat(51);
+
+        assertThatThrownBy(() -> validator.validateCountry(tooLongCountry, userID))
                 .isInstanceOf(InputValidationException.class)
                 .hasMessageContaining("exceeds maximum length");
     }
@@ -240,7 +242,9 @@ class AddressValidatorTest {
 
     @Test
     void validatePhoneNumber_rejectsPhoneNumberExceedingMaxLength() {
-        assertThatThrownBy(() -> validator.validatePhoneNumber("1".repeat(21), "US", userID))
+        String tooLongPhoneNumber = "1".repeat(21);
+
+        assertThatThrownBy(() -> validator.validatePhoneNumber(tooLongPhoneNumber, "US", userID))
                 .isInstanceOf(InputValidationException.class)
                 .hasMessageContaining("exceeds maximum length");
     }
