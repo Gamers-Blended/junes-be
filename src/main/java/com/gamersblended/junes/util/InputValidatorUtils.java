@@ -1,9 +1,9 @@
 package com.gamersblended.junes.util;
 
-import org.springframework.stereotype.Component;
+public final class InputValidatorUtils {
 
-@Component
-public class InputValidatorUtils {
+    private InputValidatorUtils() {
+    }
 
     public static String sanitizeString(String input) {
         if (null == input) {
