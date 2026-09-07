@@ -57,7 +57,10 @@ public class SnowflakeIDGenerator {
         lastTimestamp = timestamp;
 
         // Reduce timestamp to fit in smaller space
-        long reducedTime = (timestamp - EPOCH) / 1000; // seconds since epoch
+        // Must stay at millisecond resolution to match sequence's reset granularity above
+        // Else 2 different milliseconds within the same second would both start at
+        // sequence 0 and collide on the same encoded ID
+        long reducedTime = timestamp - EPOCH; // milliseconds since epoch
         reducedTime = reducedTime % MAX_REDUCED_TIME; // 25 bits max
 
         // Combine: timestamp(25) + machine(4) + sequence(10) = 39 bits
