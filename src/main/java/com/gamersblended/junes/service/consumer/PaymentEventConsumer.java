@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.PaymentResult;
@@ -16,6 +16,7 @@ import com.gamersblended.junes.model.ProcessedEvent;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.repository.jpa.ProcessedEventRepository;
+import com.gamersblended.junes.service.payment.PaymentGatewayService;
 import com.gamersblended.junes.util.KafkaEventParser;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;

@@ -2,10 +2,10 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.dto.response.ResponseMessage;
-import com.gamersblended.junes.service.CartService;
-import com.gamersblended.junes.service.EmailVerificationTokenService;
-import com.gamersblended.junes.service.PasswordResetService;
-import com.gamersblended.junes.service.WishlistService;
+import com.gamersblended.junes.service.cart.CartService;
+import com.gamersblended.junes.service.auth.EmailVerificationTokenService;
+import com.gamersblended.junes.service.auth.PasswordResetService;
+import com.gamersblended.junes.service.cart.WishlistService;
 import com.gamersblended.junes.service.order.OrderShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

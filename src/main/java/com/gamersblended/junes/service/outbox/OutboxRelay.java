@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.outbox;
 
 import com.gamersblended.junes.model.OutboxEvent;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;

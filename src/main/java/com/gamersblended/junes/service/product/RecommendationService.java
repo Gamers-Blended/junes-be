@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.product;
 
 import com.gamersblended.junes.dto.recommender.RecommendationRequestDTO;
 import com.gamersblended.junes.dto.recommender.RecommendationResponseDTO;

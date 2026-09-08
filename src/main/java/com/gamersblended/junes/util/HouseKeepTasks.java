@@ -1,9 +1,9 @@
 package com.gamersblended.junes.util;
 
-import com.gamersblended.junes.service.CartService;
-import com.gamersblended.junes.service.EmailVerificationTokenService;
-import com.gamersblended.junes.service.PasswordResetService;
-import com.gamersblended.junes.service.WishlistService;
+import com.gamersblended.junes.service.cart.CartService;
+import com.gamersblended.junes.service.auth.EmailVerificationTokenService;
+import com.gamersblended.junes.service.auth.PasswordResetService;
+import com.gamersblended.junes.service.cart.WishlistService;
 import com.gamersblended.junes.service.order.OrderExpiryService;
 import com.gamersblended.junes.service.order.OrderShipmentService;
 import lombok.extern.slf4j.Slf4j;

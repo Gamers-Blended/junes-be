@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.event.InventoryChangedEvent;

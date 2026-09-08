@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.auth;
 
 import com.gamersblended.junes.exception.DatabaseDeletionException;
 import com.gamersblended.junes.exception.InvalidTokenException;
@@ -6,6 +6,7 @@ import com.gamersblended.junes.model.PasswordResetToken;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.PasswordResetTokenRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.service.email.EmailProducerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.auth;
 
 import com.gamersblended.junes.constant.TokenPurpose;
 import com.gamersblended.junes.exception.*;
@@ -6,6 +6,7 @@ import com.gamersblended.junes.model.EmailVerificationToken;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.EmailVerificationTokenRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.service.payment.StripeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

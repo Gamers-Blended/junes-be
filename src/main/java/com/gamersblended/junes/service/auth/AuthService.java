@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.auth;
 
 import com.gamersblended.junes.constant.Role;
 import com.gamersblended.junes.constant.TokenPurpose;
@@ -11,6 +11,9 @@ import com.gamersblended.junes.model.EmailVerificationToken;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.EmailVerificationTokenRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.service.cart.CartService;
+import com.gamersblended.junes.service.cart.WishlistService;
+import com.gamersblended.junes.service.email.EmailProducerService;
 import com.gamersblended.junes.util.EmailValidatorService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;

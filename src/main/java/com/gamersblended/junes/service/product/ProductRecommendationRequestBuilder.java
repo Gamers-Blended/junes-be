@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.product;
 
 import com.gamersblended.junes.constant.SignalTypeEnums;
 import com.gamersblended.junes.dto.recommender.OrderEvent;
@@ -9,6 +9,7 @@ import com.gamersblended.junes.model.Cart;
 import com.gamersblended.junes.model.CartItem;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
 import com.gamersblended.junes.service.cache.OrderHistoryCacheService;
+import com.gamersblended.junes.service.cart.CartService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;

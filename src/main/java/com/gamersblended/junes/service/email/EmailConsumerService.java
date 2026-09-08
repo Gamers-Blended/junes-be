@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.email;
 
 import com.gamersblended.junes.dto.EmailRequestDTO;
 import com.gamersblended.junes.exception.EmailDeliveryException;

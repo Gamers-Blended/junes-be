@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.cart;
 
 import com.gamersblended.junes.dto.CartItemDTO;
 import com.gamersblended.junes.dto.ProductInCartDTO;

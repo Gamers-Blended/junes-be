@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.auth;
 
 import com.gamersblended.junes.exception.DatabaseInsertionException;
 import com.gamersblended.junes.exception.InvalidTokenException;

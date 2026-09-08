@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.payment;
 
 import com.gamersblended.junes.dto.event.BaseEvent;
 import com.gamersblended.junes.dto.event.StripeEmailUpdateEvent;

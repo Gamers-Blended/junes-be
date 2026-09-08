@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.auth;
 
 import com.gamersblended.junes.constant.TokenPurpose;
 import com.gamersblended.junes.dto.request.UpdateEmailRequest;
@@ -11,6 +11,7 @@ import com.gamersblended.junes.exception.InputValidationException;
 import com.gamersblended.junes.exception.UserNotFoundException;
 import com.gamersblended.junes.model.User;
 import com.gamersblended.junes.repository.jpa.UserRepository;
+import com.gamersblended.junes.service.email.EmailProducerService;
 import com.gamersblended.junes.util.EmailValidatorService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;

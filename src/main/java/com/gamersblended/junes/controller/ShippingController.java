@@ -4,7 +4,7 @@ import com.gamersblended.junes.annotation.RateLimit;
 import com.gamersblended.junes.dto.request.CalculateShippingRequest;
 import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.dto.response.ShippingCalculationResponse;
-import com.gamersblended.junes.service.ShippingService;
+import com.gamersblended.junes.service.cart.ShippingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

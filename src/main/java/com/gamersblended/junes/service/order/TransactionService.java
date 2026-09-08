@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.order;
 
 import com.gamersblended.junes.dto.TransactionDetailsDTO;
 import com.gamersblended.junes.dto.TransactionHistoryDTO;

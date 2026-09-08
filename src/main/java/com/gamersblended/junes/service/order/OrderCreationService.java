@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.order;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.constant.TransactionStatus;
@@ -13,6 +13,7 @@ import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
 import com.gamersblended.junes.repository.jpa.OutboxEventRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
+import com.gamersblended.junes.service.cart.ShippingService;
 import com.gamersblended.junes.util.SnowflakeIDGenerator;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,6 @@
 package com.gamersblended.junes.util;
 
-import com.gamersblended.junes.service.ReconciliationService;
+import com.gamersblended.junes.service.outbox.ReconciliationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

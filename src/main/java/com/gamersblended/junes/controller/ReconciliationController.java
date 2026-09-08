@@ -2,7 +2,7 @@ package com.gamersblended.junes.controller;
 
 import com.gamersblended.junes.model.DeadLetterEvent;
 import com.gamersblended.junes.model.OutboxEvent;
-import com.gamersblended.junes.service.ReconciliationService;
+import com.gamersblended.junes.service.outbox.ReconciliationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

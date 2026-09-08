@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.email;
 
 import com.gamersblended.junes.constant.TokenPurpose;
 import com.gamersblended.junes.dto.AddressDTO;
@@ -9,6 +9,7 @@ import com.gamersblended.junes.exception.QueueEmailException;
 import com.gamersblended.junes.model.Product;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
+import com.gamersblended.junes.service.GeoLocationService;
 import com.gamersblended.junes.util.EmailValueFormatter;
 import eu.bitwalker.useragentutils.UserAgent;
 import jakarta.servlet.http.HttpServletRequest;

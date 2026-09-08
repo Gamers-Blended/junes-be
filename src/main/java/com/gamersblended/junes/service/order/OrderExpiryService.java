@@ -4,7 +4,7 @@ import com.gamersblended.junes.constant.TransactionStatus;
 import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.model.TransactionItem;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
-import com.gamersblended.junes.service.InventoryService;
+import com.gamersblended.junes.service.product.InventoryService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

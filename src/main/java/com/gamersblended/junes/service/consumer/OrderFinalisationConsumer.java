@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.consumer;
 
 import com.gamersblended.junes.constant.TransactionStatus;
 import com.gamersblended.junes.dto.OrderItemDTO;
@@ -15,6 +15,10 @@ import com.gamersblended.junes.repository.jpa.ProcessedEventRepository;
 import com.gamersblended.junes.repository.jpa.TransactionRepository;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import com.gamersblended.junes.service.cache.OrderHistoryCacheService;
+import com.gamersblended.junes.service.cart.CartService;
+import com.gamersblended.junes.service.email.EmailProducerService;
+import com.gamersblended.junes.service.order.TransactionService;
+import com.gamersblended.junes.service.product.InventoryService;
 import com.gamersblended.junes.util.KafkaEventParser;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;

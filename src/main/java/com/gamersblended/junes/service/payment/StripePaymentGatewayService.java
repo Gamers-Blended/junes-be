@@ -1,4 +1,4 @@
-package com.gamersblended.junes.service;
+package com.gamersblended.junes.service.payment;
 
 import com.gamersblended.junes.dto.PaymentResult;
 import com.gamersblended.junes.dto.request.ChargeRequest;
