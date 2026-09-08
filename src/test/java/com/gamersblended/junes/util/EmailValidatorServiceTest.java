@@ -1,5 +1,6 @@
 package com.gamersblended.junes.util;
 
+import com.gamersblended.junes.dto.response.ValidationResult;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

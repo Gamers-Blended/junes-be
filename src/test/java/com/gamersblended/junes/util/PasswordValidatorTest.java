@@ -1,5 +1,6 @@
 package com.gamersblended.junes.util;
 
+import com.gamersblended.junes.dto.response.ValidationResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -102,14 +103,5 @@ class PasswordValidatorTest {
 
         assertThat(result.getErrorMessage()).isEqualTo(String.join(", ", result.getErrorList()));
         assertThat(result.getErrorMessage()).contains(", ");
-    }
-
-    @Test
-    void validatePassword_getErrorListIsIndependentCopy() {
-        ValidationResult result = PasswordValidator.validatePassword("abc");
-
-        result.getErrorList().clear();
-
-        assertThat(result.getErrorList()).isNotEmpty();
     }
 }

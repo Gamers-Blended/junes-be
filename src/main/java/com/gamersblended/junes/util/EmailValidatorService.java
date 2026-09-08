@@ -1,5 +1,6 @@
 package com.gamersblended.junes.util;
 
+import com.gamersblended.junes.dto.response.ValidationResult;
 import com.gamersblended.junes.repository.jpa.UserRepository;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.stereotype.Service;

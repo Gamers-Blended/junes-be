@@ -1,5 +1,7 @@
 package com.gamersblended.junes.util;
 
+import com.gamersblended.junes.dto.response.ValidationResult;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
