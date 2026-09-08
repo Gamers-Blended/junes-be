@@ -29,9 +29,6 @@
     <properties>
         <java.version>17</java.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <spotbugs.version>4.8.6.6</spotbugs.version>
-        <pmd.version>3.26.0</pmd.version>
-        <checkstyle.version>3.6.0</checkstyle.version>
         <javadoc.version>3.6.2</javadoc.version>
         <springdoc.version>2.6.0</springdoc.version>
         <bitwalker.version>1.21</bitwalker.version>
