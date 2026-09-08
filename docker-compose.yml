@@ -89,7 +89,7 @@ services:
     image: confluentinc/cp-kafka:7.7.0
     ports:
       - "9092:9092"
-      - "9093:9093"  # For controller
+      - "9094:9093"  # For controller (host 9094 to avoid clashing with alertmanager's 9093)
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: "broker,controller"
