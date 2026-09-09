@@ -41,22 +41,22 @@ public class DeadLetterEventConsumer {
             INVENTORY_EVENTS + DLT_SUFFIX
     }, groupId = "dead-letter-event-consumer")
     @Transactional
-    public void onDeadLetteredRecord(ConsumerRecord<String, String> record, Acknowledgment ack) {
+    public void onDeadLetteredRecord(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack) {
         DeadLetterEvent deadLetterEvent = new DeadLetterEvent();
-        deadLetterEvent.setOriginalTopic(readHeader(record, KafkaHeaders.DLT_ORIGINAL_TOPIC, record.topic()));
-        deadLetterEvent.setExceptionMessage(readHeader(record, KafkaHeaders.DLT_EXCEPTION_MESSAGE, null));
-        deadLetterEvent.setPayload(record.value());
+        deadLetterEvent.setOriginalTopic(readHeader(consumerRecord, KafkaHeaders.DLT_ORIGINAL_TOPIC, consumerRecord.topic()));
+        deadLetterEvent.setExceptionMessage(readHeader(consumerRecord, KafkaHeaders.DLT_EXCEPTION_MESSAGE, null));
+        deadLetterEvent.setPayload(consumerRecord.value());
         deadLetterEvent.setStatus(UNRESOLVED);
         deadLetterEvent.setFailedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
 
         // Best-effort: a payload this consumer receives already failed its own listener,
         // so it may be malformed - must not let a parse failure throw and get this record DLT'd again
         try {
-            BaseEvent parsed = kafkaEventParser.parse(record.value());
+            BaseEvent parsed = kafkaEventParser.parse(consumerRecord.value());
             deadLetterEvent.setEventID(parsed.getEventID());
             deadLetterEvent.setEventType(parsed.getEventType());
         } catch (Exception ex) {
-            log.warn("[DeadLetterEventConsumer] Could not parse dead-lettered payload from topic {}, storing raw", record.topic());
+            log.warn("[DeadLetterEventConsumer] Could not parse dead-lettered payload from topic {}, storing raw", consumerRecord.topic());
         }
 
         deadLetterEventRepository.save(deadLetterEvent);
@@ -66,8 +66,8 @@ public class DeadLetterEventConsumer {
         ack.acknowledge();
     }
 
-    private String readHeader(ConsumerRecord<String, String> record, String headerName, String fallback) {
-        Header header = record.headers().lastHeader(headerName);
+    private String readHeader(ConsumerRecord<String, String> consumerRecord, String headerName, String fallback) {
+        Header header = consumerRecord.headers().lastHeader(headerName);
         if (null == header) {
             return fallback;
         }
