@@ -24,9 +24,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.ASIA_SINGAPORE;
 
 @Slf4j
 @Service
@@ -188,7 +191,7 @@ public class CartService {
 
     @Transactional
     public void cleanupInactiveCarts() {
-        LocalDateTime cutoffDate = LocalDateTime.now().minusMonths(CART_CLEANUP_GRACE_PERIOD_MONTHS);
+        LocalDateTime cutoffDate = LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE)).minusMonths(CART_CLEANUP_GRACE_PERIOD_MONTHS);
         int deletedCount = cartDatabaseRepository.deleteInactiveCarts(cutoffDate);
         log.info("Cleaned up {} inactive cart(s) not updated since {}", deletedCount, cutoffDate);
     }
