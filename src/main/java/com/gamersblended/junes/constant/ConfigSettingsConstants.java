@@ -11,4 +11,5 @@ public class ConfigSettingsConstants {
     public static final String IAT_TIMESTAMP = "iat_timestamp";
     public static final int MAX_NUMBER_OF_SAVED_ITEMS = 5;
     public static final int RESERVATION_EXPIRY_MINUTES = 30;
+    public static final String ASIA_SINGAPORE = "Asia/Singapore"; // Zone ID
 }

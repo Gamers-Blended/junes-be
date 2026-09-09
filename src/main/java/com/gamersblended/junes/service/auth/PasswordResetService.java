@@ -14,9 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.ASIA_SINGAPORE;
 import static com.gamersblended.junes.constant.ConfigSettingsConstants.RESET_PASSWORD_EXPIRY_HOURS;
 
 @Slf4j
@@ -57,7 +59,7 @@ public class PasswordResetService {
         PasswordResetToken resetToken = new PasswordResetToken();
         resetToken.setToken(token);
         resetToken.setUser(user);
-        resetToken.setExpiryDate(LocalDateTime.now().plusHours(RESET_PASSWORD_EXPIRY_HOURS));
+        resetToken.setExpiryDate(LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE)).plusHours(RESET_PASSWORD_EXPIRY_HOURS));
         tokenRepository.saveAndFlush(resetToken);
         log.info("New token generated and saved to database for userID: {}", user.getUserID());
 
@@ -92,7 +94,7 @@ public class PasswordResetService {
                     return new InvalidTokenException("Invalid or expired token");
                 });
 
-        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE)))) {
             log.error("Token has expired");
             throw new InvalidTokenException("Token has expired");
         }
@@ -108,7 +110,7 @@ public class PasswordResetService {
     @Transactional
     public void cleanupExpiredTokens() {
         try {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE));
             int deletedCount = tokenRepository.deleteByExpiryDateBefore(now);
 
             log.info("Number of expired tokens deleted: {}", deletedCount);
