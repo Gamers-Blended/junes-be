@@ -44,6 +44,7 @@ public class RecommendationCacheService {
                 .collect(Collectors.joining(","));
 
         // MD5 for fixed-length, collision-resistant strings
+        @SuppressWarnings("java:S4790") // Non-cryptographic use: only building a cache key, not for security purposes
         String hash = DigestUtils.md5DigestAsHex(sortedIDs.getBytes(StandardCharsets.UTF_8));
 
         log.info("[RecommendationCache] signals = {} -> key = {}{}", sortedIDs, KEY_PREFIX, hash);
