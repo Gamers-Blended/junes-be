@@ -91,9 +91,8 @@ public class RecommendationService {
                     return Mono.empty();
                 })
                 .onErrorResume(RecommendationServerException.class, ex -> {
-                    // Circuit breaker re-throws exception
                     log.warn("[RecommendationService] Server error, falling back: {}", ex.getMessage());
-                    return Mono.error(ex);
+                    return Mono.empty();
                 })
                 .onErrorResume(RecommendationClientException.class, ex -> {
                     log.error("[RecommendationService] Client error — not retrying: {}", ex.getMessage());
