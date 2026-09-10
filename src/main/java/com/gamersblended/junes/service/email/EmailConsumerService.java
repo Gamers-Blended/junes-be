@@ -6,7 +6,6 @@ import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.client.MailgunClient;
 import com.mailgun.model.message.Message;
 import com.mailgun.model.message.MessageResponse;
-import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,7 +81,7 @@ public class EmailConsumerService {
         }
 
         log.error("Failed to send email to {} after {} attempts: {}",
-                to, MAX_RETRY_ATTEMPTS, lastException != null ? lastException.getMessage() : "Unknown error");
+                to, MAX_RETRY_ATTEMPTS, lastException.getMessage());
         return false;
     }
 
@@ -92,17 +91,13 @@ public class EmailConsumerService {
             return false;
         }
 
-        if (message.contains("403") || message.contains("Forbidden") ||
+        return message.contains("403") || message.contains("Forbidden") ||
                 message.contains("400") || message.contains("Bad Request") ||
                 message.contains("401") || message.contains("Unauthorized") ||
-                message.contains("404") || message.contains("Not Found")) {
-            return true;
-        }
-
-        return false;
+                message.contains("404") || message.contains("Not Found");
     }
 
-    private void sendEmail(String to, String subject, String content) throws MessagingException, MailException {
+    private void sendEmail(String to, String subject, String content) throws MailException {
         Message message = Message.builder()
                 .from(fromEmail)
                 .to(to)
@@ -121,7 +116,7 @@ public class EmailConsumerService {
      */
     private String extractTextFromHtml(String html) {
         // HTML to text conversion
-        return html.replace("<[^>]*>", "")
+        return html.replaceAll("<[^>]*>", "")
                 .replace("&nbsp;", " ")
                 .replace("&amp;", "&")
                 .replace("&lt;", "<")
