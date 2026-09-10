@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -29,12 +28,15 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     private static final int MAX_LIST_SIZE = 20;
     private static final int PAGE_SIZE_LIMIT = 100;
     private static final int MAX_SEARCH_LIMIT = 25;
+    private static final String PRICE = "price";
+    private static final String STOCK = "stock";
+    private static final String RELEASE_DATE = "release_date";
     private static final String IN_STOCK = "in_stock";
     private static final String OUT_OF_STOCK = "out_of_stock";
     private static final String PREORDER = "preorder";
     private static final Pattern SAFE_STRING_PATTERN = Pattern.compile("^[a-zA-Z0-9\\s\\-_.,!?'\"()&]+$");
 
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     public CustomProductRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = Objects.requireNonNull(mongoTemplate, "MongoTemplate cannot be null");
@@ -76,13 +78,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         // Price range
         if (null != minPrice && null != maxPrice) {
             log.info("Only products priced between {} and {} (inclusive) will be returned", minPrice, maxPrice);
-            query.addCriteria(Criteria.where("price").gte(minPrice.doubleValue()).lte(maxPrice.doubleValue()));
+            query.addCriteria(Criteria.where(PRICE).gte(minPrice.doubleValue()).lte(maxPrice.doubleValue()));
         } else if (null != minPrice) {
             log.info("Only products priced at least {} will be returned", minPrice);
-            query.addCriteria(Criteria.where("price").gte(minPrice.doubleValue()));
+            query.addCriteria(Criteria.where(PRICE).gte(minPrice.doubleValue()));
         } else if (null != maxPrice) {
             log.info("Only products priced at most {} will be returned", maxPrice);
-            query.addCriteria(Criteria.where("price").lte(maxPrice.doubleValue()));
+            query.addCriteria(Criteria.where(PRICE).lte(maxPrice.doubleValue()));
         }
 
         // Lists (IN operator)
@@ -129,7 +131,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         String endDate = releaseDate.atEndOfMonth().toString();
                         return startDate + " to " + endDate;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
 
             log.info("Only products that were released in any of these date ranges: {} (inclusive) will be returned", dateRanges);
 
@@ -147,34 +149,34 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             if (availabilitySet.equals(Set.of(IN_STOCK))) {
                 // stock > 0 & release_date before or on currentDate
                 log.info("Only products that are in stock will be returned");
-                query.addCriteria(Criteria.where("stock").gt(0));
-                query.addCriteria(Criteria.where("release_date").lte(currentDate));
+                query.addCriteria(Criteria.where(STOCK).gt(0));
+                query.addCriteria(Criteria.where(RELEASE_DATE).lte(currentDate));
             } else if (availabilitySet.equals(Set.of(OUT_OF_STOCK))) {
                 // stock <= 0 & release_date before or on currentDate
                 log.info("Only products that are out of stock will be returned");
-                query.addCriteria(Criteria.where("stock").lte(0));
-                query.addCriteria(Criteria.where("release_date").lte(currentDate));
+                query.addCriteria(Criteria.where(STOCK).lte(0));
+                query.addCriteria(Criteria.where(RELEASE_DATE).lte(currentDate));
             } else if (availabilitySet.equals(Set.of(PREORDER))) {
                 // release_date after currentDate
                 log.info("Only products that are preorders will be returned");
-                query.addCriteria(Criteria.where("release_date").gt(currentDate));
+                query.addCriteria(Criteria.where(RELEASE_DATE).gt(currentDate));
             } else if (availabilitySet.equals(Set.of(IN_STOCK, OUT_OF_STOCK))) {
                 // release_date before or on currentDate
                 log.info("Only products that are in stock and out of stock will be returned");
-                query.addCriteria(Criteria.where("release_date").lte(currentDate));
+                query.addCriteria(Criteria.where(RELEASE_DATE).lte(currentDate));
             } else if (availabilitySet.equals(Set.of(IN_STOCK, PREORDER))) {
                 // stock > 0 or release_date after currentDate
                 log.info("Only products that are in stock and preorders will be returned");
                 query.addCriteria(new Criteria().orOperator(
-                        Criteria.where("stock").gt(0),
-                        Criteria.where("release_date").gt(currentDate)
+                        Criteria.where(STOCK).gt(0),
+                        Criteria.where(RELEASE_DATE).gt(currentDate)
                 ));
             } else if (availabilitySet.equals(Set.of(OUT_OF_STOCK, PREORDER))) {
                 // stock <= 0 or release_date after currentDate
                 log.info("Only products that are out of stock and preorders will be returned");
                 query.addCriteria(new Criteria().orOperator(
-                        Criteria.where("stock").lte(0),
-                        Criteria.where("release_date").gt(currentDate)
+                        Criteria.where(STOCK).lte(0),
+                        Criteria.where(RELEASE_DATE).gt(currentDate)
                 ));
             }
         }
@@ -225,7 +227,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         String endDate = releaseDate.atEndOfMonth().toString(); // last day of month
 
         // From 1st day of month till last day of month
-        return Criteria.where("release_date").gte(startDate).lte(endDate);
+        return Criteria.where(RELEASE_DATE).gte(startDate).lte(endDate);
     }
 
     private void validateInputs(String platform, String name,
@@ -391,9 +393,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     /**
      * Checks if input list is within size limit and does not contain null values
      * Elements are within length limit and does not contain invalid characters
-     *
-     * @param fieldName
-     * @param list
      */
     private void validateStringList(String fieldName, List<String> list) {
         if (list.size() > MAX_LIST_SIZE) {

@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.ASIA_SINGAPORE;
+
 @Slf4j
 @Repository
 public class RedisWishlistRepository {
@@ -73,7 +75,7 @@ public class RedisWishlistRepository {
                 .wishlistID(UUID.randomUUID())
                 .userID(userID)
                 .sessionID(sessionID)
-                .createdOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")))
+                .createdOn(LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE)))
                 .version(0)
                 .build();
 
