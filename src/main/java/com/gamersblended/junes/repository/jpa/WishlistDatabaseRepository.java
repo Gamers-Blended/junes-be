@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,14 +15,6 @@ import java.util.UUID;
 public interface WishlistDatabaseRepository extends JpaRepository<Wishlist, UUID> {
 
     Optional<Wishlist> findByUserID(UUID userID);
-
-    boolean existsByUserID(UUID userID);
-
-    void deleteByUserID(UUID userID);
-
-    // Find wishlists that haven't been updated in n days (for cleanup)
-    @Query(value = "SELECT * FROM junes_rel.wishlists WHERE updated_on < :cutoffDate", nativeQuery = true)
-    List<Wishlist> findInactiveWishlists(@Param("cutoffDate") LocalDateTime cutoffDate);
 
     @Modifying
     @Query(value = "DELETE FROM junes_rel.wishlists WHERE updated_on < :cutoffDate", nativeQuery = true)
