@@ -57,19 +57,26 @@ public class OutboxRelay {
 
             log.info("[OutboxRelay] Published event {} ({}) for aggregate {} to topic {}",
                     event.getId(), event.getEventType(), event.getAggregateID(), event.getTopic());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            handlePublishFailure(event, ex);
         } catch (Exception ex) {
-            int attemptNumber = event.getRetryCount() + 1;
+            handlePublishFailure(event, ex);
+        }
+    }
 
-            if (attemptNumber >= MAX_RETRY_COUNT) {
-                outboxEventRepository.markFailedPermanently(event.getId(), LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+    private void handlePublishFailure(OutboxEvent event, Exception ex) {
+        int attemptNumber = event.getRetryCount() + 1;
 
-                log.error("[OutboxRelay] Event {} has exceeded max retry count ({}) - needs manual attention",
-                        event.getId(), MAX_RETRY_COUNT);
-            } else {
-                outboxEventRepository.incrementRetryCount(event.getId());
-                log.error("[OutboxRelay] Failed to publish event {} for aggregate {} (attempt {})",
-                        event.getId(), event.getAggregateID(), attemptNumber, ex);
-            }
+        if (attemptNumber >= MAX_RETRY_COUNT) {
+            outboxEventRepository.markFailedPermanently(event.getId(), LocalDateTime.now(ZoneId.of("Asia/Singapore")));
+
+            log.error("[OutboxRelay] Event {} has exceeded max retry count ({}) - needs manual attention",
+                    event.getId(), MAX_RETRY_COUNT);
+        } else {
+            outboxEventRepository.incrementRetryCount(event.getId());
+            log.error("[OutboxRelay] Failed to publish event {} for aggregate {} (attempt {})",
+                    event.getId(), event.getAggregateID(), attemptNumber, ex);
         }
     }
 }
