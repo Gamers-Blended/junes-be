@@ -47,8 +47,8 @@ class EmailConsumerServiceTest {
         Thread.interrupted();
     }
 
-    private static EmailRequestDTO emailRequest(String subject) {
-        return EmailRequestDTO.builder().to("player@example.com").subject(subject).body("Welcome").build();
+    private static EmailRequestDTO emailRequest(String body) {
+        return EmailRequestDTO.builder().to("player@example.com").subject("Welcome").body(body).build();
     }
 
     // ---- consumeEmailRequest: success on first attempt ----
