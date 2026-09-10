@@ -10,8 +10,6 @@ import com.gamersblended.junes.model.Transaction;
 import com.gamersblended.junes.repository.jpa.AddressRepository;
 import com.gamersblended.junes.repository.jpa.PaymentMethodRepository;
 import com.gamersblended.junes.service.product.InventoryService;
-import com.gamersblended.junes.service.order.OrderCreationService;
-import com.gamersblended.junes.service.order.TransactionService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

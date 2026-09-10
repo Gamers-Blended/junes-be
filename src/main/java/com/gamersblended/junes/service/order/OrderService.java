@@ -1,7 +1,6 @@
 package com.gamersblended.junes.service.order;
 
 import com.gamersblended.junes.dto.request.PlaceOrderRequest;
-import com.gamersblended.junes.service.order.OrderProcessingService;
 import com.gamersblended.junes.util.IdempotentUtils;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
