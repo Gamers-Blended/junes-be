@@ -5,13 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.exception.DuplicateRequestInProgressException;
 import com.gamersblended.junes.model.IdempotencyKey;
 import com.gamersblended.junes.repository.jpa.IdempotencyKeyRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.ASIA_SINGAPORE;
 
 @Slf4j
 @Component
@@ -21,6 +25,7 @@ public class IdempotentUtils {
     private final ObjectMapper objectMapper;
     private static final String COMPLETED = "COMPLETED";
     private static final String FAILED = "FAILED";
+    private static final int IDEMPOTENCY_KEY_RETENTION_DAYS = 7;
 
     public IdempotentUtils(IdempotencyKeyRepository idempotencyKeyRepository, ObjectMapper objectMapper) {
         this.idempotencyKeyRepository = idempotencyKeyRepository;
@@ -55,6 +60,13 @@ public class IdempotentUtils {
             idempotencyKeyRepository.markFailed(userID, eventType, idempotencyKey);
             throw ex;
         }
+    }
+
+    @Transactional
+    public void cleanupExpiredIdempotencyKeys() {
+        LocalDateTime cutoffDate = LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE)).minusDays(IDEMPOTENCY_KEY_RETENTION_DAYS);
+        int deletedCount = idempotencyKeyRepository.deleteOlderThan(cutoffDate);
+        log.info("Cleaned up {} idempotency key(s) older than {}", deletedCount, cutoffDate);
     }
 
     private String serialize(Object obj) {

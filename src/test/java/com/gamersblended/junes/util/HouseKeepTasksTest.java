@@ -1,8 +1,8 @@
 package com.gamersblended.junes.util;
 
-import com.gamersblended.junes.service.cart.CartService;
 import com.gamersblended.junes.service.auth.EmailVerificationTokenService;
 import com.gamersblended.junes.service.auth.PasswordResetService;
+import com.gamersblended.junes.service.cart.CartService;
 import com.gamersblended.junes.service.cart.WishlistService;
 import com.gamersblended.junes.service.order.OrderExpiryService;
 import com.gamersblended.junes.service.order.OrderShipmentService;
@@ -36,6 +36,9 @@ class HouseKeepTasksTest {
     @Mock
     private WishlistService wishlistService;
 
+    @Mock
+    private IdempotentUtils idempotentUtils;
+
     @InjectMocks
     private HouseKeepTasks houseKeepTasks;
 
@@ -45,7 +48,7 @@ class HouseKeepTasksTest {
 
         verify(passwordResetService).cleanupExpiredTokens();
         verifyNoInteractions(emailVerificationTokenService, orderExpiryService, orderShipmentService,
-                cartService, wishlistService);
+                cartService, wishlistService, idempotentUtils);
     }
 
     @Test
@@ -54,7 +57,7 @@ class HouseKeepTasksTest {
 
         verify(emailVerificationTokenService).cleanupUnverifiedEmails();
         verifyNoInteractions(passwordResetService, orderExpiryService, orderShipmentService,
-                cartService, wishlistService);
+                cartService, wishlistService, idempotentUtils);
     }
 
     @Test
@@ -63,7 +66,7 @@ class HouseKeepTasksTest {
 
         verify(orderExpiryService).releaseExpiredReservations();
         verifyNoInteractions(passwordResetService, emailVerificationTokenService, orderShipmentService,
-                cartService, wishlistService);
+                cartService, wishlistService, idempotentUtils);
     }
 
     @Test
@@ -72,7 +75,7 @@ class HouseKeepTasksTest {
 
         verify(orderShipmentService).simulateShipment();
         verifyNoInteractions(passwordResetService, emailVerificationTokenService, orderExpiryService,
-                cartService, wishlistService);
+                cartService, wishlistService, idempotentUtils);
     }
 
     @Test
@@ -81,7 +84,7 @@ class HouseKeepTasksTest {
 
         verify(cartService).cleanupInactiveCarts();
         verifyNoInteractions(passwordResetService, emailVerificationTokenService, orderExpiryService,
-                orderShipmentService, wishlistService);
+                orderShipmentService, wishlistService, idempotentUtils);
     }
 
     @Test
@@ -90,6 +93,15 @@ class HouseKeepTasksTest {
 
         verify(wishlistService).cleanupInactiveWishlists();
         verifyNoInteractions(passwordResetService, emailVerificationTokenService, orderExpiryService,
-                orderShipmentService, cartService);
+                orderShipmentService, cartService, idempotentUtils);
+    }
+
+    @Test
+    void scheduledHouseKeepExpiredIdempotencyKeys_delegatesToIdempotentUtilsOnly() {
+        houseKeepTasks.scheduledHouseKeepExpiredIdempotencyKeys();
+
+        verify(idempotentUtils).cleanupExpiredIdempotencyKeys();
+        verifyNoInteractions(passwordResetService, emailVerificationTokenService, orderExpiryService,
+                orderShipmentService, cartService, wishlistService);
     }
 }

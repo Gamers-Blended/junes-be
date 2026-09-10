@@ -1,8 +1,8 @@
 package com.gamersblended.junes.util;
 
-import com.gamersblended.junes.service.cart.CartService;
 import com.gamersblended.junes.service.auth.EmailVerificationTokenService;
 import com.gamersblended.junes.service.auth.PasswordResetService;
+import com.gamersblended.junes.service.cart.CartService;
 import com.gamersblended.junes.service.cart.WishlistService;
 import com.gamersblended.junes.service.order.OrderExpiryService;
 import com.gamersblended.junes.service.order.OrderShipmentService;
@@ -21,14 +21,16 @@ public class HouseKeepTasks {
     private final OrderShipmentService orderShipmentService;
     private final CartService cartService;
     private final WishlistService wishlistService;
+    private final IdempotentUtils idempotentUtils;
 
-    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, OrderShipmentService orderShipmentService, CartService cartService, WishlistService wishlistService) {
+    public HouseKeepTasks(PasswordResetService passwordResetService, EmailVerificationTokenService emailVerificationTokenService, OrderExpiryService orderExpiryService, OrderShipmentService orderShipmentService, CartService cartService, WishlistService wishlistService, IdempotentUtils idempotentUtils) {
         this.passwordResetService = passwordResetService;
         this.emailVerificationTokenService = emailVerificationTokenService;
         this.orderExpiryService = orderExpiryService;
         this.orderShipmentService = orderShipmentService;
         this.cartService = cartService;
         this.wishlistService = wishlistService;
+        this.idempotentUtils = idempotentUtils;
     }
 
     @Scheduled(cron = "${housekeeping.token-cleanup.cron: 0 0 */12 * * *}")
@@ -71,5 +73,12 @@ public class HouseKeepTasks {
     public void scheduledHouseKeepInactiveWishlists() {
         log.info("Starting scheduled house keeping for inactive wishlists...");
         wishlistService.cleanupInactiveWishlists();
+    }
+
+    @Scheduled(cron = "${housekeeping.idempotency-key-cleanup.cron: 0 0 4 * * *}")
+    @SchedulerLock(name = "IdempotencyKeyCleanupTask", lockAtMostFor = "${housekeeping.idempotency-key-cleanup.lock-at-most}", lockAtLeastFor = "${housekeeping.idempotency-key-cleanup.lock-at-least}")
+    public void scheduledHouseKeepExpiredIdempotencyKeys() {
+        log.info("Starting scheduled house keeping for expired idempotency keys...");
+        idempotentUtils.cleanupExpiredIdempotencyKeys();
     }
 }
