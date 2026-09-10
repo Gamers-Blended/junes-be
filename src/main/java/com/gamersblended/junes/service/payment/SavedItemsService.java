@@ -3,11 +3,7 @@ package com.gamersblended.junes.service.payment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gamersblended.junes.dto.AddressDTO;
 import com.gamersblended.junes.dto.PaymentMethodDTO;
-import com.gamersblended.junes.dto.event.BaseEvent;
-import com.gamersblended.junes.dto.event.StripePaymentMethodAddressAttachedEvent;
-import com.gamersblended.junes.dto.event.StripePaymentMethodDetachEvent;
-import com.gamersblended.junes.dto.event.StripePaymentMethodEditEvent;
-import com.gamersblended.junes.dto.event.StripePaymentMethodSetDefaultEvent;
+import com.gamersblended.junes.dto.event.*;
 import com.gamersblended.junes.dto.request.AddPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.AttachAddressToPaymentMethodRequest;
 import com.gamersblended.junes.dto.request.EditPaymentMethodRequest;
@@ -56,6 +52,12 @@ public class SavedItemsService {
 
     private static final String ADDRESS = "address";
     private static final String PAYMENT_METHOD = "payment_method";
+    private static final String ADDRESS_NOT_FOUND = "Address not found";
+    private static final String PAYMENT_METHOD_NOT_FOUND = "Payment method not found";
+    private static final String ADDRESS_ID_NOT_GIVEN = "Address ID is not given";
+    private static final String PAYMENT_METHOD_ID_NOT_GIVEN = "Payment method ID is not given";
+    private static final String ADDRESS_NOT_FOUND_FOR_USER_LOG = "Address with ID: {} not found for user: {}";
+    private static final String PAYMENT_METHOD_NOT_FOUND_FOR_USER_LOG = "Payment method with ID: {} not found for user: {}";
 
     public SavedItemsService(AddressRepository addressRepository, AddressMapper addressMapper,
                              PaymentMethodRepository paymentMethodRepository, PaymentMethodMapper paymentMethodMapper,
@@ -89,8 +91,8 @@ public class SavedItemsService {
     public AddressDTO getSavedAddressForUser(UUID addressID, UUID userID) {
         Address address = addressRepository.getAddressByUserIDAndID(userID, addressID)
                 .orElseThrow(() -> {
-                    log.error("Address with ID: {} not found for user: {}", addressID, userID);
-                    return new SavedItemNotFoundException("Address not found");
+                    log.error(ADDRESS_NOT_FOUND_FOR_USER_LOG, addressID, userID);
+                    return new SavedItemNotFoundException(ADDRESS_NOT_FOUND);
                 });
 
         return addressMapper.toDTO(address);
@@ -118,7 +120,7 @@ public class SavedItemsService {
     public void editAddress(UUID userID, UUID targetAddressID, AddressDTO addressDTO) {
         if (null == targetAddressID) {
             log.error("Error editing address for user {}: address ID is not given", userID);
-            throw new InputValidationException("Address ID is not given");
+            throw new InputValidationException(ADDRESS_ID_NOT_GIVEN);
         }
 
         addressValidator.validateAndSanitizeAddress(userID, addressDTO);
@@ -129,8 +131,8 @@ public class SavedItemsService {
                 .filter(address -> address.getAddressID().equals(targetAddressID))
                 .findFirst()
                 .orElseThrow(() -> {
-                    log.error("Address with ID: {} not found for user: {}", targetAddressID, userID);
-                    return new SavedItemNotFoundException("Address not found");
+                    log.error(ADDRESS_NOT_FOUND_FOR_USER_LOG, targetAddressID, userID);
+                    return new SavedItemNotFoundException(ADDRESS_NOT_FOUND);
                 });
 
         checkAndUpdateDefaultAddress(userID, addressesFromUserList, addressDTO);
@@ -144,13 +146,13 @@ public class SavedItemsService {
     public void deleteAddress(UUID userID, UUID targetAddressID) {
         if (null == targetAddressID) {
             log.error("Error deleting address for user {}: address ID is not given", userID);
-            throw new InputValidationException("Address ID is not given");
+            throw new InputValidationException(ADDRESS_ID_NOT_GIVEN);
         }
 
         Address address = addressRepository.getAddressByUserIDAndID(userID, targetAddressID)
                 .orElseThrow(() -> {
-                    log.error("Address with ID: {} not found for user: {}", targetAddressID, userID);
-                    return new SavedItemNotFoundException("Address not found");
+                    log.error(ADDRESS_NOT_FOUND_FOR_USER_LOG, targetAddressID, userID);
+                    return new SavedItemNotFoundException(ADDRESS_NOT_FOUND);
                 });
 
         address.setDeletedOn(LocalDateTime.now(ZoneId.of("Asia/Singapore")));
@@ -172,8 +174,8 @@ public class SavedItemsService {
     public PaymentMethodDTO getSavedPaymentMethodForUser(UUID paymentMethodID, UUID userID) {
         PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, paymentMethodID)
                 .orElseThrow(() -> {
-                    log.error("Payment method with ID: {} not found for user: {}", paymentMethodID, userID);
-                    return new SavedItemNotFoundException("Payment method not found");
+                    log.error(PAYMENT_METHOD_NOT_FOUND_FOR_USER_LOG, paymentMethodID, userID);
+                    return new SavedItemNotFoundException(PAYMENT_METHOD_NOT_FOUND);
                 });
 
         return paymentMethodMapper.toDTO(paymentMethod);
@@ -272,7 +274,7 @@ public class SavedItemsService {
 
         if (null == targetPaymentMethodID) {
             log.error("Error editing payment method for user {}: payment method ID is not given", userID);
-            throw new InputValidationException("Payment method ID is not given");
+            throw new InputValidationException(PAYMENT_METHOD_ID_NOT_GIVEN);
         }
 
         // 1. Validate new changes
@@ -321,13 +323,13 @@ public class SavedItemsService {
         // 1. Validation checks
         if (null == targetPaymentMethodID) {
             log.error("Error deleting payment method for user {}: payment method ID is not given", userID);
-            throw new InputValidationException("Payment method ID is not given");
+            throw new InputValidationException(PAYMENT_METHOD_ID_NOT_GIVEN);
         }
 
         PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, targetPaymentMethodID)
                 .orElseThrow(() -> {
-                    log.error("Payment method with ID: {} not found for user: {}", targetPaymentMethodID, userID);
-                    return new SavedItemNotFoundException("Payment method not found");
+                    log.error(PAYMENT_METHOD_NOT_FOUND_FOR_USER_LOG, targetPaymentMethodID, userID);
+                    return new SavedItemNotFoundException(PAYMENT_METHOD_NOT_FOUND);
                 });
 
         // 2. Idempotency guard against duplicate client submissions (e.g. double-click, retried request)
@@ -390,24 +392,24 @@ public class SavedItemsService {
         // 1. Validation checks
         if (null == addressID) {
             log.error("Error attaching address to payment method for user {}: address ID is not given", userID);
-            throw new InputValidationException("Address ID is not given");
+            throw new InputValidationException(ADDRESS_ID_NOT_GIVEN);
         }
 
         Address address = addressRepository.getAddressByUserIDAndID(userID, addressID)
                 .orElseThrow(() -> {
-                    log.error("Address with ID: {} not found for user: {}", addressID, userID);
-                    return new SavedItemNotFoundException("Address not found");
+                    log.error(ADDRESS_NOT_FOUND_FOR_USER_LOG, addressID, userID);
+                    return new SavedItemNotFoundException(ADDRESS_NOT_FOUND);
                 });
 
         if (null == paymentMethodID) {
             log.error("Error attaching address to payment method for user {}: payment method ID is not given", userID);
-            throw new InputValidationException("Payment method ID is not given");
+            throw new InputValidationException(PAYMENT_METHOD_ID_NOT_GIVEN);
         }
 
         PaymentMethod paymentMethod = paymentMethodRepository.getPaymentMethodByUserIDAndID(userID, paymentMethodID)
                 .orElseThrow(() -> {
-                    log.error("Payment method with ID: {} not found for user: {}", paymentMethodID, userID);
-                    return new SavedItemNotFoundException("Payment method not found");
+                    log.error(PAYMENT_METHOD_NOT_FOUND_FOR_USER_LOG, paymentMethodID, userID);
+                    return new SavedItemNotFoundException(PAYMENT_METHOD_NOT_FOUND);
                 });
 
         // 2. Skip if billing address is already the target one
@@ -454,8 +456,8 @@ public class SavedItemsService {
             // 2a. Check if Address exist for user
             Address addressToSetAsDefault = addressRepository.getAddressByUserIDAndID(userID, savedItemID)
                     .orElseThrow(() -> {
-                        log.error("Address with ID: {} not found for user: {}", savedItemID, userID);
-                        return new SavedItemNotFoundException("Address not found");
+                        log.error(ADDRESS_NOT_FOUND_FOR_USER_LOG, savedItemID, userID);
+                        return new SavedItemNotFoundException(ADDRESS_NOT_FOUND);
                     });
 
             // 3a. Skip if already default
