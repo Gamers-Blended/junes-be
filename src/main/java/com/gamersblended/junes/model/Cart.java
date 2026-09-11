@@ -6,7 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,7 @@ public class Cart {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userID;
 
-    // Not persisted to the carts table: only relevant to guest (session-keyed) carts in Redis,
+    // Not persisted to carts table: only relevant to guest (session-keyed) carts in Redis,
     // which are never synced to Postgres (see CartService#asyncPersistToDatabase)
     @Transient
     private UUID sessionID;
@@ -56,26 +55,9 @@ public class Cart {
     @Builder.Default
     private List<CartItem> itemList = new ArrayList<>();
 
-    // Helper methods for bidirectional relationship
+    // Helper method for bidirectional relationship
     public void addItem(CartItem item) {
         itemList.add(item);
         item.setCart(this);
-    }
-
-    public void removeItem(CartItem item) {
-        itemList.remove(item);
-        item.setCart(null);
-    }
-
-    public BigDecimal getTotalPrice() {
-        return itemList.stream()
-                .map(CartItem::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public int getTotalItems() {
-        return itemList.stream()
-                .mapToInt(CartItem::getQuantity)
-                .sum();
     }
 }

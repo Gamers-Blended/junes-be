@@ -28,7 +28,7 @@ public class Wishlist {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID userID;
 
-    // Not persisted to the wishlists table: only relevant to guest (session-keyed) wishlists in Redis,
+    // Not persisted to wishlists table: only relevant to guest (session-keyed) wishlists in Redis,
     // which are never synced to Postgres (see WishlistService#asyncPersistToDatabase)
     @Transient
     private UUID sessionID;
@@ -55,14 +55,9 @@ public class Wishlist {
     @Builder.Default
     private List<WishlistItem> itemList = new ArrayList<>();
 
-    // Helper methods for bidirectional relationship
+    // Helper method for bidirectional relationship
     public void addItem(WishlistItem item) {
         itemList.add(item);
         item.setWishlist(this);
-    }
-
-    public void removeItem(WishlistItem item) {
-        itemList.remove(item);
-        item.setWishlist(null);
     }
 }

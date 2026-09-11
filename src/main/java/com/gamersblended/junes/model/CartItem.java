@@ -51,7 +51,4 @@ public class CartItem {
     @UpdateTimestamp
     private LocalDateTime updatedOn;
 
-    public BigDecimal getSubtotal() {
-        return price.multiply(BigDecimal.valueOf(quantity));
-    }
 }

@@ -1,14 +1,19 @@
 package com.gamersblended.junes.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
+
+import static com.gamersblended.junes.constant.ConfigSettingsConstants.ASIA_SINGAPORE;
 
 @Entity
 @Table(name = "token_blacklist", schema = "junes_rel")
-@Data
+@Getter
+@Setter
 public class TokenBlacklist {
 
     @Id
@@ -20,7 +25,7 @@ public class TokenBlacklist {
     private String token;
 
     @Column(name = "blacklisted_at", nullable = false)
-    private LocalDateTime blacklistedAt = LocalDateTime.now();
+    private LocalDateTime blacklistedAt = LocalDateTime.now(ZoneId.of(ASIA_SINGAPORE));
 
     @Column(name = "expiry_date", nullable = false)
     private LocalDateTime expiryDate;
