@@ -137,4 +137,67 @@ class ProductTest {
 
         assertThat(product.getImageUrlList()).containsExactly("https://example.com/new.png");
     }
+
+    @Test
+    void getGenres_returnsImmutableSet() {
+        Product product = validProduct(new HashSet<>(Set.of("Souls")), List.of("https://example.com/image.png"));
+
+        Set<String> genres = product.getGenres();
+
+        assertThatThrownBy(() -> genres.add("Metroidvania"))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void setGenres_defensivelyCopiesInput() {
+        Product product = validProduct(new HashSet<>(Set.of("Souls")), List.of("https://example.com/image.png"));
+        Set<String> newGenres = new HashSet<>(Set.of("Metroidvania"));
+
+        product.setGenres(newGenres);
+        newGenres.add("Platformer");
+
+        assertThat(product.getGenres()).containsExactly("Metroidvania");
+    }
+
+    @Test
+    void getLanguages_returnsImmutableSet() {
+        Product product = validProduct(new HashSet<>(Set.of("Souls")), List.of("https://example.com/image.png"));
+
+        Set<String> languages = product.getLanguages();
+
+        assertThatThrownBy(() -> languages.add("French"))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void setLanguages_defensivelyCopiesInput() {
+        Product product = validProduct(new HashSet<>(Set.of("Souls")), List.of("https://example.com/image.png"));
+        Set<String> newLanguages = new HashSet<>(Set.of("French"));
+
+        product.setLanguages(newLanguages);
+        newLanguages.add("German");
+
+        assertThat(product.getLanguages()).containsExactly("French");
+    }
+
+    @Test
+    void getNumberOfPlayers_returnsImmutableSet() {
+        Product product = validProduct(new HashSet<>(Set.of("Souls")), List.of("https://example.com/image.png"));
+
+        Set<String> numberOfPlayers = product.getNumberOfPlayers();
+
+        assertThatThrownBy(() -> numberOfPlayers.add("2"))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void setNumberOfPlayers_defensivelyCopiesInput() {
+        Product product = validProduct(new HashSet<>(Set.of("Souls")), List.of("https://example.com/image.png"));
+        Set<String> newNumberOfPlayers = new HashSet<>(Set.of("2"));
+
+        product.setNumberOfPlayers(newNumberOfPlayers);
+        newNumberOfPlayers.add("4");
+
+        assertThat(product.getNumberOfPlayers()).containsExactly("2");
+    }
 }
