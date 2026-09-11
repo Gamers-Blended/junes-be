@@ -11,7 +11,6 @@ import static com.gamersblended.junes.constant.KafkaConstants.PAYMENT_METHOD_ADD
 @EqualsAndHashCode(callSuper = true)
 public class StripePaymentMethodAddressAttachedEvent extends BaseEvent {
 
-    private String eventID;
     private Integer schemaVersion; // For updates on payload shape
     private UUID userID;
     private UUID paymentMethodID;
