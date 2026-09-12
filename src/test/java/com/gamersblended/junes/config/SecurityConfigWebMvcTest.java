@@ -58,7 +58,13 @@ class SecurityConfigWebMvcTest {
     }
 
     @Test
-    void unlistedRouteUnderApiPrefix_isPubliclyAccessible_viaCatchAllTodo() throws Exception {
+    void unlistedRouteUnderApiPrefix_withoutAuthentication_isUnauthorized() throws Exception {
+        mockMvc.perform(get("/junes/api/v1/some-other-route/probe")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void unlistedRouteUnderApiPrefix_withAuthentication_isAllowed() throws Exception {
         mockMvc.perform(get("/junes/api/v1/some-other-route/probe")).andExpect(status().isOk());
     }
 
