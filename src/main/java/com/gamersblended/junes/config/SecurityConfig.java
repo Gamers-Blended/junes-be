@@ -55,11 +55,11 @@ public class SecurityConfig {
 //                        .requestMatchers("/junes/api/v1/cart/**").hasAnyRole("READER", "ADMIN") // Read-only
                                 .requestMatchers("/junes/api/v1/cart/**").permitAll()
                                 .requestMatchers("/junes/api/v1/wishlist/**").permitAll()
+                                .requestMatchers("/junes/api/v1/shipping/**").permitAll()
                                 // /actuator/** is served on separate management port (management.server.port in application*.properties)
                                 // And secured by managementSecurityFilterChain
                                 // Not this chain — isolated via Docker network rather than app-level auth here
                                 .requestMatchers("/junes/api/v1/housekeep/**").hasRole("ADMIN")
-                                .requestMatchers("/junes/api/v1/**").permitAll() // TODO temp
                                 .requestMatchers("/junes/api/v1/auth/**").permitAll()
                                 .anyRequest().authenticated() // All other requests require authentication
                 )
