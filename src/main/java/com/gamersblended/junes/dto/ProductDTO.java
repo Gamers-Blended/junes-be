@@ -21,14 +21,14 @@ public class ProductDTO {
     private String edition;
     private String publisher;
     private LocalDate releaseDate;
-    private Set<String> series;
-    private Set<String> genres;
-    private Set<String> languages;
-    private Set<String> numberOfPlayers;
+    private Set<String> series = new HashSet<>();
+    private Set<String> genres = new HashSet<>();
+    private Set<String> languages = new HashSet<>();
+    private Set<String> numberOfPlayers = new HashSet<>();
     private Integer unitsSold;
     private Integer stock;
     private String productImageUrl;
-    private List<String> imageUrlList;
+    private List<String> imageUrlList = new ArrayList<>();
     private String editionNotes;
     private LocalDate createdOn;
 
