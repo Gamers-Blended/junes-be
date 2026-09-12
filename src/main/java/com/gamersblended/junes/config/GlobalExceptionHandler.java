@@ -4,6 +4,8 @@ import com.gamersblended.junes.dto.response.ErrorResponseDTO;
 import com.gamersblended.junes.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,6 +13,7 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.stream.Collectors;
 
 /**
  * Centralize exception handling and return standardized error responses
@@ -219,6 +222,16 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
+    // Thrown by Spring's @Valid
+    // ex.getMessage() is verbose and unhelpful
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, WebRequest request) {
+        String message = ex.getBindingResult().getFieldErrors().stream() // List of per-field violations
+                .map(error -> error.getField() + ": " + error.getDefaultMessage()) // field: message
+                .collect(Collectors.joining(", "));
+        return buildErrorResponse(message, HttpStatus.BAD_REQUEST, request);
+    }
+
     // Generic exception handler for unhandled exceptions
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<Object> handleMissingServletRequestParameterException(
@@ -231,12 +244,12 @@ public class GlobalExceptionHandler {
         return buildErrorResponse("An unexpected error occurred: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    private ResponseEntity<Object> buildErrorResponse(String message, HttpStatus status, WebRequest request) {
+    private ResponseEntity<Object> buildErrorResponse(@Nullable String message, HttpStatus status, WebRequest request) {
         ErrorResponseDTO errorBody = new ErrorResponseDTO(
                 LocalDateTime.now(ZoneId.of("Asia/Singapore")),
                 status.value(),
                 status.getReasonPhrase(),
-                message,
+                message != null ? message : status.getReasonPhrase(),
                 request.getDescription(false).replace("uri=", "")
         );
         return new ResponseEntity<>(errorBody, status);
